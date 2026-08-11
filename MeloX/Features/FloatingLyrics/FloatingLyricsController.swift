@@ -205,7 +205,8 @@ final class FloatingLyricsController: NSObject {
             songID: player.currentSong?.id,
             isPlaying: player.isPlaying,
             duration: player.duration,
-            seekRevision: player.seekRevision
+            seekRevision: player.seekRevision,
+            lyricsTimingRevision: player.lyricsTimingRevision
         )
         let stateChanged = state != lastPlaybackState
         guard force || stateChanged else { return }
@@ -214,6 +215,8 @@ final class FloatingLyricsController: NSObject {
             $0.songID != state.songID
                 || $0.isPlaying != state.isPlaying
                 || $0.seekRevision != state.seekRevision
+                || $0.lyricsTimingRevision
+                    != state.lyricsTimingRevision
         } ?? true
         if timelineChanged {
             resetSampleBufferRenderer()
@@ -354,8 +357,7 @@ final class FloatingLyricsController: NSObject {
             )
         }
 
-        let lyrics = player.isPreciseLyricsTimingReady
-            && lyricsStore.songID == song.id
+        let lyrics = lyricsStore.songID == song.id
             ? lyricsStore.lyrics
             : []
         let hasSyllableSyncedLyrics = lyrics.contains(
@@ -525,4 +527,5 @@ private struct PlaybackState: Equatable {
     let isPlaying: Bool
     let duration: TimeInterval
     let seekRevision: Int
+    let lyricsTimingRevision: Int
 }
