@@ -136,7 +136,7 @@ final class AutoMixPreferences {
     static let defaultTailCutBars: AutoMixTailCutBars = .four
     static let defaultFixedDuration = 8.0
     static let fixedDurationRange = 3.0...20.0
-    static let defaultPreloadLeadTime = 90.0
+    static let defaultPreloadLeadTime = 120.0
     static let preloadLeadTimeRange = 30.0...180.0
     static let defaultFadeCurve: AutoMixFadeCurve = .equalPower
     static let defaultTempoMatchingEnabled = true
