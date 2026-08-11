@@ -73,6 +73,12 @@ final class AudioPlaybackDeck {
         )
     }
 
+    func updateMediaTimeline(
+        _ timeline: AudioPlaybackMediaTimeline
+    ) {
+        mediaTimeline = timeline
+    }
+
     func mediaTime(
         forPlaybackPosition position: TimeInterval
     ) -> CMTime {

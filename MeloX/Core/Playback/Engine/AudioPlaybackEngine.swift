@@ -34,6 +34,7 @@ final class AudioPlaybackEngine {
     var onDurationChanged: ((TimeInterval) -> Void)?
     var onPlaybackEnded: (() -> Void)?
     var onFailure: ((Error) -> Void)?
+    var onPreciseTimingReady: ((Bool) -> Void)?
     var onAutoMixTransitionBegan:
         ((Int, AutoMixTransitionPlan) -> Void)?
     var onAutoMixTransitionProgress: ((Double) -> Void)?
@@ -61,6 +62,8 @@ final class AudioPlaybackEngine {
     private var suppressesProgressUpdates = false
     private var didReportCurrentItemFailure = false
     private var loadGeneration = 0
+    private var preciseTimingGeneration = 0
+    private var preciseTimingTask: Task<Void, Never>?
 
     private var decks: [AudioPlaybackDeck] {
         autoMixController.decks
@@ -114,6 +117,7 @@ final class AudioPlaybackEngine {
 
     deinit {
         pendingSeekRetryTask?.cancel()
+        preciseTimingTask?.cancel()
         for (player, observer) in zip(
             observedPlayers,
             timeObservers
@@ -134,6 +138,10 @@ final class AudioPlaybackEngine {
     ) async {
         loadGeneration += 1
         let generation = loadGeneration
+        preciseTimingGeneration += 1
+        preciseTimingTask?.cancel()
+        preciseTimingTask = nil
+        onPreciseTimingReady?(false)
         cancelAutoMix()
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
@@ -160,6 +168,56 @@ final class AudioPlaybackEngine {
             with: playbackItem,
             identifier: nil
         )
+
+        preciseTimingGeneration += 1
+        let preciseGeneration = preciseTimingGeneration
+        preciseTimingTask?.cancel()
+        preciseTimingTask = Task(priority: .utility) { @MainActor [weak self, source] in
+            guard let self else { return }
+
+            let retryDelays: [Duration] = [
+                .milliseconds(200),
+                .milliseconds(600),
+                .milliseconds(1200)
+            ]
+
+            for attempt in 0...retryDelays.count {
+                guard !Task.isCancelled,
+                      generation == self.loadGeneration,
+                      preciseGeneration == self.preciseTimingGeneration,
+                      self.activeDeck.player.currentItem === playbackItem.item else {
+                    return
+                }
+
+                if let preciseTimeline =
+                    await self.itemFactory.preparePreciseTimeline(
+                        for: source
+                    ) {
+                    guard !Task.isCancelled,
+                          generation == self.loadGeneration,
+                          preciseGeneration == self.preciseTimingGeneration,
+                          self.activeDeck.player.currentItem === playbackItem.item else {
+                        return
+                    }
+
+                    self.activeDeck.updateMediaTimeline(preciseTimeline)
+                    self.onPreciseTimingReady?(true)
+                    self.preciseTimingTask = nil
+                    return
+                }
+
+                guard attempt < retryDelays.count else {
+                    return
+                }
+
+                do {
+                    try await Task.sleep(for: retryDelays[attempt])
+                } catch {
+                    return
+                }
+            }
+        }
+
         if autoplay {
             play()
         }
@@ -167,6 +225,10 @@ final class AudioPlaybackEngine {
 
     func unload() {
         loadGeneration += 1
+        preciseTimingGeneration += 1
+        preciseTimingTask?.cancel()
+        preciseTimingTask = nil
+        onPreciseTimingReady?(false)
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
         wantsPlayback = false

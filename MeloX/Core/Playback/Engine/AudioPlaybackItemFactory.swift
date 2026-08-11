@@ -23,7 +23,7 @@ final class AudioPlaybackItemFactory {
             let asset = AVURLAsset(
             url: source.url,
             options: [
-                AVURLAssetPreferPreciseDurationAndTimingKey: true
+                AVURLAssetPreferPreciseDurationAndTimingKey: false
             ]
         )
         let item = AVPlayerItem(asset: asset)
@@ -57,6 +57,36 @@ final class AudioPlaybackItemFactory {
                 audioTrackTimeRange: audioTrackTimeRange
             )
         )
+    }
+
+
+    func preparePreciseTimeline(
+        for source: PlaybackSource
+    ) async -> AudioPlaybackMediaTimeline? {
+        let asset = AVURLAsset(
+            url: source.url,
+            options: [
+                AVURLAssetPreferPreciseDurationAndTimingKey: true
+            ]
+        )
+
+        do {
+            _ = try await asset.load(.duration)
+            guard let audioTrack = try await asset.loadTracks(
+                withMediaType: .audio
+            ).first else {
+                return nil
+            }
+
+            let timeRange = try await audioTrack.load(.timeRange)
+            return AudioPlaybackMediaTimeline(
+                audioTrackTimeRange: timeRange
+            )
+        } catch is CancellationError {
+            return nil
+        } catch {
+            return nil
+        }
     }
 
     func updateEqualizer(
