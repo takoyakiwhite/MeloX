@@ -34,8 +34,8 @@ final class AutoMixDeckTransitionController {
         let deckIndex: Int
         let item: AVPlayerItem
         let plan: AutoMixTransitionPlan
-        let warmupStartPosition: TimeInterval
-        var isWarming = false
+        var isPrerolled = false
+        var isPrerolling = false
     }
 
     private final class ActiveTransition {
@@ -75,10 +75,6 @@ final class AutoMixDeckTransitionController {
 
     private let itemFactory:
         AudioPlaybackItemFactory
-    private static let autoMixBufferDuration: TimeInterval = 120
-    private static let warmupLeadTime: TimeInterval = 8
-    private static let warmupProgressThreshold: TimeInterval = 0.05
-
     private var preparationGeneration = 0
     private var baseVolume: Float = 1
     private var deckGains: [Float] = [1, 0]
@@ -88,7 +84,13 @@ final class AutoMixDeckTransitionController {
         ActiveTransition?
     private var envelopeTask:
         Task<Void, Never>?
+    private var prerollRetryTask:
+        Task<Void, Never>?
     private var wantsPlayback = false
+
+    private static let autoMixForwardBufferDuration: TimeInterval = 120
+    private static let minimumTransitionBuffer: TimeInterval = 6
+    private static let rateUpdateThreshold: Float = 0.002
 
     var activeDeck: AudioPlaybackDeck {
         decks[activeDeckIndex]
@@ -110,6 +112,7 @@ final class AutoMixDeckTransitionController {
 
     deinit {
         envelopeTask?.cancel()
+        prerollRetryTask?.cancel()
     }
 
     func prepare(
@@ -127,8 +130,8 @@ final class AutoMixDeckTransitionController {
             for: source,
             preferredForwardBufferDuration:
                 max(
-                    Self.autoMixBufferDuration,
-                    plan.duration + 8
+                    Self.autoMixForwardBufferDuration,
+                    plan.duration + Self.minimumTransitionBuffer
                 ),
             autoMixEqualizerState:
                 decks[deckIndex]
@@ -149,25 +152,11 @@ final class AutoMixDeckTransitionController {
         )
         deckGains[deckIndex] = 0
         applyOutputVolumes()
-        let warmupLead = min(
-            Self.warmupLeadTime,
-            max(plan.duration * 0.5, 3)
-        )
-        let warmupStartPosition = max(
-            plan.incomingStartTime
-                - warmupLead
-                    * Double(
-                    normalizedRate(
-                        plan.incomingStartPlaybackRate
-                    )
-                ),
-            0
-        )
         await seek(
             deck.player,
             to: deck.mediaTime(
                 forPlaybackPosition:
-                    warmupStartPosition
+                    plan.incomingStartTime
             )
         )
         guard generation == preparationGeneration,
@@ -179,21 +168,16 @@ final class AutoMixDeckTransitionController {
                 identifier: identifier,
                 deckIndex: deckIndex,
                 item: item,
-                plan: plan,
-                warmupStartPosition:
-                    warmupStartPosition
+                plan: plan
             )
         switch item.status {
         case .readyToPlay
             where deck.player.status
                 == .readyToPlay:
-            deck.player.preroll(
-                atRate:
-                    normalizedRate(
-                        plan
-                            .incomingStartPlaybackRate
-                    )
-            ) { _ in }
+            requestPreroll(
+                for: deckIndex,
+                generation: generation
+            )
         case .failed:
             failPreparedTransition(
                 on: deckIndex,
@@ -214,6 +198,8 @@ final class AutoMixDeckTransitionController {
         preparationGeneration += 1
         envelopeTask?.cancel()
         envelopeTask = nil
+        prerollRetryTask?.cancel()
+        prerollRetryTask = nil
 
         if let activeTransition {
             decks[
@@ -269,20 +255,6 @@ final class AutoMixDeckTransitionController {
 
     func resumeIncomingIfNeeded() {
         wantsPlayback = true
-        if let preparedTransition,
-           preparedTransition.isWarming,
-           preparedTransition.item.status
-                == .readyToPlay {
-            decks[preparedTransition.deckIndex]
-                .player.playImmediately(
-                    atRate:
-                        normalizedRate(
-                            preparedTransition
-                                .plan
-                                .incomingStartPlaybackRate
-                        )
-                )
-        }
         guard let activeTransition else {
             return
         }
@@ -316,24 +288,18 @@ final class AutoMixDeckTransitionController {
         }
         switch item.status {
         case .readyToPlay:
+            if let preparedTransition,
+               preparedTransition.deckIndex == deckIndex,
+               !preparedTransition.isPrerolled,
+               !preparedTransition.isPrerolling {
+                requestPreroll(
+                    for: deckIndex,
+                    generation: preparationGeneration
+                )
+            }
             startIfNeeded(
                 wantsPlayback: wantsPlayback
             )
-            if let preparedTransition,
-               preparedTransition.deckIndex
-                == deckIndex,
-               !preparedTransition.isWarming,
-               decks[deckIndex].player.status
-                == .readyToPlay {
-                decks[deckIndex].player.preroll(
-                    atRate:
-                        normalizedRate(
-                            preparedTransition
-                                .plan
-                                .incomingStartPlaybackRate
-                        )
-                ) { _ in }
-            }
         case .failed:
             failPreparedTransition(
                 on: deckIndex,
@@ -354,73 +320,38 @@ final class AutoMixDeckTransitionController {
     ) {
         self.wantsPlayback = wantsPlayback
         guard activeTransition == nil,
-              var preparedTransition,
+              let preparedTransition,
               wantsPlayback,
               preparedTransition.item.status
                 == .readyToPlay,
+              preparedTransition.isPrerolled,
               decks[
                 preparedTransition.deckIndex
               ].player.status
                 == .readyToPlay else {
             return
         }
-        guard let outgoingSeconds =
+        guard let seconds =
                 activeDeck.currentPlaybackTime else {
             return
         }
-
-        let warmupLead = min(
-            Self.warmupLeadTime,
-            max(preparedTransition.plan.duration * 0.5, 3)
-        )
-        let warmupStartTime = max(
-            preparedTransition.plan.outgoingStartTime
-                - warmupLead,
-            0
-        )
-
-        if !preparedTransition.isWarming {
-            guard outgoingSeconds >= warmupStartTime else {
-                return
-            }
-            let incomingPlayer =
-                decks[preparedTransition.deckIndex].player
-            deckGains[preparedTransition.deckIndex] = 0
-            applyOutputVolumes()
-            incomingPlayer.playImmediately(
-                atRate:
-                    normalizedRate(
-                        preparedTransition
-                            .plan
-                            .incomingStartPlaybackRate
-                    )
-            )
-            preparedTransition.isWarming = true
-            self.preparedTransition = preparedTransition
-            return
-        }
-
-        let incomingDeck =
-            decks[preparedTransition.deckIndex]
-        let incomingPosition =
-            incomingDeck.currentPlaybackTime
-        let hasStartedProducingTime =
-            incomingPosition.map { position in
-                position
-                    >= preparedTransition
-                        .warmupStartPosition
-                        + Self.warmupProgressThreshold
-            } ?? false
-        guard incomingDeck.player.timeControlStatus
-                == .playing,
-              hasStartedProducingTime else {
-            return
-        }
-
-        guard outgoingSeconds
+        guard seconds
                 >= preparedTransition
                     .plan
                     .outgoingStartTime else {
+            return
+        }
+        guard seconds
+                < preparedTransition
+                    .plan
+                    .outgoingStartTime
+                    + preparedTransition.plan.duration else {
+            return
+        }
+        guard hasSufficientBuffer(
+            for: preparedTransition,
+            at: preparedTransition.plan.incomingStartTime
+        ) else {
             return
         }
         start(preparedTransition)
@@ -471,21 +402,6 @@ final class AutoMixDeckTransitionController {
                 === prepared.item else {
             return
         }
-        do {
-            try activateAudioSession()
-        } catch {
-            failPreparedTransition(
-                on: prepared.deckIndex,
-                error: error
-            )
-            return
-        }
-
-        let outgoingPosition =
-            activeDeck.currentPlaybackTime
-        let incomingPosition =
-            decks[prepared.deckIndex]
-                .currentPlaybackTime
         let transition = ActiveTransition(
             identifier: prepared.identifier,
             outgoingDeckIndex:
@@ -494,19 +410,12 @@ final class AutoMixDeckTransitionController {
                 prepared.deckIndex,
             plan: prepared.plan,
             outgoingStartPosition:
-                outgoingPosition
-                    ?? prepared.plan
-                        .outgoingStartTime,
+                prepared.plan.outgoingStartTime,
             incomingStartPosition:
-                incomingPosition
-                    ?? prepared.plan
-                        .incomingStartTime
+                prepared.plan.incomingStartTime
         )
         preparedTransition = nil
         activeTransition = transition
-        decks[transition.outgoingDeckIndex]
-            .player.currentItem?
-            .audioTimePitchAlgorithm = .spectral
         deckGains[
             transition.outgoingDeckIndex
         ] = 1
@@ -519,11 +428,13 @@ final class AutoMixDeckTransitionController {
         )
         applyOutputVolumes()
         decks[transition.incomingDeckIndex]
-            .player.rate =
-                incomingRate(
-                    for: transition,
-                    progress: 0
-                )
+            .player.playImmediately(
+                atRate:
+                    incomingRate(
+                        for: transition,
+                        progress: 0
+                    )
+            )
         onTransitionBegan?(
             transition.identifier,
             transition.plan
@@ -574,16 +485,20 @@ final class AutoMixDeckTransitionController {
                         current.incomingDeckIndex
                     ].player
                 if self.wantsPlayback {
-                    outgoingPlayer.rate =
-                        self.outgoingRate(
+                    self.setRateIfNeeded(
+                        outgoingPlayer,
+                        to: self.outgoingRate(
                             for: current,
                             progress: progress
                         )
-                    incomingPlayer.rate =
-                        self.incomingRate(
+                    )
+                    self.setRateIfNeeded(
+                        incomingPlayer,
+                        to: self.incomingRate(
                             for: current,
                             progress: progress
                         )
+                    )
                 } else {
                     if outgoingPlayer.rate != 0 {
                         outgoingPlayer.pause()
@@ -609,6 +524,127 @@ final class AutoMixDeckTransitionController {
                 )
             }
         }
+    }
+
+    private func requestPreroll(
+        for deckIndex: Int,
+        generation: Int
+    ) {
+        guard var preparedTransition,
+              preparedTransition.deckIndex == deckIndex,
+              preparedTransition.item.status == .readyToPlay,
+              decks[deckIndex].player.status == .readyToPlay,
+              !preparedTransition.isPrerolled,
+              !preparedTransition.isPrerolling else {
+            return
+        }
+
+        preparedTransition.isPrerolling = true
+        self.preparedTransition = preparedTransition
+        let item = preparedTransition.item
+        let rate = normalizedRate(
+            preparedTransition.plan.incomingStartPlaybackRate
+        )
+        decks[deckIndex].player.preroll(atRate: rate) {
+            [weak self, weak item] finished in
+            Task { @MainActor [weak self, weak item] in
+                guard let self,
+                      let item,
+                      generation == self.preparationGeneration,
+                      var current = self.preparedTransition,
+                      current.deckIndex == deckIndex,
+                      current.item === item,
+                      self.decks[deckIndex].player.currentItem === item else {
+                    return
+                }
+                current.isPrerolling = false
+                current.isPrerolled = finished
+                self.preparedTransition = current
+                if finished {
+                    self.startIfNeeded(
+                        wantsPlayback: self.wantsPlayback
+                    )
+                } else {
+                    self.schedulePrerollRetry(
+                        generation: generation
+                    )
+                }
+            }
+        }
+    }
+
+    private func schedulePrerollRetry(
+        generation: Int
+    ) {
+        prerollRetryTask?.cancel()
+        prerollRetryTask = Task {
+            try? await Task.sleep(
+                for: .milliseconds(250)
+            )
+            guard !Task.isCancelled else { return }
+            await MainActor.run { [weak self] in
+                guard let self,
+                      generation == self.preparationGeneration,
+                      let preparedTransition = self.preparedTransition,
+                      !preparedTransition.isPrerolled else {
+                    return
+                }
+                self.requestPreroll(
+                    for: preparedTransition.deckIndex,
+                    generation: generation
+                )
+            }
+        }
+    }
+
+    private func hasSufficientBuffer(
+        for prepared: PreparedTransition,
+        at playbackPosition: TimeInterval
+    ) -> Bool {
+        let item = prepared.item
+        if let asset = item.asset as? AVURLAsset,
+           asset.url.isFileURL {
+            return true
+        }
+        let required = min(
+            max(Self.minimumTransitionBuffer, prepared.plan.duration + 2),
+            12
+        )
+        return bufferedDuration(
+            of: item,
+            from: playbackPosition
+        ) >= required
+            || item.isPlaybackBufferFull
+    }
+
+    private func bufferedDuration(
+        of item: AVPlayerItem,
+        from playbackPosition: TimeInterval
+    ) -> TimeInterval {
+        guard playbackPosition.isFinite else { return 0 }
+        for value in item.loadedTimeRanges {
+            let range = value.timeRangeValue
+            let start = range.start.seconds
+            let end = range.end.seconds
+            guard start.isFinite, end.isFinite, end > start else {
+                continue
+            }
+            if playbackPosition >= start - 0.05,
+               playbackPosition <= end + 0.05 {
+                return max(end - playbackPosition, 0)
+            }
+        }
+        return 0
+    }
+
+    private func setRateIfNeeded(
+        _ player: AVPlayer,
+        to rate: Float
+    ) {
+        guard abs(player.rate - rate) >= Self.rateUpdateThreshold else {
+            return
+        }
+        player.rate = rate
     }
 
     private func currentProgress(
@@ -848,7 +884,4 @@ final class AutoMixDeckTransitionController {
         }
     }
 
-    private func activateAudioSession() throws {
-        try AudioPlaybackSessionConfigurator.activate()
-    }
 }
