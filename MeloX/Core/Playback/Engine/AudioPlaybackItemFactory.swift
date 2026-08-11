@@ -33,60 +33,53 @@ final class AudioPlaybackItemFactory {
                 source.preferredForwardBufferDuration
             )
         item.allowedAudioSpatializationFormats = .multichannel
-        var audioTrackTimeRange: CMTimeRange?
+        var preciseTimingTask:
+            Task<AudioPlaybackMediaTimeline?, Never>?
         do {
             if let audioTrack = try await asset.loadTracks(
                 withMediaType: .audio
             ).first {
-                audioTrackTimeRange = try? await audioTrack.load(
-                    .timeRange
-                )
                 item.audioMix =
                     equalizerProcessor.makeAudioMix(
                         for: audioTrack,
                         autoMixEqualizerState:
                             autoMixEqualizerState
                     )
+
+                preciseTimingTask = Task {
+                    let preciseAsset = AVURLAsset(
+                        url: source.url,
+                        options: [
+                            AVURLAssetPreferPreciseDurationAndTimingKey: true
+                        ]
+                    )
+                    do {
+                        guard let preciseTrack = try await preciseAsset
+                            .loadTracks(withMediaType: .audio)
+                            .first else {
+                            return nil
+                        }
+                        let timeRange = try await preciseTrack.load(
+                            .timeRange
+                        )
+                        return AudioPlaybackMediaTimeline(
+                            audioTrackTimeRange: timeRange
+                        )
+                    } catch is CancellationError {
+                        return nil
+                    } catch {
+                        return nil
+                    }
+                }
             }
         } catch {
             // AVPlayerItem reports an actionable error if playback fails.
         }
         return PreparedAudioPlaybackItem(
             item: item,
-            timeline: AudioPlaybackMediaTimeline(
-                audioTrackTimeRange: audioTrackTimeRange
-            )
+            timeline: AudioPlaybackMediaTimeline(),
+            preciseTimingTask: preciseTimingTask
         )
-    }
-
-
-    func preparePreciseTimeline(
-        for source: PlaybackSource
-    ) async -> AudioPlaybackMediaTimeline? {
-        let asset = AVURLAsset(
-            url: source.url,
-            options: [
-                AVURLAssetPreferPreciseDurationAndTimingKey: true
-            ]
-        )
-
-        do {
-            _ = try await asset.load(.duration)
-            guard let audioTrack = try await asset.loadTracks(
-                withMediaType: .audio
-            ).first else {
-                return nil
-            }
-
-            let timeRange = try await audioTrack.load(.timeRange)
-            return AudioPlaybackMediaTimeline(
-                audioTrackTimeRange: timeRange
-            )
-        } catch is CancellationError {
-            return nil
-        } catch {
-            return nil
-        }
     }
 
     func updateEqualizer(

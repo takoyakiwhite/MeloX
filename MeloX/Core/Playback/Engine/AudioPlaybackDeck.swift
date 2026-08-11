@@ -8,12 +8,17 @@ final class AudioPlaybackDeck {
 
     var onItemStatusChanged: ((AVPlayerItem) -> Void)?
     var onSeekableTimeRangesChanged: ((AVPlayerItem) -> Void)?
+    var onPreciseTimingReady: (() -> Void)?
     private(set) var itemIdentifier: Int?
     private(set) var mediaTimeline =
         AudioPlaybackMediaTimeline()
 
     private var itemStatusObserver: NSKeyValueObservation?
     private var seekableTimeRangesObserver: NSKeyValueObservation?
+    private var preciseTimingTask:
+        Task<AudioPlaybackMediaTimeline?, Never>?
+    private var preciseTimingApplyTask:
+        Task<Void, Never>?
 
     init() {
         player = AVPlayer()
@@ -28,6 +33,10 @@ final class AudioPlaybackDeck {
     ) {
         let item = playbackItem.item
         autoMixEqualizerState.reset()
+        preciseTimingTask?.cancel()
+        preciseTimingTask = nil
+        preciseTimingApplyTask?.cancel()
+        preciseTimingApplyTask = nil
         itemStatusObserver?.invalidate()
         seekableTimeRangesObserver?.invalidate()
         itemIdentifier = identifier
@@ -57,6 +66,22 @@ final class AudioPlaybackDeck {
             }
         }
         player.replaceCurrentItem(with: item)
+
+        if let preciseTimingTask = playbackItem.preciseTimingTask {
+            let expectedItem = item
+            self.preciseTimingTask = preciseTimingTask
+            self.preciseTimingApplyTask = Task { [weak self] in
+                let preciseTimeline = await preciseTimingTask.value
+                guard !Task.isCancelled,
+                      let self,
+                      let preciseTimeline,
+                      self.player.currentItem === expectedItem else {
+                    return
+                }
+                self.mediaTimeline = preciseTimeline
+                self.onPreciseTimingReady?()
+            }
+        }
     }
 
     var currentPlaybackTime: TimeInterval? {
@@ -73,12 +98,6 @@ final class AudioPlaybackDeck {
         )
     }
 
-    func updateMediaTimeline(
-        _ timeline: AudioPlaybackMediaTimeline
-    ) {
-        mediaTimeline = timeline
-    }
-
     func mediaTime(
         forPlaybackPosition position: TimeInterval
     ) -> CMTime {
@@ -87,12 +106,21 @@ final class AudioPlaybackDeck {
         )
     }
 
+    deinit {
+        preciseTimingTask?.cancel()
+        preciseTimingApplyTask?.cancel()
+    }
+
     func clear() {
         autoMixEqualizerState.reset()
         itemStatusObserver?.invalidate()
         itemStatusObserver = nil
         seekableTimeRangesObserver?.invalidate()
         seekableTimeRangesObserver = nil
+        preciseTimingTask?.cancel()
+        preciseTimingTask = nil
+        preciseTimingApplyTask?.cancel()
+        preciseTimingApplyTask = nil
         itemIdentifier = nil
         mediaTimeline = AudioPlaybackMediaTimeline()
         player.pause()
