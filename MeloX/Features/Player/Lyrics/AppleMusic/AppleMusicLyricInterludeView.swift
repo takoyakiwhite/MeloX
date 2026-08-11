@@ -30,6 +30,9 @@ struct AppleMusicLyricsFocusCoordinator: View {
             .onChange(of: player.progress, initial: true) {
                 synchronizeImmediately()
             }
+            .onChange(of: player.lyricsTimingRevision) {
+                synchronizeImmediately()
+            }
             .task(id: synchronizationTrigger) {
                 await synchronizeAtTransitions()
             }
@@ -46,6 +49,7 @@ struct AppleMusicLyricsFocusCoordinator: View {
             lyricCount: lyrics.count,
             firstLyricID: lyrics.first?.id,
             lastLyricID: lyrics.last?.id,
+            lyricsTimingRevision: player.lyricsTimingRevision,
             interludeCount: interludes.count,
             firstInterludeID: interludes.first?.id,
             lastInterludeID: interludes.last?.id
@@ -264,6 +268,7 @@ private struct AppleMusicLyricsFocusSynchronizationTrigger: Hashable {
     let lyricCount: Int
     let firstLyricID: LyricLine.ID?
     let lastLyricID: LyricLine.ID?
+    let lyricsTimingRevision: Int
     let interludeCount: Int
     let firstInterludeID: LyricInterlude.ID?
     let lastInterludeID: LyricInterlude.ID?
