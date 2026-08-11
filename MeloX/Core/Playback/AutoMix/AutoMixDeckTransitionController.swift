@@ -136,6 +136,7 @@ final class AutoMixDeckTransitionController {
         )
         let item = playbackItem.item
         item.audioTimePitchAlgorithm = .spectral
+        activeDeck.player.currentItem?.audioTimePitchAlgorithm = .spectral
         guard generation == preparationGeneration,
               !Task.isCancelled,
               activeTransition == nil else {
