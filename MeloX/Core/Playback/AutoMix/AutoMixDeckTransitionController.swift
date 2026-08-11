@@ -380,16 +380,6 @@ final class AutoMixDeckTransitionController {
                 === prepared.item else {
             return
         }
-        do {
-            try activateAudioSession()
-        } catch {
-            failPreparedTransition(
-                on: prepared.deckIndex,
-                error: error
-            )
-            return
-        }
-
         let outgoingPosition =
             activeDeck.currentPlaybackTime
         let incomingPosition =
