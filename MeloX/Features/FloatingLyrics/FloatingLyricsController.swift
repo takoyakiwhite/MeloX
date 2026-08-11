@@ -354,7 +354,8 @@ final class FloatingLyricsController: NSObject {
             )
         }
 
-        let lyrics = lyricsStore.songID == song.id
+        let lyrics = player.isPreciseLyricsTimingReady
+            && lyricsStore.songID == song.id
             ? lyricsStore.lyrics
             : []
         let hasSyllableSyncedLyrics = lyrics.contains(
