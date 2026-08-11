@@ -370,7 +370,10 @@ struct NowPlayingView: View {
     }
 
     private var lyrics: [LyricLine] {
-        lyricsStore.lyrics
+        guard player.isPreciseLyricsTimingReady else {
+            return []
+        }
+        return lyricsStore.lyrics
     }
 
     private var lyricError: String? {
