@@ -34,6 +34,8 @@ final class AutoMixDeckTransitionController {
         let deckIndex: Int
         let item: AVPlayerItem
         let plan: AutoMixTransitionPlan
+        var isPrerolled = false
+        var isPrerolling = false
     }
 
     private final class ActiveTransition {
@@ -82,6 +84,8 @@ final class AutoMixDeckTransitionController {
         ActiveTransition?
     private var envelopeTask:
         Task<Void, Never>?
+    private var prerollRetryTask:
+        Task<Void, Never>?
     private var wantsPlayback = false
 
     var activeDeck: AudioPlaybackDeck {
@@ -104,6 +108,7 @@ final class AutoMixDeckTransitionController {
 
     deinit {
         envelopeTask?.cancel()
+        prerollRetryTask?.cancel()
     }
 
     func prepare(
@@ -162,13 +167,9 @@ final class AutoMixDeckTransitionController {
         case .readyToPlay
             where deck.player.status
                 == .readyToPlay:
-            deck.player.preroll(
-                atRate:
-                    normalizedRate(
-                        plan
-                            .incomingStartPlaybackRate
-                    )
-            ) { _ in }
+            prerollPreparedTransition(
+                on: deckIndex
+            )
         case .failed:
             failPreparedTransition(
                 on: deckIndex,
@@ -207,6 +208,8 @@ final class AutoMixDeckTransitionController {
         }
 
         preparedTransition = nil
+        prerollRetryTask?.cancel()
+        prerollRetryTask = nil
         activeTransition = nil
         resetAutoMixEqualizers()
         deckGains = activeDeckIndex == 0
@@ -316,6 +319,7 @@ final class AutoMixDeckTransitionController {
         guard activeTransition == nil,
               let preparedTransition,
               wantsPlayback,
+              preparedTransition.isPrerolled,
               preparedTransition.item.status
                 == .readyToPlay,
               decks[
@@ -333,6 +337,92 @@ final class AutoMixDeckTransitionController {
             return
         }
         start(preparedTransition)
+    }
+
+    private func prerollPreparedTransition(
+        on deckIndex: Int
+    ) {
+        guard var preparedTransition,
+              preparedTransition.deckIndex == deckIndex,
+              !preparedTransition.isPrerolled,
+              !preparedTransition.isPrerolling,
+              decks[deckIndex].player.currentItem
+                === preparedTransition.item,
+              preparedTransition.item.status == .readyToPlay,
+              decks[deckIndex].player.status == .readyToPlay else {
+            return
+        }
+
+        preparedTransition.isPrerolling = true
+        self.preparedTransition = preparedTransition
+        let generation = preparationGeneration
+        let item = preparedTransition.item
+        let rate = normalizedRate(
+            preparedTransition.plan
+                .incomingStartPlaybackRate
+        )
+
+        prerollRetryTask?.cancel()
+        prerollRetryTask = nil
+
+        decks[deckIndex].player.preroll(
+            atRate: rate
+        ) { [weak self, weak item] finished in
+            Task { @MainActor [weak self, weak item] in
+                guard let self,
+                      let item,
+                      generation == self.preparationGeneration,
+                      let current = self.preparedTransition,
+                      current.deckIndex == deckIndex,
+                      current.item === item,
+                      self.decks[deckIndex].player.currentItem
+                        === item else {
+                    return
+                }
+
+                self.preparedTransition?.isPrerolling = false
+
+                if finished {
+                    self.preparedTransition?.isPrerolled = true
+                    self.prerollRetryTask?.cancel()
+                    self.prerollRetryTask = nil
+                    self.startIfNeeded(
+                        wantsPlayback: self.wantsPlayback
+                    )
+                } else {
+                    self.schedulePrerollRetry(
+                        on: deckIndex,
+                        generation: generation
+                    )
+                }
+            }
+        }
+    }
+
+    private func schedulePrerollRetry(
+        on deckIndex: Int,
+        generation: Int
+    ) {
+        prerollRetryTask?.cancel()
+        prerollRetryTask = Task {
+            @MainActor [weak self] in
+            do {
+                try await Task.sleep(
+                    for: .milliseconds(200)
+                )
+            } catch {
+                return
+            }
+            guard let self,
+                  !Task.isCancelled,
+                  generation == self.preparationGeneration else {
+                return
+            }
+            self.prerollRetryTask = nil
+            self.prerollPreparedTransition(
+                on: deckIndex
+            )
+        }
     }
 
     func finishIfOutgoingEnded(
@@ -651,6 +741,8 @@ final class AutoMixDeckTransitionController {
         let identifier =
             preparedTransition.identifier
         decks[deckIndex].clear()
+        prerollRetryTask?.cancel()
+        prerollRetryTask = nil
         self.preparedTransition = nil
         deckGains[deckIndex] = 0
         applyOutputVolumes()
@@ -667,6 +759,8 @@ final class AutoMixDeckTransitionController {
         }
         let index = standbyDeckIndex
         decks[index].clear()
+        prerollRetryTask?.cancel()
+        prerollRetryTask = nil
         deckGains[index] = 0
         preparedTransition = nil
     }
