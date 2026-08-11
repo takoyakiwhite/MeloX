@@ -32,6 +32,7 @@ final class AudioPlaybackEngine {
     var onPlaybackClockChanged:
         ((AudioPlaybackClockSample) -> Void)?
     var onDurationChanged: ((TimeInterval) -> Void)?
+    var onPreciseTimingReady: ((Bool) -> Void)?
     var onPlaybackEnded: (() -> Void)?
     var onFailure: ((Error) -> Void)?
     var onAutoMixTransitionBegan:
@@ -160,8 +161,6 @@ final class AudioPlaybackEngine {
             with: playbackItem,
             identifier: nil
         )
-        activeDeck.player.currentItem?
-            .audioTimePitchAlgorithm = .spectral
         if autoplay {
             play()
         }
@@ -282,6 +281,7 @@ final class AudioPlaybackEngine {
             guard let self else { return }
             self.onAutoMixTransitionCompleted?(identifier)
             self.publishDurationIfAvailable()
+            self.notifyPreciseTimingIfReady()
             self.updateStateFromPlayer(
                 clockOrigin: .activeItemChanged
             )
@@ -327,6 +327,7 @@ final class AudioPlaybackEngine {
                     origin: .stateChanged
                 )
                 self.publishDurationIfAvailable()
+                self.onPreciseTimingReady?(true)
             }
 
             timeObservers[index] =
@@ -393,6 +394,18 @@ final class AudioPlaybackEngine {
                 }
             }
         )
+    }
+
+    private func notifyPreciseTimingIfReady() {
+        guard activeDeck.isPreciseTimingReady,
+              activeDeck.player.currentItem != nil else {
+            return
+        }
+        publishPlaybackClockSample(
+            origin: .stateChanged
+        )
+        publishDurationIfAvailable()
+        onPreciseTimingReady?(true)
     }
 
     private func handleSeekableTimeRangesChange(

@@ -33,52 +33,30 @@ final class AudioPlaybackItemFactory {
                 source.preferredForwardBufferDuration
             )
         item.allowedAudioSpatializationFormats = .multichannel
-        var preciseTimingTask:
-            Task<AudioPlaybackMediaTimeline?, Never>?
+        var audioTrackTimeRange: CMTimeRange?
         do {
             if let audioTrack = try await asset.loadTracks(
                 withMediaType: .audio
             ).first {
+                audioTrackTimeRange = try? await audioTrack.load(
+                    .timeRange
+                )
                 item.audioMix =
                     equalizerProcessor.makeAudioMix(
                         for: audioTrack,
                         autoMixEqualizerState:
                             autoMixEqualizerState
                     )
-
-                preciseTimingTask = Task {
-                    let preciseAsset = AVURLAsset(
-                        url: source.url,
-                        options: [
-                            AVURLAssetPreferPreciseDurationAndTimingKey: true
-                        ]
-                    )
-                    do {
-                        guard let preciseTrack = try await preciseAsset
-                            .loadTracks(withMediaType: .audio)
-                            .first else {
-                            return nil
-                        }
-                        let timeRange = try await preciseTrack.load(
-                            .timeRange
-                        )
-                        return AudioPlaybackMediaTimeline(
-                            audioTrackTimeRange: timeRange
-                        )
-                    } catch is CancellationError {
-                        return nil
-                    } catch {
-                        return nil
-                    }
-                }
             }
         } catch {
             // AVPlayerItem reports an actionable error if playback fails.
         }
         return PreparedAudioPlaybackItem(
             item: item,
-            timeline: AudioPlaybackMediaTimeline(),
-            preciseTimingTask: preciseTimingTask
+            timeline: AudioPlaybackMediaTimeline(
+                audioTrackTimeRange: audioTrackTimeRange
+            ),
+            preciseTimingURL: source.url
         )
     }
 

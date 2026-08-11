@@ -12,13 +12,11 @@ final class AudioPlaybackDeck {
     private(set) var itemIdentifier: Int?
     private(set) var mediaTimeline =
         AudioPlaybackMediaTimeline()
+    private(set) var isPreciseTimingReady = false
 
     private var itemStatusObserver: NSKeyValueObservation?
     private var seekableTimeRangesObserver: NSKeyValueObservation?
-    private var preciseTimingTask:
-        Task<AudioPlaybackMediaTimeline?, Never>?
-    private var preciseTimingApplyTask:
-        Task<Void, Never>?
+    private var preciseTimingTask: Task<Void, Never>?
 
     init() {
         player = AVPlayer()
@@ -35,12 +33,11 @@ final class AudioPlaybackDeck {
         autoMixEqualizerState.reset()
         preciseTimingTask?.cancel()
         preciseTimingTask = nil
-        preciseTimingApplyTask?.cancel()
-        preciseTimingApplyTask = nil
         itemStatusObserver?.invalidate()
         seekableTimeRangesObserver?.invalidate()
         itemIdentifier = identifier
         mediaTimeline = playbackItem.timeline
+        isPreciseTimingReady = false
         itemStatusObserver = item.observe(
             \.status,
             options: [.initial, .new]
@@ -67,11 +64,10 @@ final class AudioPlaybackDeck {
         }
         player.replaceCurrentItem(with: item)
 
-        if let preciseTimingTask = playbackItem.preciseTimingTask {
+        if let url = playbackItem.preciseTimingURL {
             let expectedItem = item
-            self.preciseTimingTask = preciseTimingTask
-            self.preciseTimingApplyTask = Task { [weak self] in
-                let preciseTimeline = await preciseTimingTask.value
+            preciseTimingTask = Task { [weak self] in
+                let preciseTimeline = await Self.loadPreciseTimeline(from: url)
                 guard !Task.isCancelled,
                       let self,
                       let preciseTimeline,
@@ -79,6 +75,7 @@ final class AudioPlaybackDeck {
                     return
                 }
                 self.mediaTimeline = preciseTimeline
+                self.isPreciseTimingReady = true
                 self.onPreciseTimingReady?()
             }
         }
@@ -108,7 +105,32 @@ final class AudioPlaybackDeck {
 
     deinit {
         preciseTimingTask?.cancel()
-        preciseTimingApplyTask?.cancel()
+    }
+
+    nonisolated private static func loadPreciseTimeline(
+        from url: URL
+    ) async -> AudioPlaybackMediaTimeline? {
+        let asset = AVURLAsset(
+            url: url,
+            options: [
+                AVURLAssetPreferPreciseDurationAndTimingKey: true
+            ]
+        )
+        do {
+            guard let audioTrack = try await asset.loadTracks(
+                withMediaType: .audio
+            ).first else {
+                return nil
+            }
+            let timeRange = try await audioTrack.load(.timeRange)
+            return AudioPlaybackMediaTimeline(
+                audioTrackTimeRange: timeRange
+            )
+        } catch is CancellationError {
+            return nil
+        } catch {
+            return nil
+        }
     }
 
     func clear() {
@@ -119,8 +141,7 @@ final class AudioPlaybackDeck {
         seekableTimeRangesObserver = nil
         preciseTimingTask?.cancel()
         preciseTimingTask = nil
-        preciseTimingApplyTask?.cancel()
-        preciseTimingApplyTask = nil
+        isPreciseTimingReady = false
         itemIdentifier = nil
         mediaTimeline = AudioPlaybackMediaTimeline()
         player.pause()

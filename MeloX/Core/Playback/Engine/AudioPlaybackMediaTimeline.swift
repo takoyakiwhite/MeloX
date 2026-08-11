@@ -47,6 +47,5 @@ struct AudioPlaybackMediaTimeline {
 struct PreparedAudioPlaybackItem {
     let item: AVPlayerItem
     let timeline: AudioPlaybackMediaTimeline
-    let preciseTimingTask:
-        Task<AudioPlaybackMediaTimeline?, Never>?
+    let preciseTimingURL: URL?
 }

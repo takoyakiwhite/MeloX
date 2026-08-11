@@ -194,6 +194,10 @@ final class AutoMixDeckTransitionController {
             decks[
                 activeTransition
                     .incomingDeckIndex
+            ].player.automaticallyWaitsToMinimizeStalling = true
+            decks[
+                activeTransition
+                    .incomingDeckIndex
             ].clear()
             activeDeckIndex =
                 activeTransition
@@ -221,6 +225,7 @@ final class AutoMixDeckTransitionController {
     func reset() {
         cancel(wantsPlayback: false)
         for deck in decks {
+            deck.player.automaticallyWaitsToMinimizeStalling = true
             deck.clear()
         }
         activeDeckIndex = 0
@@ -403,11 +408,9 @@ final class AutoMixDeckTransitionController {
         )
         preparedTransition = nil
         activeTransition = transition
-        if let item = decks[transition.outgoingDeckIndex]
-            .player.currentItem,
-           item.audioTimePitchAlgorithm != .spectral {
-            item.audioTimePitchAlgorithm = .spectral
-        }
+        decks[transition.incomingDeckIndex]
+            .player
+            .automaticallyWaitsToMinimizeStalling = false
         deckGains[
             transition.outgoingDeckIndex
         ] = 1
@@ -612,6 +615,12 @@ final class AutoMixDeckTransitionController {
         envelopeTask = nil
 
         decks[
+            transition.incomingDeckIndex
+        ].player.automaticallyWaitsToMinimizeStalling = true
+        decks[
+            transition.outgoingDeckIndex
+        ].player.automaticallyWaitsToMinimizeStalling = true
+        decks[
             transition.outgoingDeckIndex
         ].clear()
         activeDeckIndex =
@@ -750,4 +759,5 @@ final class AutoMixDeckTransitionController {
             }
         }
     }
+
 }
