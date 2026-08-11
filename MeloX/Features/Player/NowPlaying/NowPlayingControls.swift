@@ -232,7 +232,12 @@ struct NowPlayingTransportControls: View {
                     reducesMotion: accessibilityReduceMotion
                 )
             )
-            .accessibilityLabel(player.isPlaying ? "暂停" : "播放")
+            .disabled(player.isLoading)
+            .accessibilityLabel(
+                player.isLoading
+                    ? "正在加载"
+                    : (player.isPlaying ? "暂停" : "播放")
+            )
 
             Spacer()
 
