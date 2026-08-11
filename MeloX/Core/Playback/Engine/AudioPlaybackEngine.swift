@@ -160,6 +160,8 @@ final class AudioPlaybackEngine {
             with: playbackItem,
             identifier: nil
         )
+        activeDeck.player.currentItem?
+            .audioTimePitchAlgorithm = .spectral
         if autoplay {
             play()
         }

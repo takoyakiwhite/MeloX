@@ -750,8 +750,4 @@ final class AutoMixDeckTransitionController {
             }
         }
     }
-
-    private func activateAudioSession() throws {
-        try AudioPlaybackSessionConfigurator.activate()
-    }
 }
