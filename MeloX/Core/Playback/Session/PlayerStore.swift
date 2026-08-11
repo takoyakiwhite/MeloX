@@ -202,12 +202,6 @@ final class PlayerStore {
     private var currentLoadShouldAutoplay = false
 
     @ObservationIgnored
-    private var automaticLoadRetryTask: Task<Void, Never>?
-
-    @ObservationIgnored
-    private var automaticLoadRetryAttempt = 0
-
-    @ObservationIgnored
     private var currentPlaybackSource: PlaybackSource?
 
     @ObservationIgnored
@@ -515,7 +509,14 @@ final class PlayerStore {
     }
 
     func togglePlayback() {
-        guard currentSong != nil, !isLoading else { return }
+        guard currentSong != nil else { return }
+        if isLoading {
+            playbackIssue = nil
+            currentLoadShouldAutoplay = true
+            engine.play()
+            updateNowPlayingState()
+            return
+        }
         if engine.hasCurrentItem {
             if isPlaying {
                 engine.pause()
@@ -533,8 +534,6 @@ final class PlayerStore {
 
     func retry() async {
         guard currentSong != nil else { return }
-        cancelAutomaticLoadRetry()
-        automaticLoadRetryAttempt = 0
         await loadCurrentSong(
             autoplay: true,
             startAt: estimatedProgress()
@@ -985,140 +984,11 @@ final class PlayerStore {
         prepareAutoMixIfNeeded()
     }
 
-    private static let automaticLoadRetryDelays: [Duration] = [
-        .seconds(1),
-        .seconds(2),
-        .seconds(4),
-    ]
-
-    private func cancelAutomaticLoadRetry() {
-        automaticLoadRetryTask?.cancel()
-        automaticLoadRetryTask = nil
-    }
-
-    private func shouldAutomaticallyRetry(_ error: Error) -> Bool {
-        if error is CancellationError {
-            return false
-        }
-
-        if let apiError = error as? APIError {
-            switch apiError {
-            case .emptyResponse:
-                return true
-            case .invalidResponse:
-                return true
-            case .server(let statusCode, _):
-                return statusCode == 408
-                    || statusCode == 425
-                    || statusCode == 429
-                    || (500...599).contains(statusCode)
-            case .requestEncoding,
-                    .noPlayableSource,
-                    .notLoggedIn:
-                return false
-            }
-        }
-
-        if let playbackError = error as? AudioPlaybackError {
-            switch playbackError {
-            case .itemFailed:
-                return true
-            case .audioSession:
-                return false
-            }
-        }
-
-        if let urlError = error as? URLError {
-            switch urlError.code {
-            case .timedOut,
-                    .cannotFindHost,
-                    .cannotConnectToHost,
-                    .networkConnectionLost,
-                    .notConnectedToInternet,
-                    .dnsLookupFailed:
-                return true
-            default:
-                return false
-            }
-        }
-
-        return false
-    }
-
-    private func scheduleAutomaticLoadRetry(
-        for song: Song,
-        error: Error,
-        autoplay: Bool,
-        startAt: TimeInterval,
-        generation: Int,
-        attempt: Int
-    ) {
-        guard shouldAutomaticallyRetry(error) else {
-            return
-        }
-
-        let delays = Self.automaticLoadRetryDelays
-        guard attempt < delays.count else {
-            return
-        }
-
-        cancelAutomaticLoadRetry()
-        let nextAttempt = attempt + 1
-        automaticLoadRetryAttempt = nextAttempt
-        isLoading = true
-        isPlaying = false
-        playbackIssue = nil
-        updateNowPlayingState()
-
-        let delay = delays[attempt]
-        automaticLoadRetryTask = Task { @MainActor [weak self] in
-            do {
-                try await Task.sleep(for: delay)
-            } catch {
-                return
-            }
-
-            guard let self,
-                  !Task.isCancelled,
-                  self.loadGeneration == generation,
-                  self.currentSong?.id == song.id,
-                  self.currentLoadShouldAutoplay == autoplay else {
-                return
-            }
-
-            self.automaticLoadRetryTask = nil
-            await self.loadCurrentSong(
-                autoplay: autoplay,
-                startAt: startAt,
-                automaticRetryAttempt: nextAttempt
-            )
-        }
-    }
-
-    private func finishPlaybackLoadFailure(
-        for song: Song,
-        error: Error
-    ) {
-        isResolvingSource = false
-        isLoading = false
-        isPlaying = false
-        playbackIssue = PlaybackIssue(song: song, error: error)
-        updateNowPlayingState()
-        persistSnapshot()
-    }
-
     private func loadCurrentSong(
         autoplay: Bool,
-        startAt: TimeInterval = 0,
-        automaticRetryAttempt: Int = 0
+        startAt: TimeInterval = 0
     ) async {
         guard let song = playbackQueue.currentSong else { return }
-        if automaticRetryAttempt == 0 {
-            cancelAutomaticLoadRetry()
-            self.automaticLoadRetryAttempt = 0
-        } else {
-            self.automaticLoadRetryAttempt = automaticRetryAttempt
-        }
         cancelAutoMixPreparation()
         loadGeneration += 1
         let generation = loadGeneration
@@ -1190,26 +1060,12 @@ final class PlayerStore {
             return
         } catch {
             guard generation == loadGeneration, currentSong?.id == song.id else { return }
-            if shouldAutomaticallyRetry(error),
-               automaticRetryAttempt
-                    < Self.automaticLoadRetryDelays.count {
-                let retryPosition = estimatedProgress()
-                isResolvingSource = false
-                scheduleAutomaticLoadRetry(
-                    for: song,
-                    error: error,
-                    autoplay: autoplay,
-                    startAt: retryPosition,
-                    generation: generation,
-                    attempt: automaticRetryAttempt
-                )
-                return
-            }
-
-            finishPlaybackLoadFailure(
-                for: song,
-                error: error
-            )
+            isResolvingSource = false
+            isLoading = false
+            isPlaying = false
+            playbackIssue = PlaybackIssue(song: song, error: error)
+            updateNowPlayingState()
+            persistSnapshot()
         }
     }
 
@@ -1240,35 +1096,18 @@ final class PlayerStore {
             return
         }
 
-        guard let song = currentSong else {
-            isLoading = false
-            isPlaying = false
-            return
+        if let song = currentSong {
+            playbackIssue = PlaybackIssue(song: song, error: error)
         }
+        isLoading = false
+        isPlaying = false
+        updateNowPlayingState()
 
         if let playbackError = error as? AudioPlaybackError,
            case .itemFailed = playbackError {
             engine.unload()
         }
-
-        if shouldAutomaticallyRetry(error),
-           automaticLoadRetryAttempt
-                < Self.automaticLoadRetryDelays.count {
-            scheduleAutomaticLoadRetry(
-                for: song,
-                error: error,
-                autoplay: currentLoadShouldAutoplay,
-                startAt: estimatedProgress(),
-                generation: loadGeneration,
-                attempt: automaticLoadRetryAttempt
-            )
-            return
-        }
-
-        finishPlaybackLoadFailure(
-            for: song,
-            error: error
-        )
+        persistSnapshot()
     }
 
     private func stopAtQueueEnd() {
@@ -1308,8 +1147,6 @@ final class PlayerStore {
                 self.isPlaying = true
                 self.isLoading = false
                 self.currentLoadShouldAutoplay = true
-                self.cancelAutomaticLoadRetry()
-                self.automaticLoadRetryAttempt = 0
                 self.playbackIssue = nil
                 self.recordCurrentPlaybackStartIfNeeded()
                 self.scheduleBeatAnalysisIfNeeded()
@@ -1422,7 +1259,7 @@ final class PlayerStore {
 
     private func bindRemoteCommands() {
         nowPlayingSession.onPlay = { [weak self] in
-            guard let self, !self.isLoading else { return }
+            guard let self else { return }
             if self.engine.hasCurrentItem {
                 self.engine.play()
             } else {
@@ -1430,16 +1267,7 @@ final class PlayerStore {
             }
         }
         nowPlayingSession.onPause = { [weak self] in
-            guard let self else { return }
-            if self.isLoading {
-                self.cancelAutomaticLoadRetry()
-                self.currentLoadShouldAutoplay = false
-                self.isLoading = false
-                self.isPlaying = false
-                self.updateNowPlayingState()
-                return
-            }
-            self.engine.pause()
+            self?.engine.pause()
         }
         nowPlayingSession.onNext = { [weak self] in
             Task { @MainActor in await self?.next() }
