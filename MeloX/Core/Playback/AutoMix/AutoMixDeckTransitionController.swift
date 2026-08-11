@@ -136,7 +136,6 @@ final class AutoMixDeckTransitionController {
         )
         let item = playbackItem.item
         item.audioTimePitchAlgorithm = .spectral
-        activeDeck.player.currentItem?.audioTimePitchAlgorithm = .spectral
         guard generation == preparationGeneration,
               !Task.isCancelled,
               activeTransition == nil else {
@@ -161,6 +160,8 @@ final class AutoMixDeckTransitionController {
               deck.player.currentItem === item else {
             return
         }
+        activeDeck.player.currentItem?
+            .audioTimePitchAlgorithm = .spectral
         preparedTransition =
             PreparedTransition(
                 identifier: identifier,
@@ -414,10 +415,12 @@ final class AutoMixDeckTransitionController {
             plan: prepared.plan,
             outgoingStartPosition:
                 outgoingPosition
-                    ?? prepared.plan.outgoingStartTime,
+                    ?? prepared.plan
+                        .outgoingStartTime,
             incomingStartPosition:
                 incomingPosition
-                    ?? prepared.plan.incomingStartTime
+                    ?? prepared.plan
+                        .incomingStartTime
         )
         preparedTransition = nil
         activeTransition = transition
@@ -766,8 +769,6 @@ final class AutoMixDeckTransitionController {
         }
         let identifier =
             preparedTransition.identifier
-        prerollRetryTask?.cancel()
-        prerollRetryTask = nil
         decks[deckIndex].clear()
         self.preparedTransition = nil
         deckGains[deckIndex] = 0
@@ -784,8 +785,6 @@ final class AutoMixDeckTransitionController {
             return
         }
         let index = standbyDeckIndex
-        prerollRetryTask?.cancel()
-        prerollRetryTask = nil
         decks[index].clear()
         deckGains[index] = 0
         preparedTransition = nil
