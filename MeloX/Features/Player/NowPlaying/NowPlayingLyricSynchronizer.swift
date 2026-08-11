@@ -14,6 +14,9 @@ struct NowPlayingLyricSynchronizer: View {
             .onChange(of: player.progress, initial: true) {
                 synchronizeImmediately()
             }
+            .onChange(of: player.lyricsTimingRevision) {
+                synchronizeImmediately()
+            }
             .task(id: synchronizationTrigger) {
                 await synchronizeAtLyricTransitions()
             }
@@ -30,7 +33,8 @@ struct NowPlayingLyricSynchronizer: View {
             advanceTime: advanceTime,
             lyricCount: lyrics.count,
             firstLyricID: lyrics.first?.id,
-            lastLyricID: lyrics.last?.id
+            lastLyricID: lyrics.last?.id,
+            lyricsTimingRevision: player.lyricsTimingRevision
         )
     }
 
@@ -93,4 +97,5 @@ private struct LyricSynchronizationTrigger: Hashable {
     let lyricCount: Int
     let firstLyricID: LyricLine.ID?
     let lastLyricID: LyricLine.ID?
+    let lyricsTimingRevision: Int
 }
