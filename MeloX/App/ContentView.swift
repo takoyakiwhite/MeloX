@@ -50,59 +50,6 @@ struct ContentView: View {
         _selectedTab = State(initialValue: initialTab)
     }
 
-    private var downloadsErrorBinding: Binding<Bool> {
-        Binding(
-            get: {
-                AppFeatureAvailability.downloads
-                    && downloads.errorMessage != nil
-            },
-            set: { isPresented in
-                if !isPresented {
-                    downloads.clearError()
-                }
-            }
-        )
-    }
-
-    private var playbackIssueBinding: Binding<Bool> {
-        Binding(
-            get: {
-                player.playbackIssue != nil
-            },
-            set: { isPresented in
-                if !isPresented {
-                    player.dismissPlaybackIssue()
-                }
-            }
-        )
-    }
-
-    private var heartModeLaunchErrorBinding: Binding<Bool> {
-        Binding(
-            get: {
-                heartModeLaunchErrorMessage != nil
-            },
-            set: { isPresented in
-                if !isPresented {
-                    heartModeLaunchErrorMessage = nil
-                }
-            }
-        )
-    }
-
-    private var floatingLyricsErrorBinding: Binding<Bool> {
-        Binding(
-            get: {
-                floatingLyrics.errorMessage != nil
-            },
-            set: { isPresented in
-                if !isPresented {
-                    floatingLyrics.dismissError()
-                }
-            }
-        )
-    }
-
     var body: some View {
         Group {
             if settings.hasCompletedOnboarding {
@@ -196,10 +143,23 @@ struct ContentView: View {
             }
             .task(id: player.currentSong?.id) {
                 let song = player.currentSong
-                let songID = song?.isPodcastProgram == true ? nil : song?.id
-                player.setNowPlayingLyrics([], for: songID, isLoading: songID != nil)
+                let songID = song?.isPodcastProgram == true
+                    ? nil
+                    : song?.id
+
+                // Reset the PlayerStore lyric snapshot immediately for the
+                // new song. This keeps the Box out of the stale "waiting"
+                // state while LyricsStore performs the asynchronous request.
+                player.setNowPlayingLyrics(
+                    [],
+                    for: songID,
+                    isLoading: songID != nil,
+                    errorMessage: nil
+                )
+
                 await lyrics.load(for: songID)
                 guard !Task.isCancelled else { return }
+
                 player.setNowPlayingLyrics(
                     lyrics.lyrics,
                     for: songID,
@@ -388,39 +348,6 @@ struct ContentView: View {
             }
             .appLaunchExperience()
     }
-
-    private func startHeartModeOnLaunchIfNeeded() async {
-        guard !hasHandledHeartModeLaunch,
-              hasRestoredPlayback else {
-            return
-        }
-        guard settings.startsHeartModeOnLaunch else {
-            hasHandledHeartModeLaunch = true
-            return
-        }
-        guard library.isLoggedIn else {
-            hasHandledHeartModeLaunch = true
-            return
-        }
-        guard library.canStartHeartMode,
-              let playlistID = library.likedPlaylistID,
-              let seedSongID = library.randomHeartModeSeedSongID() else {
-            return
-        }
-
-        hasHandledHeartModeLaunch = true
-        do {
-            try await player.playHeartMode(
-                playlistID: playlistID,
-                seedSongID: seedSongID
-            )
-        } catch is CancellationError {
-            return
-        } catch {
-            heartModeLaunchErrorMessage = error.localizedDescription
-        }
-    }
-
     @ViewBuilder
     private var playerAwareTabView: some View {
         if player.currentSong != nil {
