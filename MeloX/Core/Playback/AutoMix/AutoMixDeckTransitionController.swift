@@ -339,7 +339,62 @@ final class AutoMixDeckTransitionController {
                     .outgoingStartTime else {
             return
         }
-        start(preparedTransition)
+
+        let outgoingDuration =
+            activeDeck.playbackDuration
+                ?? preparedTransition.plan.outgoingStartTime
+                + preparedTransition.plan.duration
+        let remainingDuration = max(
+            outgoingDuration - seconds,
+            0
+        )
+
+        // The transition may have been prepared ahead of time, but the
+        // actual start can be delayed by buffering, a pause, an interruption,
+        // or other main-actor work. Never start a transition whose planned
+        // duration no longer fits inside the remaining outgoing content.
+        guard remainingDuration >= 1 else {
+            return
+        }
+
+        let effectiveDuration = min(
+            preparedTransition.plan.duration,
+            remainingDuration
+        )
+        let effectivePlan:
+            AutoMixTransitionPlan
+        if effectiveDuration <
+            preparedTransition.plan.duration {
+            effectivePlan = AutoMixTransitionPlan(
+                kind: preparedTransition.plan.kind,
+                outgoingStartTime:
+                    preparedTransition.plan.outgoingStartTime,
+                duration: effectiveDuration,
+                incomingStartTime:
+                    preparedTransition.plan.incomingStartTime,
+                outgoingEndPlaybackRate:
+                    preparedTransition.plan.outgoingEndPlaybackRate,
+                incomingStartPlaybackRate:
+                    preparedTransition.plan.incomingStartPlaybackRate,
+                fadeCurve: preparedTransition.plan.fadeCurve,
+                confidence: preparedTransition.plan.confidence
+            )
+        } else {
+            effectivePlan = preparedTransition.plan
+        }
+
+        let startPlan =
+            effectivePlan == preparedTransition.plan
+            ? preparedTransition
+            : PreparedTransition(
+                identifier: preparedTransition.identifier,
+                deckIndex: preparedTransition.deckIndex,
+                item: preparedTransition.item,
+                plan: effectivePlan,
+                isPrerolled:
+                    preparedTransition.isPrerolled
+            )
+        start(startPlan)
     }
 
     private func startPrerollIfReady(

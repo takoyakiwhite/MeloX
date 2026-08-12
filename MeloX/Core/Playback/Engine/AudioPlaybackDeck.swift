@@ -13,6 +13,7 @@ final class AudioPlaybackDeck {
     private(set) var mediaTimeline =
         AudioPlaybackMediaTimeline()
     private(set) var isPreciseTimingReady = false
+    private(set) var mediaTimelineRevision = 0
 
     private var itemStatusObserver: NSKeyValueObservation?
     private var seekableTimeRangesObserver: NSKeyValueObservation?
@@ -37,6 +38,7 @@ final class AudioPlaybackDeck {
         seekableTimeRangesObserver?.invalidate()
         itemIdentifier = identifier
         mediaTimeline = playbackItem.timeline
+        mediaTimelineRevision &+= 1
         isPreciseTimingReady = false
         itemStatusObserver = item.observe(
             \.status,
@@ -75,6 +77,7 @@ final class AudioPlaybackDeck {
                     return
                 }
                 self.mediaTimeline = preciseTimeline
+                self.mediaTimelineRevision &+= 1
                 self.isPreciseTimingReady = true
                 self.onPreciseTimingReady?()
             }
@@ -144,6 +147,7 @@ final class AudioPlaybackDeck {
         isPreciseTimingReady = false
         itemIdentifier = nil
         mediaTimeline = AudioPlaybackMediaTimeline()
+        mediaTimelineRevision &+= 1
         player.pause()
         player.replaceCurrentItem(with: nil)
         player.rate = 0

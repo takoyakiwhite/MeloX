@@ -188,8 +188,19 @@ struct ContentView: View {
             }
             .onChange(of: scenePhase) { _, phase in
                 player.refreshLyricsNotification()
-                guard phase == .active else { return }
-                player.refreshLyricsLiveActivity()
+
+                switch phase {
+                case .inactive, .background:
+                    // Persist the exact current playback position before the
+                    // process can be suspended or terminated. The snapshot
+                    // uses PlaybackTimelineClock, so this is more precise
+                    // than waiting for the periodic second-based persistence.
+                    player.persistPlaybackStateForLifecycleChange()
+                case .active:
+                    player.refreshLyricsLiveActivity()
+                @unknown default:
+                    break
+                }
             }
             .onChange(of: floatingLyrics.restorationRequestID) {
                 guard floatingLyrics.restorationRequestID > 0,

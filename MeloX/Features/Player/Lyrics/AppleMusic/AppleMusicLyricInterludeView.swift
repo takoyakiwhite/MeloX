@@ -27,9 +27,6 @@ struct AppleMusicLyricsFocusCoordinator: View {
         Color.clear
             .frame(width: 0, height: 0)
             .accessibilityHidden(true)
-            .onChange(of: player.progress, initial: true) {
-                synchronizeImmediately()
-            }
             .onChange(of: player.lyricsTimingRevision) {
                 synchronizeImmediately()
             }

@@ -60,12 +60,6 @@ final class NeteaseAPI {
     private(set) var isCellularData = false
 
     @ObservationIgnored
-    /// Called after the effective network type changes.
-    /// Current playback is left untouched; consumers may refresh only
-    /// not-yet-started work such as AutoMix standby preparation.
-    var onNetworkTypeChanged: (() -> Void)?
-
-    @ObservationIgnored
     let client: NeteaseDirectClient
 
     private var playbackQuality: MusicQuality {
@@ -78,12 +72,7 @@ final class NeteaseAPI {
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let isCellular = path.usesInterfaceType(.cellular)
             Task { @MainActor [weak self] in
-                guard let self,
-                      self.isCellularData != isCellular else {
-                    return
-                }
-                self.isCellularData = isCellular
-                self.onNetworkTypeChanged?()
+                self?.isCellularData = isCellular
             }
         }
         pathMonitor.start(queue: DispatchQueue(label: "MeloX.NetworkMonitor"))
