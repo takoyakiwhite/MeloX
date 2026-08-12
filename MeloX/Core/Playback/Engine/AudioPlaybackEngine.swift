@@ -62,6 +62,7 @@ final class AudioPlaybackEngine {
     private var suppressesProgressUpdates = false
     private var didReportCurrentItemFailure = false
     private var loadGeneration = 0
+    private weak var lastNotifiedPreciseTimingItem: AVPlayerItem?
 
     private var decks: [AudioPlaybackDeck] {
         autoMixController.decks
@@ -320,14 +321,10 @@ final class AudioPlaybackEngine {
                 [weak self, weak deck] in
                 guard let self, let deck,
                       index == self.activeDeckIndex,
-                      deck.player.currentItem != nil else {
+                      let item = deck.player.currentItem else {
                     return
                 }
-                self.publishPlaybackClockSample(
-                    origin: .stateChanged
-                )
-                self.publishDurationIfAvailable()
-                self.onPreciseTimingReady?(true)
+                self.notifyPreciseTimingIfNeeded(for: item)
             }
 
             timeObservers[index] =
@@ -398,9 +395,19 @@ final class AudioPlaybackEngine {
 
     private func notifyPreciseTimingIfReady() {
         guard activeDeck.isPreciseTimingReady,
-              activeDeck.player.currentItem != nil else {
+              let item = activeDeck.player.currentItem else {
             return
         }
+        notifyPreciseTimingIfNeeded(for: item)
+    }
+
+    private func notifyPreciseTimingIfNeeded(
+        for item: AVPlayerItem
+    ) {
+        guard lastNotifiedPreciseTimingItem !== item else {
+            return
+        }
+        lastNotifiedPreciseTimingItem = item
         publishPlaybackClockSample(
             origin: .stateChanged
         )

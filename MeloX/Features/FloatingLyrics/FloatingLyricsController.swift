@@ -215,8 +215,6 @@ final class FloatingLyricsController: NSObject {
             $0.songID != state.songID
                 || $0.isPlaying != state.isPlaying
                 || $0.seekRevision != state.seekRevision
-                || $0.lyricsTimingRevision
-                    != state.lyricsTimingRevision
         } ?? true
         if timelineChanged {
             resetSampleBufferRenderer()

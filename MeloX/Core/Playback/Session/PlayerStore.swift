@@ -1158,6 +1158,19 @@ final class PlayerStore {
         }
         engine.onPreciseTimingReady = { [weak self] isReady in
             guard let self, isReady else { return }
+
+            if let precisePosition = self.engine.currentPlaybackTime {
+                let rate = self.isPlaying ? 1.0 : 0.0
+                let correctedPosition = self.clampedPlaybackPosition(
+                    precisePosition
+                )
+                self.progress = correctedPosition
+                self.reanchorPlaybackTimeline(
+                    to: correctedPosition,
+                    rate: rate
+                )
+            }
+
             self.isPreciseLyricsTimingReady = true
             self.lyricsTimingRevision &+= 1
             self.updateNowPlayingState(
