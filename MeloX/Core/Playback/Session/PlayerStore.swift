@@ -262,6 +262,9 @@ final class PlayerStore {
         self.lyricsNotificationController =
             lyricsNotificationController
         sleepTimer = PlaybackSleepTimer()
+        api.onNetworkTypeChanged = { [weak self] in
+            self?.handleNetworkTypeChanged()
+        }
         bindEngine()
         bindAutoMixCoordinator()
         bindRemoteCommands()
@@ -1684,6 +1687,18 @@ final class PlayerStore {
         } catch {
             return
         }
+    }
+
+    private func handleNetworkTypeChanged() {
+        // Never disturb an AutoMix transition that has already started.
+        // If the next track is only planned/prepared, discard the old
+        // standby source and rebuild it using the new network-specific
+        // quality selected by NeteaseAPI.playbackSource(for:).
+        guard !isAutoMixTransitioning else {
+            return
+        }
+        cancelAutoMixPreparation()
+        prepareAutoMixIfNeeded()
     }
 
     private func prepareAutoMixIfNeeded() {
