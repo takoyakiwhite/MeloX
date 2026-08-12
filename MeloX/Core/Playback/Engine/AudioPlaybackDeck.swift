@@ -35,6 +35,8 @@ final class AudioPlaybackDeck {
         AudioPlaybackMediaTimeline()
     private(set) var isPreciseTimingReady = false
     private(set) var mediaTimelineRevision = 0
+    private(set) var preciseMediaTimeline:
+        AudioPlaybackMediaTimeline?
 
     private var itemStatusObserver: NSKeyValueObservation?
     private var seekableTimeRangesObserver: NSKeyValueObservation?
@@ -63,6 +65,7 @@ final class AudioPlaybackDeck {
         seekableTimeRangesObserver?.invalidate()
         itemIdentifier = identifier
         mediaTimeline = playbackItem.timeline
+        preciseMediaTimeline = nil
         mediaTimelineRevision &+= 1
         isPreciseTimingReady = false
         preciseTimingFailure = nil
@@ -153,10 +156,12 @@ final class AudioPlaybackDeck {
                         break
                     }
 
-                    // Only replace the active timeline after all precise
-                    // timing properties have been validated.
-                    self.mediaTimeline = preciseTimeline
-                    self.mediaTimelineRevision &+= 1
+                    // The precise asset is a separate timing probe. Do not
+                    // replace the active playback timeline with its mediaStart:
+                    // that asset is not the AVPlayerItem being played and can
+                    // have a different track origin. The active AVPlayerItem
+                    // timeline remains authoritative for seek/currentTime.
+                    self.preciseMediaTimeline = preciseTimeline
                     self.preciseTimingFailure = nil
                     self.isPreciseTimingReady = true
                     self.preciseTimingTask = nil
@@ -267,6 +272,7 @@ final class AudioPlaybackDeck {
         isPreciseTimingReady = false
         itemIdentifier = nil
         mediaTimeline = AudioPlaybackMediaTimeline()
+        preciseMediaTimeline = nil
         mediaTimelineRevision &+= 1
         player.pause()
         player.replaceCurrentItem(with: nil)
