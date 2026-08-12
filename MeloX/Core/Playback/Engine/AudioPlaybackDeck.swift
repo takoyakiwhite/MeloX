@@ -156,12 +156,15 @@ final class AudioPlaybackDeck {
                         break
                     }
 
-                    // The precise asset is a separate timing probe. Do not
-                    // replace the active playback timeline with its mediaStart:
-                    // that asset is not the AVPlayerItem being played and can
-                    // have a different track origin. The active AVPlayerItem
-                    // timeline remains authoritative for seek/currentTime.
+                    // Calibrate the song timeline from the same URL using the
+                    // precise Asset. Do not replace the playing AVPlayerItem:
+                    // the AVPlayerItem keeps streaming exactly as before.
+                    // The timeline swap is atomic at the Deck level; callers
+                    // immediately re-anchor the shared PlaybackTimelineClock
+                    // from the current AVPlayer time.
                     self.preciseMediaTimeline = preciseTimeline
+                    self.mediaTimeline = preciseTimeline
+                    self.mediaTimelineRevision &+= 1
                     self.preciseTimingFailure = nil
                     self.isPreciseTimingReady = true
                     self.preciseTimingTask = nil
@@ -253,8 +256,22 @@ final class AudioPlaybackDeck {
             throw PreciseTimingError.invalidTimeRange
         }
 
+        let mediaStart = timeRange.start.seconds
+        guard mediaStart.isFinite,
+              mediaStart >= 0 else {
+            throw PreciseTimingError.invalidTimeRange
+        }
+
+        let playbackDuration =
+            durationValue.seconds - mediaStart
+        guard playbackDuration.isFinite,
+              playbackDuration > 0 else {
+            throw PreciseTimingError.invalidTimeRange
+        }
+
         return AudioPlaybackMediaTimeline(
-            audioTrackTimeRange: timeRange
+            audioTrackTimeRange: timeRange,
+            knownPlaybackDuration: playbackDuration
         )
     }
 

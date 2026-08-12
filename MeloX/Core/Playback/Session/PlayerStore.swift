@@ -1381,16 +1381,31 @@ final class PlayerStore {
         engine.onPreciseTimingReady = { [weak self] isReady in
             guard let self else { return }
 
-            if isReady, let precisePosition = self.engine.currentPlaybackTime {
-                let rate = self.engine.currentPlaybackRate
-                let correctedPosition = self.clampedPlaybackPosition(
-                    precisePosition
-                )
-                self.progress = correctedPosition
-                self.reanchorPlaybackTimeline(
-                    to: correctedPosition,
-                    rate: rate
-                )
+            if isReady {
+                // Precise timing calibrates the main playback timeline. The
+                // playing AVPlayerItem is untouched. Re-read its current time
+                // after the timeline swap so progress, lyrics and word timing
+                // all share exactly the same calibrated position.
+                if let preciseDuration = self.engine.playbackDuration,
+                   preciseDuration.isFinite,
+                   preciseDuration > 0 {
+                    self.duration = preciseDuration
+                }
+
+                if let precisePosition = self.engine.currentPlaybackTime {
+                    let rate = self.engine.currentPlaybackRate
+                    let correctedPosition = self.clampedPlaybackPosition(
+                        precisePosition
+                    )
+                    self.progress = correctedPosition
+                    self.reanchorPlaybackTimeline(
+                        to: correctedPosition,
+                        rate: rate
+                    )
+                } else {
+                    // Keep the existing clock if AVPlayer has not exposed a
+                    // valid position yet; the next clock sample will re-anchor.
+                }
             }
 
             self.isPreciseLyricsTimingReady = isReady
