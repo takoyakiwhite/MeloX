@@ -694,11 +694,21 @@ final class PlayerStore {
 
     func setNowPlayingLyrics(_ lyrics: [LyricLine], for songID: Int?) {
         guard let songID, currentSong?.id == songID else { return }
+
         nowPlayingLyricsSongID = songID
         nowPlayingLyrics = lyrics
-        updateNowPlayingLyricMetadata()
-        updateLyricsLiveActivity()
-        updateLyricsNotification()
+        lyricsTimingRevision &+= 1
+
+        // Ordinary lyrics can render immediately. Precise media timing is
+        // fetched independently only now that there is lyric content that can
+        // benefit from the accurate media timeline.
+        if !lyrics.isEmpty {
+            engine.requestPreciseTimingForLyrics()
+        }
+
+        updateNowPlayingLyricMetadata(force: true)
+        updateLyricsLiveActivity(force: true)
+        updateLyricsNotification(force: true)
     }
 
     func applySystemNowPlayingLyricsPreference() {
@@ -1072,6 +1082,16 @@ final class PlayerStore {
                 startAt: resolvedStartPosition,
                 autoplay: shouldAutoplay
             )
+
+            // Lyrics may have arrived before the audio item finished loading.
+            // Request precise timing again after the item exists so that this
+            // ordering cannot lose the request.
+            if generation == loadGeneration,
+               currentSong?.id == song.id,
+               nowPlayingLyricsSongID == song.id,
+               !nowPlayingLyrics.isEmpty {
+                engine.requestPreciseTimingForLyrics()
+            }
         } catch is CancellationError {
             return
         } catch {

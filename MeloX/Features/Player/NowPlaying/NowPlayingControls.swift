@@ -9,65 +9,78 @@ struct NowPlayingProgressControl: View {
     @State private var scrubPosition: TimeInterval?
 
     var body: some View {
-        VStack(spacing: 2) {
-            Slider(
-                value: Binding(
-                    get: {
-                        min(
-                            scrubPosition ?? player.progress,
-                            progressMaximum
-                        )
-                    },
-                    set: { value in
-                        scrubPosition = min(
-                            max(value, 0),
-                            progressMaximum
-                        )
-                    }
-                ),
-                in: 0...progressMaximum,
-                onEditingChanged: { editing in
-                    if editing {
-                        scrubPosition = min(
-                            max(player.progress, 0),
-                            progressMaximum
-                        )
-                    } else {
-                        let target = scrubPosition ?? player.progress
-                        scrubPosition = nil
-                        player.seek(to: target)
-                    }
-                }
+        TimelineView(
+            .animation(
+                minimumInterval: 1.0 / 60.0,
+                paused: !player.isPlaying
             )
-            .sliderThumbVisibility(.hidden)
-            .tint(.white)
-            .accessibilityLabel("播放进度")
-            .accessibilityValue("已播放 \(formatTime(player.progress))，总时长 \(formatTime(progressMaximum))")
+        ) { context in
+            let liveProgress = player.estimatedProgress(
+                at: context.date
+            )
 
-            HStack {
-                Text(formatTime(player.progress))
-
-                Spacer()
-
-                Text("−\(formatTime(max(player.duration - player.progress, 0)))")
-            }
-            .overlay {
-                Group {
-                    if player.isAutoMixTransitioning {
-                        NowPlayingAutoMixStatus()
-                    } else {
-                        NowPlayingQualityMenu()
+            VStack(spacing: 2) {
+                Slider(
+                    value: Binding(
+                        get: {
+                            min(
+                                scrubPosition ?? liveProgress,
+                                progressMaximum
+                            )
+                        },
+                        set: { value in
+                            scrubPosition = min(
+                                max(value, 0),
+                                progressMaximum
+                            )
+                        }
+                    ),
+                    in: 0...progressMaximum,
+                    onEditingChanged: { editing in
+                        if editing {
+                            scrubPosition = min(
+                                max(liveProgress, 0),
+                                progressMaximum
+                            )
+                        } else {
+                            let target = scrubPosition ?? liveProgress
+                            scrubPosition = nil
+                            player.seek(to: target)
+                        }
                     }
-                }
-                .animation(
-                    .smooth(duration: 0.25),
-                    value: player.isAutoMixTransitioning
                 )
+                .sliderThumbVisibility(.hidden)
+                .tint(.white)
+                .accessibilityLabel("播放进度")
+                .accessibilityValue(
+                    "已播放 \(formatTime(liveProgress))，总时长 \(formatTime(progressMaximum))"
+                )
+
+                HStack {
+                    Text(formatTime(liveProgress))
+
+                    Spacer()
+
+                    Text("−\(formatTime(max(player.duration - liveProgress, 0)))")
+                }
+                .overlay {
+                    Group {
+                        if player.isAutoMixTransitioning {
+                            NowPlayingAutoMixStatus()
+                        } else {
+                            NowPlayingQualityMenu()
+                        }
+                    }
+                    .animation(
+                        .smooth(duration: 0.25),
+                        value: player.isAutoMixTransitioning
+                    )
+                }
+                .font(.caption2.monospacedDigit())
+                .foregroundStyle(.white.opacity(0.5))
             }
-            .font(.caption2.monospacedDigit())
-            .foregroundStyle(.white.opacity(0.5))
+            .frame(height: 52)
         }
-        .frame(height: 52)
         .onChange(of: player.currentSong?.id) {
             scrubPosition = nil
         }

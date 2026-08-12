@@ -52,27 +52,23 @@ struct NowPlayingLyricSynchronizer: View {
         )
 
         while !Task.isCancelled {
-            let adjustedProgress = player.estimatedProgress() + advanceTime
+            let playbackTime = player.estimatedProgress(
+                at: Date.now
+            )
+            let adjustedProgress = playbackTime + advanceTime
             let position = LyricPlaybackTimeline.position(
                 at: adjustedProgress,
                 in: synchronizedLyrics
             )
             updateHighlightedLyric(to: position.highlightedLyricID)
 
-            guard player.isPlaying,
-                  let nextTransitionTime = position.nextTransitionTime else {
-                return
-            }
-
-            let remainingTime = nextTransitionTime
-                - (player.estimatedProgress() + advanceTime)
-            guard remainingTime > 0 else {
-                await Task.yield()
-                continue
-            }
+            guard player.isPlaying else { return }
 
             do {
-                try await Task.sleep(for: .seconds(remainingTime))
+                // Always derive the next state from the shared playback clock.
+                // Never sleep until a lyric timestamp because rate changes,
+                // buffering, pause/resume, and seeks can invalidate that wait.
+                try await Task.sleep(for: .milliseconds(16))
             } catch {
                 return
             }

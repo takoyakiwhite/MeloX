@@ -287,6 +287,13 @@ final class AudioPlaybackEngine {
         itemFactory.updateEqualizer(configuration)
     }
 
+    /// Requests precise media timing for lyric synchronization only.
+    /// This is intentionally separate from playback-item loading so song
+    /// startup is never blocked by precise timing metadata.
+    func requestPreciseTimingForLyrics() {
+        activeDeck.requestPreciseTiming()
+    }
+
     func prepareAutoMix(
         _ source: PlaybackSource,
         identifier: Int,
@@ -373,7 +380,7 @@ final class AudioPlaybackEngine {
             timeObservers[index] =
                 deck.player.addPeriodicTimeObserver(
                     forInterval: CMTime(
-                        seconds: 0.1,
+                        seconds: 0.05,
                         preferredTimescale: 600
                     ),
                     queue: .main
