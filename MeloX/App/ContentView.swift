@@ -150,15 +150,19 @@ struct ContentView: View {
                 guard !Task.isCancelled else { return }
                 player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
             }
+            .onChange(of: lyrics.songID) { _, songID in
+                // LyricsStore clears its lyric array when switching songs.
+                // Keep PlayerStore synchronized with that state transition as
+                // well, so the precise-lyrics status cannot stay attached to
+                // the previous song or remain stuck in "等待歌词".
+                player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
+            }
             .onChange(of: lyrics.lyrics) { _, newLyrics in
-                guard !newLyrics.isEmpty,
-                      let songID = lyrics.songID else {
-                    return
-                }
-                // Keep PlayerStore's now-playing lyric snapshot in sync with
-                // the actual LyricsStore source. This also covers cases where
-                // the lyric list changes after the song task has already
-                // completed (for example, a refresh or cached result).
+                guard let songID = lyrics.songID else { return }
+                // Keep PlayerStore's now-playing lyric snapshot synchronized
+                // with the actual LyricsStore source for both empty and
+                // non-empty updates. Empty updates are important because a
+                // song change clears LyricsStore before the new lyrics arrive.
                 player.setNowPlayingLyrics(newLyrics, for: songID)
             }
             .task {
