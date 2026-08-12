@@ -99,9 +99,12 @@ final class AudioPlaybackEngine {
     /// `playbackDuration` is the duration used by the same timeline that
     /// converts AVPlayer media time into song playback position.
     var playbackDuration: TimeInterval? {
-        guard activeDeck.player.currentItem != nil else { return nil }
-        let value = activeDeck.playbackDuration
-        guard value.isFinite, value > 0 else { return nil }
+        guard activeDeck.player.currentItem != nil,
+              let value = activeDeck.playbackDuration,
+              value.isFinite,
+              value > 0 else {
+            return nil
+        }
         return value
     }
 
