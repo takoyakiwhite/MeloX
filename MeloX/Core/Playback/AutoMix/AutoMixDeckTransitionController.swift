@@ -247,29 +247,40 @@ final class AutoMixDeckTransitionController {
         }
     }
 
-    func resumeIncomingIfNeeded() {
+    @discardableResult
+    func resumeIncomingIfNeeded() -> Bool {
         wantsPlayback = true
         guard let activeTransition else {
-            return
+            return false
         }
+
         let progress = currentProgress(
             for: activeTransition
         )
-        decks[
-            activeTransition.outgoingDeckIndex
-        ].player.rate = outgoingRate(
-            for: activeTransition,
-            progress: progress
-        )
-        decks[
-            activeTransition.incomingDeckIndex
-        ].player.playImmediately(
+        let outgoingPlayer =
+            decks[activeTransition.outgoingDeckIndex].player
+        let incomingPlayer =
+            decks[activeTransition.incomingDeckIndex].player
+
+        // Resume the incoming deck first so that a nearly-finished
+        // outgoing deck cannot end the transition before the incoming
+        // deck has been restarted. The normal playback path must then
+        // skip its second play() call for the active transition.
+        incomingPlayer.playImmediately(
             atRate:
                 incomingRate(
                     for: activeTransition,
                     progress: progress
                 )
         )
+        outgoingPlayer.playImmediately(
+            atRate:
+                outgoingRate(
+                    for: activeTransition,
+                    progress: progress
+                )
+        )
+        return true
     }
 
     func handleStandbyStatus(
