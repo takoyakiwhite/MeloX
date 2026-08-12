@@ -232,6 +232,16 @@ final class PlayerStore {
         Task<Void, Never>?
 
     @ObservationIgnored
+    private var preciseTimingRefreshTask:
+        Task<Void, Never>?
+
+    @ObservationIgnored
+    private var preciseTimingRefreshGeneration = 0
+
+    @ObservationIgnored
+    private var preciseTimingSourceRefreshCount = 0
+
+    @ObservationIgnored
     private var isResolvingSource = false
 
     @ObservationIgnored
@@ -748,6 +758,78 @@ final class PlayerStore {
         persistSnapshot()
     }
 
+    private func refreshPreciseTimingSourceAfterFailure(
+        for error: Error
+    ) {
+        if let preciseError = error as? PreciseTimingError {
+            switch preciseError {
+            case .notPrecise, .noAudioTrack, .invalidTimeRange, .unavailable:
+                return
+            }
+        }
+        guard preciseTimingSourceRefreshCount < 1,
+              preciseTimingRefreshTask == nil,
+              let song = currentSong,
+              nowPlayingLyricsSongID == song.id,
+              !nowPlayingLyrics.isEmpty,
+              let currentSource = currentPlaybackSource,
+              !currentSource.url.isFileURL else {
+            return
+        }
+
+        preciseTimingRefreshGeneration &+= 1
+        preciseTimingSourceRefreshCount += 1
+        let refreshGeneration = preciseTimingRefreshGeneration
+        let songID = song.id
+        let currentLoadGeneration = loadGeneration
+        hasRequestedPreciseLyricsTiming = true
+        preciseLyricsTimingFailed = false
+        lyricsTimingRevision &+= 1
+
+        preciseTimingRefreshTask = Task { [weak self] in
+            defer { self?.preciseTimingRefreshTask = nil }
+
+            do {
+                guard let self else { return }
+                let refreshedSource = try await self.api.playbackSource(
+                    for: song
+                )
+                try Task.checkCancellation()
+
+                guard refreshGeneration == self.preciseTimingRefreshGeneration,
+                      currentLoadGeneration == self.loadGeneration,
+                      self.currentSong?.id == songID,
+                      self.currentPlaybackSource == currentSource,
+                      self.nowPlayingLyricsSongID == songID,
+                      !self.nowPlayingLyrics.isEmpty else {
+                    return
+                }
+
+                self.currentPlaybackSource = refreshedSource
+                self.effectivePlaybackQuality = refreshedSource.quality
+                self.preciseLyricsTimingFailed = false
+                self.hasRequestedPreciseLyricsTiming = true
+                self.lyricsTimingRevision &+= 1
+                self.engine.retryPreciseTimingForLyrics(
+                    using: refreshedSource.url
+                )
+            } catch is CancellationError {
+                return
+            } catch {
+                guard let self,
+                      refreshGeneration == self.preciseTimingRefreshGeneration,
+                      currentLoadGeneration == self.loadGeneration,
+                      self.currentSong?.id == songID else {
+                    return
+                }
+                // Keep the precise timing failure visible after a failed
+                // source refresh. Playback itself is unaffected.
+                self.preciseLyricsTimingFailed = true
+                self.lyricsTimingRevision &+= 1
+            }
+        }
+    }
+
     func setNowPlayingLyrics(_ lyrics: [LyricLine], for songID: Int?) {
         guard let songID, currentSong?.id == songID else { return }
 
@@ -1097,6 +1179,10 @@ final class PlayerStore {
         effectivePlaybackQuality = nil
         currentLoadShouldAutoplay = autoplay
         playbackIssue = nil
+        preciseTimingRefreshTask?.cancel()
+        preciseTimingRefreshTask = nil
+        preciseTimingRefreshGeneration &+= 1
+        preciseTimingSourceRefreshCount = 0
         isPreciseLyricsTimingReady = false
         hasRequestedPreciseLyricsTiming = false
         preciseLyricsTimingFailed = false
@@ -1271,6 +1357,17 @@ final class PlayerStore {
             self.hasRequestedPreciseLyricsTiming = true
             self.preciseLyricsTimingFailed = !isReady
             self.lyricsTimingRevision &+= 1
+            self.updateNowPlayingState(
+                forceNowPlayingLyrics: true,
+                forceLyricsLiveActivity: true
+            )
+        }
+        engine.onPreciseTimingFailed = { [weak self] error in
+            guard let self else { return }
+            self.isPreciseLyricsTimingReady = false
+            self.preciseLyricsTimingFailed = true
+            self.lyricsTimingRevision &+= 1
+            self.refreshPreciseTimingSourceAfterFailure(for: error)
             self.updateNowPlayingState(
                 forceNowPlayingLyrics: true,
                 forceLyricsLiveActivity: true
@@ -1861,6 +1958,10 @@ final class PlayerStore {
         playbackIssue = nil
         hasRecordedCurrentStart = false
         lastPersistedBucket = Int(floor(progress * 2))
+        preciseTimingRefreshTask?.cancel()
+        preciseTimingRefreshTask = nil
+        preciseTimingRefreshGeneration &+= 1
+        preciseTimingSourceRefreshCount = 0
         isPreciseLyricsTimingReady = false
         hasRequestedPreciseLyricsTiming = false
         preciseLyricsTimingFailed = false

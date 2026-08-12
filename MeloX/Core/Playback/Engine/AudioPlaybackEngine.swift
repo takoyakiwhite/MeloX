@@ -33,6 +33,7 @@ final class AudioPlaybackEngine {
         ((AudioPlaybackClockSample) -> Void)?
     var onDurationChanged: ((TimeInterval) -> Void)?
     var onPreciseTimingReady: ((Bool) -> Void)?
+    var onPreciseTimingFailed: ((Error) -> Void)?
     var onPlaybackEnded: (() -> Void)?
     var onFailure: ((Error) -> Void)?
     var onAutoMixTransitionBegan:
@@ -294,6 +295,10 @@ final class AudioPlaybackEngine {
         activeDeck.requestPreciseTiming()
     }
 
+    func retryPreciseTimingForLyrics(using url: URL) {
+        activeDeck.retryPreciseTiming(using: url)
+    }
+
     func prepareAutoMix(
         _ source: PlaybackSource,
         identifier: Int,
@@ -377,13 +382,14 @@ final class AudioPlaybackEngine {
                 self.notifyPreciseTimingIfNeeded(for: item)
             }
             deck.onPreciseTimingFailed = {
-                [weak self, weak deck] in
+                [weak self, weak deck] error in
                 guard let self, let deck,
                       index == self.activeDeckIndex,
                       deck.player.currentItem != nil else {
                     return
                 }
                 self.onPreciseTimingReady?(false)
+                self.onPreciseTimingFailed?(error)
             }
 
             timeObservers[index] =

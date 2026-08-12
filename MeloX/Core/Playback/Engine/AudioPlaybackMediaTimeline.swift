@@ -8,7 +8,9 @@ import Foundation
 struct AudioPlaybackMediaTimeline {
     let mediaStart: TimeInterval
 
-    init(audioTrackTimeRange: CMTimeRange? = nil) {
+    init(
+        audioTrackTimeRange: CMTimeRange? = nil,
+    ) {
         let start = audioTrackTimeRange?.start.seconds ?? 0
         mediaStart = start.isFinite ? max(start, 0) : 0
     }
