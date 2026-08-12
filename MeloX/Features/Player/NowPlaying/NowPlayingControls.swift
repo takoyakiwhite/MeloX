@@ -167,30 +167,58 @@ private struct NowPlayingPreciseLyricsStatus: View {
     @Environment(PlayerStore.self) private var player
 
     var body: some View {
-        let status = player.preciseLyricsTimingStatus
+        let lyricStatus = player.lyricsAvailabilityStatus
+        let timingStatus = player.preciseLyricsTimingStatus
 
-        HStack(spacing: 5) {
-            Image(systemName: status.systemImage)
-                .font(.system(size: 9, weight: .semibold))
+        HStack(spacing: 7) {
+            statusItem(
+                label: "歌词",
+                title: lyricStatus.title,
+                systemImage: lyricStatus.systemImage,
+                isReady: lyricStatus == .lrc || lyricStatus == .yrc
+            )
 
-            Text("精准歌词")
-                .fontWeight(.medium)
+            Divider()
+                .frame(height: 13)
+                .opacity(0.35)
 
-            Text(status.title)
-                .monospacedDigit()
+            statusItem(
+                label: "Timing",
+                title: timingStatus.title,
+                systemImage: timingStatus.systemImage,
+                isReady: timingStatus.isReady
+            )
         }
         .padding(.horizontal, 9)
         .padding(.vertical, 4)
         .background(
-            .white.opacity(status.isReady ? 0.18 : 0.12),
+            .white.opacity(timingStatus.isReady ? 0.18 : 0.12),
             in: .rect(cornerRadius: 7)
         )
-        .foregroundStyle(.white.opacity(status.isReady ? 0.95 : 0.72))
+        .foregroundStyle(.white.opacity(timingStatus.isReady ? 0.95 : 0.72))
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("精准歌词时间轴")
-        .accessibilityValue(status.title)
+        .accessibilityLabel("歌词与精准时间轴状态")
+        .accessibilityValue("歌词：\(lyricStatus.title)，Timing：\(timingStatus.title)")
+    }
+
+    private func statusItem(
+        label: String,
+        title: String,
+        systemImage: String,
+        isReady: Bool
+    ) -> some View {
+        HStack(spacing: 3) {
+            Image(systemName: systemImage)
+                .font(.system(size: 8, weight: .semibold))
+            Text(label)
+                .fontWeight(.medium)
+            Text(title)
+                .monospacedDigit()
+        }
+        .foregroundStyle(.white.opacity(isReady ? 0.95 : 0.72))
     }
 }
+
 
 private struct NowPlayingQualityMenu: View {
     @Environment(PlayerStore.self) private var player

@@ -28,19 +28,39 @@ private struct ListenTogetherSavedPlaybackOptions {
     let autoMixEnabled: Bool
 }
 
-enum PreciseLyricsTimingStatus {
-    case unavailable
-    case waitingForLyrics
-    case waitingForRequest
-    case loading
-    case failed
-    case ready
+enum LyricsAvailabilityStatus: Equatable {
+    case unavailable, loading, lrc, yrc, none, failed
 
     var title: String {
         switch self {
         case .unavailable: return "不可用"
-        case .waitingForLyrics: return "等待歌词"
-        case .waitingForRequest: return "等待请求"
+        case .loading: return "加载中"
+        case .lrc: return "LRC"
+        case .yrc: return "YRC 逐字"
+        case .none: return "暂无歌词"
+        case .failed: return "获取失败"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .unavailable: return "minus.circle.fill"
+        case .loading: return "arrow.triangle.2.circlepath"
+        case .lrc: return "text.alignleft"
+        case .yrc: return "text.word.spacing"
+        case .none: return "nosign"
+        case .failed: return "exclamationmark.triangle.fill"
+        }
+    }
+}
+
+enum PreciseLyricsTimingStatus: Equatable {
+    case unavailable, notRequested, loading, failed, ready
+
+    var title: String {
+        switch self {
+        case .unavailable: return "不可用"
+        case .notRequested: return "未请求"
         case .loading: return "获取中"
         case .failed: return "获取失败"
         case .ready: return "已获取"
@@ -53,16 +73,11 @@ enum PreciseLyricsTimingStatus {
         case .loading: return "arrow.triangle.2.circlepath"
         case .failed: return "exclamationmark.triangle.fill"
         case .unavailable: return "minus.circle.fill"
-        case .waitingForLyrics, .waitingForRequest: return "clock"
+        case .notRequested: return "clock"
         }
     }
 
-    var isReady: Bool {
-        switch self {
-        case .ready: return true
-        default: return false
-        }
-    }
+    var isReady: Bool { self == .ready }
 }
 
 @MainActor
@@ -143,21 +158,25 @@ final class PlayerStore {
             queue.indices.contains(index) ? queue[index].id : nil
         }
     }
+    var lyricsAvailabilityStatus: LyricsAvailabilityStatus {
+        guard currentSong != nil else { return .unavailable }
+        guard nowPlayingLyricsSongID == currentSong?.id else { return .loading }
+        if nowPlayingLyricsIsLoading { return .loading }
+        if nowPlayingLyrics.isEmpty {
+            return nowPlayingLyricsErrorMessage == nil ? .none : .failed
+        }
+        return nowPlayingLyrics.contains(where: \.isSyllableSynced) ? .yrc : .lrc
+    }
+
     var preciseLyricsTimingStatus: PreciseLyricsTimingStatus {
         guard currentSong != nil else { return .unavailable }
         guard nowPlayingLyricsSongID == currentSong?.id, !nowPlayingLyrics.isEmpty else {
-            return .waitingForLyrics
+            return .notRequested
         }
-        if isPreciseLyricsTimingReady {
-            return .ready
-        }
-        if preciseLyricsTimingFailed {
-            return .failed
-        }
-        if hasRequestedPreciseLyricsTiming {
-            return .loading
-        }
-        return .waitingForRequest
+        if isPreciseLyricsTimingReady { return .ready }
+        if preciseLyricsTimingFailed { return .failed }
+        if hasRequestedPreciseLyricsTiming { return .loading }
+        return .notRequested
     }
 
     var isAutoMixTransitioning: Bool {
@@ -830,17 +849,30 @@ final class PlayerStore {
         }
     }
 
-    func setNowPlayingLyrics(_ lyrics: [LyricLine], for songID: Int?) {
-        guard let songID, currentSong?.id == songID else { return }
+    func setNowPlayingLyrics(
+        _ lyrics: [LyricLine],
+        for songID: Int?,
+        isLoading: Bool = false,
+        errorMessage: String? = nil
+    ) {
+        guard let currentSong else { return }
+        if let songID {
+            guard currentSong.id == songID else { return }
+        } else {
+            guard currentSong.isPodcastProgram else { return }
+        }
 
         nowPlayingLyricsSongID = songID
         nowPlayingLyrics = lyrics
+        nowPlayingLyricsIsLoading = isLoading
+        nowPlayingLyricsErrorMessage = errorMessage
         lyricsTimingRevision &+= 1
 
-        // Ordinary lyrics can render immediately. Precise media timing is
-        // fetched independently only now that there is lyric content that can
-        // benefit from the accurate media timeline.
-        if !lyrics.isEmpty {
+        if lyrics.isEmpty {
+            hasRequestedPreciseLyricsTiming = false
+            isPreciseLyricsTimingReady = false
+            preciseLyricsTimingFailed = false
+        } else {
             hasRequestedPreciseLyricsTiming = true
             preciseLyricsTimingFailed = false
             engine.requestPreciseTimingForLyrics()
@@ -1189,6 +1221,8 @@ final class PlayerStore {
         if nowPlayingLyricsSongID != song.id {
             nowPlayingLyricsSongID = nil
             nowPlayingLyrics = []
+            nowPlayingLyricsIsLoading = false
+            nowPlayingLyricsErrorMessage = nil
             publishedNowPlayingLyricID = nil
         }
         engine.unload()
@@ -1967,6 +2001,8 @@ final class PlayerStore {
         preciseLyricsTimingFailed = false
         nowPlayingLyricsSongID = nil
         nowPlayingLyrics = []
+        nowPlayingLyricsIsLoading = false
+        nowPlayingLyricsErrorMessage = nil
         publishedNowPlayingLyricID = nil
         publishedLyricsLiveActivity = nil
 

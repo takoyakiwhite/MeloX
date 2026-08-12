@@ -143,27 +143,51 @@ struct ContentView: View {
             }
             .task(id: player.currentSong?.id) {
                 let song = player.currentSong
-                let songID = song?.isPodcastProgram == true
-                    ? nil
-                    : song?.id
+                let songID = song?.isPodcastProgram == true ? nil : song?.id
+                player.setNowPlayingLyrics([], for: songID, isLoading: songID != nil)
                 await lyrics.load(for: songID)
                 guard !Task.isCancelled else { return }
-                player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
+                player.setNowPlayingLyrics(
+                    lyrics.lyrics,
+                    for: songID,
+                    isLoading: lyrics.isLoading,
+                    errorMessage: lyrics.errorMessage
+                )
             }
             .onChange(of: lyrics.songID) { _, songID in
-                // LyricsStore clears its lyric array when switching songs.
-                // Keep PlayerStore synchronized with that state transition as
-                // well, so the precise-lyrics status cannot stay attached to
-                // the previous song or remain stuck in "等待歌词".
-                player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
+                player.setNowPlayingLyrics(
+                    lyrics.lyrics,
+                    for: songID,
+                    isLoading: lyrics.isLoading,
+                    errorMessage: lyrics.errorMessage
+                )
             }
             .onChange(of: lyrics.lyrics) { _, newLyrics in
                 guard let songID = lyrics.songID else { return }
-                // Keep PlayerStore's now-playing lyric snapshot synchronized
-                // with the actual LyricsStore source for both empty and
-                // non-empty updates. Empty updates are important because a
-                // song change clears LyricsStore before the new lyrics arrive.
-                player.setNowPlayingLyrics(newLyrics, for: songID)
+                player.setNowPlayingLyrics(
+                    newLyrics,
+                    for: songID,
+                    isLoading: lyrics.isLoading,
+                    errorMessage: lyrics.errorMessage
+                )
+            }
+            .onChange(of: lyrics.isLoading) { _, isLoading in
+                guard let songID = lyrics.songID else { return }
+                player.setNowPlayingLyrics(
+                    lyrics.lyrics,
+                    for: songID,
+                    isLoading: isLoading,
+                    errorMessage: lyrics.errorMessage
+                )
+            }
+            .onChange(of: lyrics.errorMessage) { _, errorMessage in
+                guard let songID = lyrics.songID else { return }
+                player.setNowPlayingLyrics(
+                    lyrics.lyrics,
+                    for: songID,
+                    isLoading: lyrics.isLoading,
+                    errorMessage: errorMessage
+                )
             }
             .task {
                 await floatingLyrics.monitor()
