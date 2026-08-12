@@ -295,17 +295,7 @@ struct ContentView: View {
                 }
             }
             .onChange(of: floatingLyrics.restorationRequestID) {
-                guard floatingLyrics.restorationRequestID > 0,
-                      player.currentSong != nil else {
-                    floatingLyrics.completeRestoration(success: false)
-                    return
-                }
-
-                playerPresentation = .nowPlaying
-                Task { @MainActor in
-                    await Task.yield()
-                    floatingLyrics.completeRestoration(success: true)
-                }
+                handleFloatingLyricsRestoration()
             }
             .alert(
                 "歌曲无法播放",
@@ -585,6 +575,20 @@ struct ContentView: View {
     private var initialNowPlayingPage: NowPlayingPage {
         guard settings.rememberNowPlayingPage else { return .artwork }
         return NowPlayingPage(rawValue: settings.rememberedNowPlayingPage) ?? .artwork
+    }
+
+    private func handleFloatingLyricsRestoration() {
+        guard floatingLyrics.restorationRequestID > 0,
+              player.currentSong != nil else {
+            floatingLyrics.completeRestoration(success: false)
+            return
+        }
+
+        playerPresentation = .nowPlaying
+        Task { @MainActor in
+            await Task.yield()
+            floatingLyrics.completeRestoration(success: true)
+        }
     }
 
     private func openMusicRoute(_ route: MusicRoute) {
