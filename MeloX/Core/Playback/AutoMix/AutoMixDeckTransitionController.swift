@@ -362,6 +362,15 @@ final class AutoMixDeckTransitionController {
               ].player.currentItem === item else {
             return false
         }
+
+        // A queued end notification can arrive just after the user pauses.
+        // Do not complete the transition while playback is intentionally
+        // paused; resumeIncomingIfNeeded() will continue the existing
+        // transition when playback resumes.
+        guard wantsPlayback else {
+            return true
+        }
+
         finish(
             activeTransition,
             wantsPlayback: wantsPlayback
