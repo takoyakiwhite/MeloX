@@ -50,6 +50,20 @@ struct ContentView: View {
         _selectedTab = State(initialValue: initialTab)
     }
 
+    private var downloadsErrorBinding: Binding<Bool> {
+        Binding(
+            get: {
+                AppFeatureAvailability.downloads
+                    && downloads.errorMessage != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    downloads.clearError()
+                }
+            }
+        )
+    }
+
     var body: some View {
         Group {
             if settings.hasCompletedOnboarding {
@@ -296,17 +310,7 @@ struct ContentView: View {
             }
             .alert(
                 "下载操作失败",
-                isPresented: Binding(
-                    get: {
-                        AppFeatureAvailability.downloads
-                            && downloads.errorMessage != nil
-                    },
-                    set: { isPresented in
-                        if !isPresented {
-                            downloads.clearError()
-                        }
-                    }
-                )
+                isPresented: downloadsErrorBinding
             ) {
                 Button("好", role: .cancel) {
                     downloads.clearError()
