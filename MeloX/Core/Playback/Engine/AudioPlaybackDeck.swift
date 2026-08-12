@@ -107,7 +107,7 @@ final class AudioPlaybackDeck {
         preciseTimingTask?.cancel()
     }
 
-    nonisolated private static func loadPreciseTimeline(
+    private static func loadPreciseTimeline(
         from url: URL
     ) async -> AudioPlaybackMediaTimeline? {
         let asset = AVURLAsset(

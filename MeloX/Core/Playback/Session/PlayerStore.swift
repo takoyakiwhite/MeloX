@@ -1016,7 +1016,6 @@ final class PlayerStore {
         currentLoadShouldAutoplay = autoplay
         playbackIssue = nil
         isPreciseLyricsTimingReady = false
-        lyricsTimingRevision &+= 1
         if nowPlayingLyricsSongID != song.id {
             nowPlayingLyricsSongID = nil
             nowPlayingLyrics = []
@@ -1158,21 +1157,13 @@ final class PlayerStore {
             self.updateNowPlayingState()
         }
         engine.onPreciseTimingReady = { [weak self] isReady in
-            guard let self else { return }
-            self.isPreciseLyricsTimingReady = isReady
+            guard let self, isReady else { return }
+            self.isPreciseLyricsTimingReady = true
             self.lyricsTimingRevision &+= 1
-            if isReady {
-                self.updateNowPlayingState(
-                    forceNowPlayingLyrics: true,
-                    forceLyricsLiveActivity: true
-                )
-            } else {
-                self.publishedNowPlayingLyricID = nil
-                self.updateNowPlayingState(
-                    forceNowPlayingLyrics: true,
-                    forceLyricsLiveActivity: true
-                )
-            }
+            self.updateNowPlayingState(
+                forceNowPlayingLyrics: true,
+                forceLyricsLiveActivity: true
+            )
         }
         engine.onPlaybackClockChanged = { [weak self] sample in
             self?.handlePlaybackClockSample(sample)
@@ -1749,7 +1740,6 @@ final class PlayerStore {
         hasRecordedCurrentStart = false
         lastPersistedSecond = Int(progress)
         isPreciseLyricsTimingReady = false
-        lyricsTimingRevision &+= 1
         nowPlayingLyricsSongID = nil
         nowPlayingLyrics = []
         publishedNowPlayingLyricID = nil

@@ -33,8 +33,7 @@ struct NowPlayingLyricSynchronizer: View {
             advanceTime: advanceTime,
             lyricCount: lyrics.count,
             firstLyricID: lyrics.first?.id,
-            lastLyricID: lyrics.last?.id,
-            lyricsTimingRevision: player.lyricsTimingRevision
+            lastLyricID: lyrics.last?.id
         )
     }
 
@@ -97,5 +96,4 @@ private struct LyricSynchronizationTrigger: Hashable {
     let lyricCount: Int
     let firstLyricID: LyricLine.ID?
     let lastLyricID: LyricLine.ID?
-    let lyricsTimingRevision: Int
 }
