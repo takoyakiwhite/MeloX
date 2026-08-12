@@ -89,11 +89,11 @@ final class AudioPlaybackEngine {
     var currentPlaybackRate: Double {
         switch activeDeck.player.timeControlStatus {
         case .playing:
-            return max(Double(activeDeck.player.rate), 0)
+            return max(Double(activeDeck.player.rate), 0.0)
         case .paused, .waitingToPlayAtSpecifiedRate:
-            return 0
+            return 0.0
         @unknown default:
-            return 0
+            return 0.0
         }
     }
 
@@ -152,10 +152,11 @@ final class AudioPlaybackEngine {
         pendingSeekRetryTask = nil
         seekRetryAttempt = 0
         wantsPlayback = autoplay
-        pendingSeekTime = pendingSeekTime ?? max(0, startAt)
+        pendingSeekTime = max(0, startAt)
         seekGeneration += 1
         suppressesProgressUpdates = true
         didReportCurrentItemFailure = false
+        lastNotifiedPreciseTimingItem = nil
         transition(to: .loading)
 
         let playbackItem = await itemFactory.makeItem(
@@ -418,7 +419,10 @@ final class AudioPlaybackEngine {
     private func notifyPreciseTimingIfNeeded(
         for item: AVPlayerItem
     ) {
-        guard lastNotifiedPreciseTimingItem !== item else {
+        guard activeDeck.player.currentItem === item,
+              !suppressesProgressUpdates,
+              pendingSeekTime == nil,
+              lastNotifiedPreciseTimingItem !== item else {
             return
         }
         lastNotifiedPreciseTimingItem = item
@@ -632,6 +636,7 @@ final class AudioPlaybackEngine {
                 self.publishPlaybackClockSample(
                     origin: .seekCompleted
                 )
+                self.notifyPreciseTimingIfReady()
                 self.resumePlaybackIfNeeded()
             }
         }

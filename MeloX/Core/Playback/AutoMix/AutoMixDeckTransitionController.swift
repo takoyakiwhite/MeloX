@@ -118,6 +118,8 @@ final class AutoMixDeckTransitionController {
         guard plan.duration > 0 else { return }
         preparationGeneration += 1
         let generation = preparationGeneration
+        prerollTask?.cancel()
+        prerollTask = nil
         clearStandbyDeck()
 
         let deckIndex = standbyDeckIndex
@@ -485,10 +487,6 @@ final class AutoMixDeckTransitionController {
                     progress: 0
                 )
         )
-        // Suppress AVPlayer's startup wait only for the handoff itself.
-        // Restore the normal stall-minimizing behavior immediately so
-        // a later network underrun can still be handled normally.
-        incomingPlayer.automaticallyWaitsToMinimizeStalling = true
         onTransitionBegan?(
             transition.identifier,
             transition.plan
