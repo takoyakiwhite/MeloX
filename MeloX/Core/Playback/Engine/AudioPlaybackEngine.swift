@@ -86,17 +86,6 @@ final class AudioPlaybackEngine {
         return activeDeck.currentPlaybackTime
     }
 
-    var currentPlaybackRate: Double {
-        switch activeDeck.player.timeControlStatus {
-        case .playing:
-            return max(Double(activeDeck.player.rate), 0)
-        case .paused, .waitingToPlayAtSpecifiedRate:
-            return 0
-        @unknown default:
-            return 0
-        }
-    }
-
     var expectsPlaybackToContinue: Bool {
         wantsPlayback
     }
@@ -151,7 +140,6 @@ final class AudioPlaybackEngine {
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
         seekRetryAttempt = 0
-        lastNotifiedPreciseTimingItem = nil
         wantsPlayback = autoplay
         pendingSeekTime = pendingSeekTime ?? max(0, startAt)
         seekGeneration += 1
@@ -189,7 +177,6 @@ final class AudioPlaybackEngine {
         seekRetryAttempt = 0
         suppressesProgressUpdates = false
         didReportCurrentItemFailure = false
-        lastNotifiedPreciseTimingItem = nil
         autoMixController.reset()
         transition(to: .idle)
     }
@@ -206,8 +193,11 @@ final class AudioPlaybackEngine {
         }
         do {
             try activateAudioSession()
-            activeDeck.player.play()
-            autoMixController.resumeIncomingIfNeeded()
+            let resumedAutoMix =
+                autoMixController.resumeIncomingIfNeeded()
+            if !resumedAutoMix {
+                activeDeck.player.play()
+            }
             updateStateFromPlayer()
         } catch {
             wantsPlayback = false
@@ -417,13 +407,7 @@ final class AudioPlaybackEngine {
     private func notifyPreciseTimingIfNeeded(
         for item: AVPlayerItem
     ) {
-        guard activeDeck.player.currentItem === item,
-              !suppressesProgressUpdates,
-              pendingSeekTime == nil,
-              lastNotifiedPreciseTimingItem !== item else {
-            return
-        }
-        guard activeDeck.currentPlaybackTime != nil else {
+        guard lastNotifiedPreciseTimingItem !== item else {
             return
         }
         lastNotifiedPreciseTimingItem = item
@@ -637,12 +621,6 @@ final class AudioPlaybackEngine {
                 self.publishPlaybackClockSample(
                     origin: .seekCompleted
                 )
-                if self.activeDeck.isPreciseTimingReady,
-                   let currentItem = self.activeDeck.player.currentItem {
-                    self.notifyPreciseTimingIfNeeded(
-                        for: currentItem
-                    )
-                }
                 self.resumePlaybackIfNeeded()
             }
         }

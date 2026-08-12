@@ -34,6 +34,7 @@ final class AutoMixDeckTransitionController {
         let deckIndex: Int
         let item: AVPlayerItem
         let plan: AutoMixTransitionPlan
+        var isPrerolled = false
     }
 
     private final class ActiveTransition {
@@ -82,6 +83,8 @@ final class AutoMixDeckTransitionController {
         ActiveTransition?
     private var envelopeTask:
         Task<Void, Never>?
+    private var prerollTask:
+        Task<Void, Never>?
     private var wantsPlayback = false
 
     var activeDeck: AudioPlaybackDeck {
@@ -104,6 +107,7 @@ final class AutoMixDeckTransitionController {
 
     deinit {
         envelopeTask?.cancel()
+        prerollTask?.cancel()
     }
 
     func prepare(
@@ -156,25 +160,22 @@ final class AutoMixDeckTransitionController {
                 identifier: identifier,
                 deckIndex: deckIndex,
                 item: item,
-                plan: plan
+                plan: plan,
+                isPrerolled: false
             )
         switch item.status {
-        case .readyToPlay
-            where deck.player.status
-                == .readyToPlay:
-            deck.player.preroll(
-                atRate:
-                    normalizedRate(
-                        plan
-                            .incomingStartPlaybackRate
-                    )
-            ) { _ in }
+        case .readyToPlay:
+            startPrerollIfReady(
+                deckIndex: deckIndex,
+                item: item,
+                generation: generation
+            )
         case .failed:
             failPreparedTransition(
                 on: deckIndex,
                 error: item.error
             )
-        case .unknown, .readyToPlay:
+        case .unknown:
             break
         @unknown default:
             failPreparedTransition(
@@ -189,6 +190,8 @@ final class AutoMixDeckTransitionController {
         preparationGeneration += 1
         envelopeTask?.cancel()
         envelopeTask = nil
+        prerollTask?.cancel()
+        prerollTask = nil
 
         if let activeTransition {
             decks[
@@ -253,19 +256,20 @@ final class AutoMixDeckTransitionController {
         guard let activeTransition else {
             return false
         }
-
         let progress = currentProgress(
             for: activeTransition
         )
-        let outgoingPlayer =
-            decks[activeTransition.outgoingDeckIndex].player
+        if progress >= 1 {
+            finish(
+                activeTransition,
+                wantsPlayback: true
+            )
+            return false
+        }
         let incomingPlayer =
             decks[activeTransition.incomingDeckIndex].player
-
-        // Resume the incoming deck first so that a nearly-finished
-        // outgoing deck cannot end the transition before the incoming
-        // deck has been restarted. The normal playback path must then
-        // skip its second play() call for the active transition.
+        let outgoingPlayer =
+            decks[activeTransition.outgoingDeckIndex].player
         incomingPlayer.playImmediately(
             atRate:
                 incomingRate(
@@ -273,13 +277,11 @@ final class AutoMixDeckTransitionController {
                     progress: progress
                 )
         )
-        outgoingPlayer.playImmediately(
-            atRate:
-                outgoingRate(
-                    for: activeTransition,
-                    progress: progress
-                )
-        )
+        outgoingPlayer.rate =
+            outgoingRate(
+                for: activeTransition,
+                progress: progress
+            )
         return true
     }
 
@@ -293,23 +295,11 @@ final class AutoMixDeckTransitionController {
         }
         switch item.status {
         case .readyToPlay:
-            startIfNeeded(
-                wantsPlayback: wantsPlayback
+            startPrerollIfReady(
+                deckIndex: deckIndex,
+                item: item,
+                generation: preparationGeneration
             )
-            if let preparedTransition,
-               preparedTransition.deckIndex
-                == deckIndex,
-               decks[deckIndex].player.status
-                == .readyToPlay {
-                decks[deckIndex].player.preroll(
-                    atRate:
-                        normalizedRate(
-                            preparedTransition
-                                .plan
-                                .incomingStartPlaybackRate
-                        )
-                ) { _ in }
-            }
         case .failed:
             failPreparedTransition(
                 on: deckIndex,
@@ -334,6 +324,7 @@ final class AutoMixDeckTransitionController {
               wantsPlayback,
               preparedTransition.item.status
                 == .readyToPlay,
+              preparedTransition.isPrerolled,
               decks[
                 preparedTransition.deckIndex
               ].player.status
@@ -351,6 +342,55 @@ final class AutoMixDeckTransitionController {
         start(preparedTransition)
     }
 
+    private func startPrerollIfReady(
+        deckIndex: Int,
+        item: AVPlayerItem,
+        generation: Int
+    ) {
+        guard deckIndex != activeDeckIndex,
+              preparedTransition?.deckIndex == deckIndex,
+              preparedTransition?.item === item,
+              item.status == .readyToPlay,
+              decks[deckIndex].player.status == .readyToPlay else {
+            return
+        }
+        prerollTask?.cancel()
+        prerollTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            let rate = self.normalizedRate(
+                self.preparedTransition?.plan.incomingStartPlaybackRate ?? 1
+            )
+            let success = await self.preroll(
+                self.decks[deckIndex].player,
+                atRate: rate
+            )
+            guard !Task.isCancelled,
+                  generation == self.preparationGeneration,
+                  self.activeTransition == nil,
+                  self.decks[deckIndex].player.currentItem === item,
+                  self.preparedTransition?.deckIndex == deckIndex,
+                  self.preparedTransition?.item === item else {
+                return
+            }
+            guard success else {
+                return
+            }
+            self.preparedTransition?.isPrerolled = true
+            self.startIfNeeded(wantsPlayback: self.wantsPlayback)
+        }
+    }
+
+    private func preroll(
+        _ player: AVPlayer,
+        atRate rate: Float
+    ) async -> Bool {
+        await withCheckedContinuation { continuation in
+            player.preroll(atRate: rate) { finished in
+                continuation.resume(returning: finished)
+            }
+        }
+    }
+
     func finishIfOutgoingEnded(
         _ item: AVPlayerItem,
         wantsPlayback: Bool
@@ -362,15 +402,9 @@ final class AutoMixDeckTransitionController {
               ].player.currentItem === item else {
             return false
         }
-
-        // A queued end notification can arrive just after the user pauses.
-        // Do not complete the transition while playback is intentionally
-        // paused; resumeIncomingIfNeeded() will continue the existing
-        // transition when playback resumes.
         guard wantsPlayback else {
             return true
         }
-
         finish(
             activeTransition,
             wantsPlayback: wantsPlayback
@@ -442,14 +476,19 @@ final class AutoMixDeckTransitionController {
             transition: transition
         )
         applyOutputVolumes()
-        decks[transition.incomingDeckIndex]
-            .player.playImmediately(
-                atRate:
-                    incomingRate(
-                        for: transition,
-                        progress: 0
-                    )
-            )
+        let incomingPlayer =
+            decks[transition.incomingDeckIndex].player
+        incomingPlayer.playImmediately(
+            atRate:
+                incomingRate(
+                    for: transition,
+                    progress: 0
+                )
+        )
+        // Suppress AVPlayer's startup wait only for the handoff itself.
+        // Restore the normal stall-minimizing behavior immediately so
+        // a later network underrun can still be handled normally.
+        incomingPlayer.automaticallyWaitsToMinimizeStalling = true
         onTransitionBegan?(
             transition.identifier,
             transition.plan
