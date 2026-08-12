@@ -183,27 +183,11 @@ struct ContentView: View {
             .task {
                 await restorePlaybackOnLaunch()
             }
-            .task(
-                id: HeartModeLaunchReadiness(
-                    hasRestoredPlayback: hasRestoredPlayback,
-                    isLoggedIn: library.isLoggedIn,
-                    canStartHeartMode: library.canStartHeartMode
-                )
-            ) {
+            .task(id: heartModeLaunchReadiness) {
                 await startHeartModeOnLaunchIfNeeded()
             }
             .task(id: player.currentSong?.id) {
-                let song = player.currentSong
-                let songID = song?.isPodcastProgram == true ? nil : song?.id
-                player.setNowPlayingLyrics([], for: songID, isLoading: songID != nil)
-                await lyrics.load(for: songID)
-                guard !Task.isCancelled else { return }
-                player.setNowPlayingLyrics(
-                    lyrics.lyrics,
-                    for: songID,
-                    isLoading: lyrics.isLoading,
-                    errorMessage: lyrics.errorMessage
-                )
+                await loadLyricsForCurrentSong()
             }
             .onChange(of: lyrics.songID) { _, songID in
                 player.setNowPlayingLyrics(
@@ -349,6 +333,36 @@ struct ContentView: View {
                 openMusicRoute(.song(song))
             }
             .appLaunchExperience()
+    }
+
+    private var heartModeLaunchReadiness: HeartModeLaunchReadiness {
+        HeartModeLaunchReadiness(
+            hasRestoredPlayback: hasRestoredPlayback,
+            isLoggedIn: library.isLoggedIn,
+            canStartHeartMode: library.canStartHeartMode
+        )
+    }
+
+    private func loadLyricsForCurrentSong() async {
+        let song = player.currentSong
+        let songID = song?.isPodcastProgram == true ? nil : song?.id
+
+        player.setNowPlayingLyrics(
+            [],
+            for: songID,
+            isLoading: songID != nil
+        )
+
+        await lyrics.load(for: songID)
+
+        guard !Task.isCancelled else { return }
+
+        player.setNowPlayingLyrics(
+            lyrics.lyrics,
+            for: songID,
+            isLoading: lyrics.isLoading,
+            errorMessage: lyrics.errorMessage
+        )
     }
 
     private func restorePlaybackOnLaunch() async {
