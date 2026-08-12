@@ -114,20 +114,18 @@ struct ContentView: View {
     }
 
     private var mainExperience: some View {
-        playerAwareTabView
+        AnyView(playerAwareTabView)
             .environment(
                 \.openMusicRoute,
-                OpenMusicRouteAction(action: openMusicRoute)
+                openMusicRouteAction
             )
             .environment(
                 \.openNeteaseShare,
-                OpenNeteaseShareAction(action: openNeteaseShare)
+                openNeteaseShareAction
             )
             .environment(
                 \.setTabViewBottomAccessorySuppressed,
-                SetTabViewBottomAccessorySuppressedAction {
-                    isTabViewBottomAccessorySuppressed = $0
-                }
+                tabViewBottomAccessorySuppressedAction
             )
             .fullScreenCover(
                 item: $playerPresentation,
@@ -138,7 +136,7 @@ struct ContentView: View {
                     NowPlayingView(initialPage: initialNowPlayingPage)
                         .environment(
                             \.openMusicRoute,
-                            OpenMusicRouteAction(action: openMusicRoute)
+                            openMusicRouteAction
                         )
                         .environment(
                             \.openNeteaseShare,
@@ -333,6 +331,21 @@ struct ContentView: View {
                 openMusicRoute(.song(song))
             }
             .appLaunchExperience()
+    }
+
+    private var openMusicRouteAction: OpenMusicRouteAction {
+        OpenMusicRouteAction(action: openMusicRoute)
+    }
+
+    private var openNeteaseShareAction: OpenNeteaseShareAction {
+        OpenNeteaseShareAction(action: openNeteaseShare)
+    }
+
+    private var tabViewBottomAccessorySuppressedAction:
+        SetTabViewBottomAccessorySuppressedAction {
+        SetTabViewBottomAccessorySuppressedAction { isSuppressed in
+            isTabViewBottomAccessorySuppressed = isSuppressed
+        }
     }
 
     private var heartModeLaunchReadiness: HeartModeLaunchReadiness {
