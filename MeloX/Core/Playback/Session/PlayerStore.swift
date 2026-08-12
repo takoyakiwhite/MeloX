@@ -62,9 +62,7 @@ final class PlayerStore {
     private(set) var beatAnalysisStatus:
         PlaybackBeatAnalysisStatus = .idle
     private(set) var effectivePlaybackQuality: MusicQuality?
-    var currentPlaybackSourceHost: String? {
-        currentPlaybackSource?.url.host?.lowercased()
-    }
+    private(set) var currentPlaybackSourceHost: String?
     private(set) var sleepTimer: PlaybackSleepTimer
 
     var availablePlaybackQualities: [MusicQuality] {
@@ -1019,6 +1017,7 @@ final class PlayerStore {
         isPlaying = false
         isUsingDownloadedSource = false
         currentPlaybackSource = nil
+        currentPlaybackSourceHost = nil
         effectivePlaybackQuality = nil
         currentLoadShouldAutoplay = autoplay
         playbackIssue = nil
@@ -1056,6 +1055,7 @@ final class PlayerStore {
             guard generation == loadGeneration, currentSong?.id == song.id else { return }
             isResolvingSource = false
             currentPlaybackSource = source
+            currentPlaybackSourceHost = source.url.host?.lowercased()
             effectivePlaybackQuality = source.quality
             let shouldAutoplay = currentLoadShouldAutoplay
             let resolvedStartPosition = estimatedProgress()
@@ -1726,6 +1726,7 @@ final class PlayerStore {
         )
         resetBeatAnalysis()
         currentPlaybackSource = context.source
+        currentPlaybackSourceHost = context.source.url.host?.lowercased()
         effectivePlaybackQuality = context.source.quality
         isUsingDownloadedSource =
             context.sourceIsDownloaded
