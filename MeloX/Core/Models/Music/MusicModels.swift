@@ -197,7 +197,7 @@ struct Album: Codable, Hashable, Identifiable {
     }
 }
 
-nonisolated struct Song: Codable, Hashable, Identifiable {
+struct Song: Codable, Hashable, Identifiable {
     let id: Int
     let name: String
     let artists: [Artist]

@@ -205,8 +205,7 @@ final class FloatingLyricsController: NSObject {
             songID: player.currentSong?.id,
             isPlaying: player.isPlaying,
             duration: player.duration,
-            seekRevision: player.seekRevision,
-            lyricsTimingRevision: player.lyricsTimingRevision
+            seekRevision: player.seekRevision
         )
         let stateChanged = state != lastPlaybackState
         guard force || stateChanged else { return }
@@ -525,5 +524,4 @@ private struct PlaybackState: Equatable {
     let isPlaying: Bool
     let duration: TimeInterval
     let seekRevision: Int
-    let lyricsTimingRevision: Int
 }

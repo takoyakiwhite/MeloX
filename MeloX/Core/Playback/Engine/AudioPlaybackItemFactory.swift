@@ -20,12 +20,12 @@ final class AudioPlaybackItemFactory {
         autoMixEqualizerState:
             SharedAutoMixEqualizerState
     ) async -> PreparedAudioPlaybackItem {
-            let asset = AVURLAsset(
-            url: source.url,
-            options: [
-                AVURLAssetPreferPreciseDurationAndTimingKey: false
-            ]
-        )
+        let asset = AVURLAsset(
+        url: source.url,
+        options: [
+        AVURLAssetPreferPreciseDurationAndTimingKey: true
+        ]
+   )
         let item = AVPlayerItem(asset: asset)
         item.preferredForwardBufferDuration =
             max(
@@ -55,8 +55,7 @@ final class AudioPlaybackItemFactory {
             item: item,
             timeline: AudioPlaybackMediaTimeline(
                 audioTrackTimeRange: audioTrackTimeRange
-            ),
-            preciseTimingURL: source.url
+            )
         )
     }
 

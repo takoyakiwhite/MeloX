@@ -32,8 +32,6 @@ final class AudioPlaybackEngine {
     var onPlaybackClockChanged:
         ((AudioPlaybackClockSample) -> Void)?
     var onDurationChanged: ((TimeInterval) -> Void)?
-    var onPreciseTimingReady: ((Bool) -> Void)?
-    var onPreciseTimingFailed: ((Error) -> Void)?
     var onPlaybackEnded: (() -> Void)?
     var onFailure: ((Error) -> Void)?
     var onAutoMixTransitionBegan:
@@ -60,15 +58,9 @@ final class AudioPlaybackEngine {
     private var seekGeneration = 0
     private var seekRetryAttempt = 0
     private var pendingSeekRetryTask: Task<Void, Never>?
-    private var seekDebounceTask: Task<Void, Never>?
-    private var pendingSeekTarget: TimeInterval?
-    private var activeSeekTarget: TimeInterval?
-    private var activeSeekTimelineRevision: Int?
-    private var seekCorrectionAttempt = 0
     private var suppressesProgressUpdates = false
     private var didReportCurrentItemFailure = false
     private var loadGeneration = 0
-    private weak var lastNotifiedPreciseTimingItem: AVPlayerItem?
 
     private var decks: [AudioPlaybackDeck] {
         autoMixController.decks
@@ -90,38 +82,6 @@ final class AudioPlaybackEngine {
         guard activeDeck.player.currentItem != nil,
               !suppressesProgressUpdates else { return nil }
         return activeDeck.currentPlaybackTime
-    }
-
-    /// Duration of the currently active playback timeline.
-    ///
-    /// This deliberately delegates to the active deck instead of exposing
-    /// the precise-timing probe as a second playback clock. The deck's
-    /// `playbackDuration` is the duration used by the same timeline that
-    /// converts AVPlayer media time into song playback position.
-    var playbackDuration: TimeInterval? {
-        guard activeDeck.player.currentItem != nil,
-              let value = activeDeck.playbackDuration,
-              value.isFinite,
-              value > 0 else {
-            return nil
-        }
-        return value
-    }
-
-    var currentPlaybackRate: Double {
-        let rate = Double(activeDeck.player.rate)
-        guard rate.isFinite, rate > 0 else {
-            return 0
-        }
-
-        switch activeDeck.player.timeControlStatus {
-        case .playing, .waitingToPlayAtSpecifiedRate:
-            return rate
-        case .paused:
-            return 0
-        @unknown default:
-            return rate
-        }
     }
 
     var expectsPlaybackToContinue: Bool {
@@ -154,7 +114,6 @@ final class AudioPlaybackEngine {
 
     deinit {
         pendingSeekRetryTask?.cancel()
-        seekDebounceTask?.cancel()
         for (player, observer) in zip(
             observedPlayers,
             timeObservers
@@ -178,19 +137,12 @@ final class AudioPlaybackEngine {
         cancelAutoMix()
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
-        seekDebounceTask?.cancel()
-        seekDebounceTask = nil
         seekRetryAttempt = 0
-        pendingSeekTarget = nil
-        activeSeekTarget = nil
-        activeSeekTimelineRevision = nil
-        seekCorrectionAttempt = 0
         wantsPlayback = autoplay
-        pendingSeekTime = max(0, startAt)
+        pendingSeekTime = pendingSeekTime ?? max(0, startAt)
         seekGeneration += 1
         suppressesProgressUpdates = true
         didReportCurrentItemFailure = false
-        lastNotifiedPreciseTimingItem = nil
         transition(to: .loading)
 
         let playbackItem = await itemFactory.makeItem(
@@ -217,12 +169,6 @@ final class AudioPlaybackEngine {
         loadGeneration += 1
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
-        seekDebounceTask?.cancel()
-        seekDebounceTask = nil
-        pendingSeekTarget = nil
-        activeSeekTarget = nil
-        activeSeekTimelineRevision = nil
-        seekCorrectionAttempt = 0
         wantsPlayback = false
         pendingSeekTime = nil
         seekGeneration += 1
@@ -245,12 +191,12 @@ final class AudioPlaybackEngine {
         }
         do {
             try activateAudioSession()
+            updateStateFromPlayer()
             let resumedAutoMix =
                 autoMixController.resumeIncomingIfNeeded()
             if !resumedAutoMix {
                 activeDeck.player.play()
             }
-            updateStateFromPlayer()
         } catch {
             wantsPlayback = false
             onFailure?(AudioPlaybackError.audioSession(error))
@@ -268,30 +214,25 @@ final class AudioPlaybackEngine {
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
         seekRetryAttempt = 0
-        seekCorrectionAttempt = 0
-        cancelAutoMix()
-
-        seekGeneration &+= 1
-        suppressesProgressUpdates = true
-        activeSeekTarget = nil
-        activeSeekTimelineRevision = nil
-        pendingSeekTarget = position
-
         guard let item = activeDeck.player.currentItem else {
+            seekGeneration += 1
             pendingSeekTime = position
-            scheduleDebouncedSeekIfPossible()
+            suppressesProgressUpdates = true
             return
         }
-
-        guard item.status == .readyToPlay else {
+        cancelAutoMix()
+        if item.status != .readyToPlay {
+            seekGeneration += 1
             pendingSeekTime = position
-            scheduleDebouncedSeekIfPossible()
+            suppressesProgressUpdates = true
             return
         }
 
         pendingSeekTime = nil
-        item.cancelPendingSeeks()
-        scheduleDebouncedSeekIfPossible()
+        applySeek(
+            to: position,
+            for: item
+        )
     }
 
     func setVolume(_ volume: Double) {
@@ -302,17 +243,6 @@ final class AudioPlaybackEngine {
         _ configuration: AudioEqualizerConfiguration
     ) {
         itemFactory.updateEqualizer(configuration)
-    }
-
-    /// Requests precise media timing for lyric synchronization only.
-    /// This is intentionally separate from playback-item loading so song
-    /// startup is never blocked by precise timing metadata.
-    func requestPreciseTimingForLyrics() {
-        activeDeck.requestPreciseTiming()
-    }
-
-    func retryPreciseTimingForLyrics(using url: URL) {
-        activeDeck.retryPreciseTiming(using: url)
     }
 
     func prepareAutoMix(
@@ -353,7 +283,6 @@ final class AudioPlaybackEngine {
             guard let self else { return }
             self.onAutoMixTransitionCompleted?(identifier)
             self.publishDurationIfAvailable()
-            self.notifyPreciseTimingIfReady()
             self.updateStateFromPlayer(
                 clockOrigin: .activeItemChanged
             )
@@ -388,30 +317,11 @@ final class AudioPlaybackEngine {
                     at: index
                 )
             }
-            deck.onPreciseTimingReady = {
-                [weak self, weak deck] in
-                guard let self, let deck,
-                      index == self.activeDeckIndex,
-                      let item = deck.player.currentItem else {
-                    return
-                }
-                self.notifyPreciseTimingIfNeeded(for: item)
-            }
-            deck.onPreciseTimingFailed = {
-                [weak self, weak deck] error in
-                guard let self, let deck,
-                      index == self.activeDeckIndex,
-                      deck.player.currentItem != nil else {
-                    return
-                }
-                self.onPreciseTimingReady?(false)
-                self.onPreciseTimingFailed?(error)
-            }
 
             timeObservers[index] =
                 deck.player.addPeriodicTimeObserver(
                     forInterval: CMTime(
-                        seconds: 0.05,
+                        seconds: 0.1,
                         preferredTimescale: 600
                     ),
                     queue: .main
@@ -472,31 +382,6 @@ final class AudioPlaybackEngine {
                 }
             }
         )
-    }
-
-    private func notifyPreciseTimingIfReady() {
-        guard activeDeck.isPreciseTimingReady,
-              let item = activeDeck.player.currentItem else {
-            return
-        }
-        notifyPreciseTimingIfNeeded(for: item)
-    }
-
-    private func notifyPreciseTimingIfNeeded(
-        for item: AVPlayerItem
-    ) {
-        guard activeDeck.player.currentItem === item,
-              !suppressesProgressUpdates,
-              pendingSeekTime == nil,
-              lastNotifiedPreciseTimingItem !== item else {
-            return
-        }
-        lastNotifiedPreciseTimingItem = item
-        publishPlaybackClockSample(
-            origin: .stateChanged
-        )
-        publishDurationIfAvailable()
-        onPreciseTimingReady?(true)
     }
 
     private func handleSeekableTimeRangesChange(
@@ -670,22 +555,13 @@ final class AudioPlaybackEngine {
     ) {
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
-        seekDebounceTask?.cancel()
-        seekDebounceTask = nil
         pendingSeekTime = nil
-        pendingSeekTarget = nil
-
-        seekGeneration &+= 1
+        seekGeneration += 1
         let generation = seekGeneration
         let seekingDeck = activeDeck
-        let seekingPlayer = seekingDeck.player
-        let timelineRevision = seekingDeck.mediaTimelineRevision
-
+        let seekingPlayer = activeDeck.player
         suppressesProgressUpdates = true
-        activeSeekTarget = position
-        activeSeekTimelineRevision = timelineRevision
         item.cancelPendingSeeks()
-
         seekingPlayer.seek(
             to: seekingDeck.mediaTime(
                 forPlaybackPosition: position
@@ -700,84 +576,20 @@ final class AudioPlaybackEngine {
                       seekingPlayer.currentItem === item else {
                     return
                 }
-
                 guard finished else {
-                    self.activeSeekTarget = position
                     self.pendingSeekTime = position
                     self.seekRetryAttempt += 1
                     self.schedulePendingSeekRetry(for: item)
                     return
                 }
-
-                guard let target = self.activeSeekTarget else {
-                    self.finishSeekPlayback(for: item)
-                    return
-                }
-
-                let timelineChanged =
-                    self.activeSeekTimelineRevision
-                        != seekingDeck.mediaTimelineRevision
-
-                let actual = seekingDeck.currentPlaybackTime
-                let error = actual.map { abs($0 - target) } ?? .infinity
-
-                if self.seekCorrectionAttempt < 2,
-                   timelineChanged || error > 0.05 {
-                    self.seekCorrectionAttempt += 1
-                    self.applySeek(to: target, for: item)
-                    return
-                }
-
-                self.finishSeekPlayback(for: item)
+                self.seekRetryAttempt = 0
+                self.suppressesProgressUpdates = false
+                self.publishPlaybackClockSample(
+                    origin: .seekCompleted
+                )
+                self.resumePlaybackIfNeeded()
             }
         }
-    }
-
-    private func scheduleDebouncedSeekIfPossible() {
-        guard pendingSeekTarget != nil else { return }
-
-        seekDebounceTask?.cancel()
-        seekDebounceTask = Task {
-            @MainActor [weak self] in
-            do {
-                try await Task.sleep(for: .milliseconds(80))
-            } catch {
-                return
-            }
-
-            guard let self,
-                  !Task.isCancelled,
-                  let target = self.pendingSeekTarget,
-                  let item = self.activeDeck.player.currentItem else {
-                return
-            }
-
-            guard item.status == .readyToPlay else {
-                self.pendingSeekTime = target
-                return
-            }
-
-            self.pendingSeekTime = nil
-            self.applySeek(to: target, for: item)
-        }
-    }
-
-    private func finishSeekPlayback(for item: AVPlayerItem) {
-        guard activeDeck.player.currentItem === item else { return }
-        pendingSeekRetryTask?.cancel()
-        pendingSeekRetryTask = nil
-        seekDebounceTask?.cancel()
-        seekDebounceTask = nil
-        pendingSeekTime = nil
-        pendingSeekTarget = nil
-        activeSeekTarget = nil
-        activeSeekTimelineRevision = nil
-        seekRetryAttempt = 0
-        seekCorrectionAttempt = 0
-        suppressesProgressUpdates = false
-        publishPlaybackClockSample(origin: .seekCompleted)
-        notifyPreciseTimingIfReady()
-        resumePlaybackIfNeeded()
     }
 
     private func retryPendingSeek(
@@ -788,9 +600,7 @@ final class AudioPlaybackEngine {
               item.status == .readyToPlay else {
             return
         }
-        pendingSeekTarget = position
-        pendingSeekTime = nil
-        scheduleDebouncedSeekIfPossible()
+        applySeek(to: position, for: item)
     }
 
     private func schedulePendingSeekRetry(

@@ -1,6 +1,6 @@
 import Foundation
 
-nonisolated enum AutoMixFadeEnvelope {
+enum AutoMixFadeEnvelope {
     static func gains(
         at rawProgress: Double,
         curve: AutoMixFadeCurve

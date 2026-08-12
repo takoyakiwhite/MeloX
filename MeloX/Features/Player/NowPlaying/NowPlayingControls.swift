@@ -6,87 +6,44 @@ struct NowPlayingProgressControl: View {
 
     let song: Song
 
-    @State private var scrubPosition: TimeInterval?
-
     var body: some View {
-        TimelineView(
-            .animation(
-                minimumInterval: 1.0 / 60.0,
-                paused: !player.isPlaying
+        VStack(spacing: 2) {
+            Slider(
+                value: Binding(
+                    get: { min(player.progress, progressMaximum) },
+                    set: { player.seek(to: $0) }
+                ),
+                in: 0...progressMaximum
             )
-        ) { context in
-            let liveProgress = player.estimatedProgress(
-                at: context.date
-            )
+            .sliderThumbVisibility(.hidden)
+            .tint(.white)
+            .accessibilityLabel("播放进度")
+            .accessibilityValue("已播放 \(formatTime(player.progress))，总时长 \(formatTime(progressMaximum))")
 
-            VStack(spacing: 2) {
-                Slider(
-                    value: Binding(
-                        get: {
-                            min(
-                                scrubPosition ?? liveProgress,
-                                progressMaximum
-                            )
-                        },
-                        set: { value in
-                            scrubPosition = min(
-                                max(value, 0),
-                                progressMaximum
-                            )
-                        }
-                    ),
-                    in: 0...progressMaximum,
-                    onEditingChanged: { editing in
-                        if editing {
-                            scrubPosition = min(
-                                max(liveProgress, 0),
-                                progressMaximum
-                            )
-                        } else {
-                            let target = scrubPosition ?? liveProgress
-                            scrubPosition = nil
-                            player.seek(to: target)
-                        }
-                    }
-                )
-                .sliderThumbVisibility(.hidden)
-                .tint(.white)
-                .accessibilityLabel("播放进度")
-                .accessibilityValue(
-                    "已播放 \(formatTime(liveProgress))，总时长 \(formatTime(progressMaximum))"
-                )
+            HStack {
+                Text(formatTime(player.progress))
 
-                HStack {
-                    Text(formatTime(liveProgress))
+                Spacer()
 
-                    Spacer()
-
-                    Text("−\(formatTime(max(player.duration - liveProgress, 0)))")
-                }
-                .overlay {
-                    Group {
-                        if player.isAutoMixTransitioning {
-                            NowPlayingAutoMixStatus()
-                        } else {
-                            HStack(spacing: 6) {
-                                NowPlayingPreciseLyricsStatus()
-                                NowPlayingQualityMenu()
-                            }
-                        }
-                    }
-                    .animation(
-                        .smooth(duration: 0.25),
-                        value: player.isAutoMixTransitioning
-                    )
-                }
-                .font(.caption2.monospacedDigit())
-                .foregroundStyle(.white.opacity(0.5))
+                Text("−\(formatTime(max(player.duration - player.progress, 0)))")
             }
-            .frame(height: 52)
+            .overlay {
+                Group {
+                    if player.isAutoMixTransitioning {
+                        NowPlayingAutoMixStatus()
+                    } else {
+                        NowPlayingQualityMenu()
+                    }
+                }
+                .animation(
+                    .smooth(duration: 0.25),
+                    value: player.isAutoMixTransitioning
+                )
+            }
+            .font(.caption2.monospacedDigit())
+            .foregroundStyle(.white.opacity(0.5))
         }
-        .onChange(of: player.currentSong?.id) {
-            scrubPosition = nil
-        }
+        .frame(height: 52)
     }
 
     private var progressMaximum: TimeInterval {
@@ -163,63 +120,6 @@ private struct NowPlayingAutoMixStatus: View {
     }
 }
 
-private struct NowPlayingPreciseLyricsStatus: View {
-    @Environment(PlayerStore.self) private var player
-
-    var body: some View {
-        let lyricStatus = player.lyricsAvailabilityStatus
-        let timingStatus = player.preciseLyricsTimingStatus
-
-        HStack(spacing: 7) {
-            statusItem(
-                label: "歌词",
-                title: lyricStatus.title,
-                systemImage: lyricStatus.systemImage,
-                isReady: lyricStatus == .lrc || lyricStatus == .yrc
-            )
-
-            Divider()
-                .frame(height: 13)
-                .opacity(0.35)
-
-            statusItem(
-                label: "Timing",
-                title: timingStatus.title,
-                systemImage: timingStatus.systemImage,
-                isReady: timingStatus.isReady
-            )
-        }
-        .padding(.horizontal, 9)
-        .padding(.vertical, 4)
-        .background(
-            .white.opacity(timingStatus.isReady ? 0.18 : 0.12),
-            in: .rect(cornerRadius: 7)
-        )
-        .foregroundStyle(.white.opacity(timingStatus.isReady ? 0.95 : 0.72))
-        .accessibilityElement(children: .ignore)
-        .accessibilityLabel("歌词与精准时间轴状态")
-        .accessibilityValue("歌词：\(lyricStatus.title)，Timing：\(timingStatus.title)")
-    }
-
-    private func statusItem(
-        label: String,
-        title: String,
-        systemImage: String,
-        isReady: Bool
-    ) -> some View {
-        HStack(spacing: 3) {
-            Image(systemName: systemImage)
-                .font(.system(size: 8, weight: .semibold))
-            Text(label)
-                .fontWeight(.medium)
-            Text(title)
-                .monospacedDigit()
-        }
-        .foregroundStyle(.white.opacity(isReady ? 0.95 : 0.72))
-    }
-}
-
-
 private struct NowPlayingQualityMenu: View {
     @Environment(PlayerStore.self) private var player
     @Environment(AppSettings.self) private var settings
@@ -257,7 +157,16 @@ private struct NowPlayingQualityMenu: View {
     }
 
     private var displayedQualityTitle: String {
-        player.effectivePlaybackQuality?.title ?? "音质"
+        switch player.currentPlaybackSourceHost {
+        case "kw-er.kuwo.cn":
+            return "酷我"
+        case "bd-er.kuwo.cn":
+            return "波点"
+        case "fsandroid.tx.kugou.com":
+            return "酷狗"
+        default:
+            return player.effectivePlaybackQuality?.title ?? "音质"
+    }
     }
 
     private var qualityBinding: Binding<MusicQuality> {

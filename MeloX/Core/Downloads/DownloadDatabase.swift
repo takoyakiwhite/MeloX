@@ -120,7 +120,7 @@ final class DownloadDatabase {
     }
 }
 
-private nonisolated struct DownloadRecord: Codable, FetchableRecord, PersistableRecord {
+private struct DownloadRecord: Codable, FetchableRecord, PersistableRecord {
     static let databaseTableName = "downloads"
 
     let songID: Int

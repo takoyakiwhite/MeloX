@@ -7,21 +7,10 @@ import Foundation
 /// into a different point after changing source quality.
 struct AudioPlaybackMediaTimeline {
     let mediaStart: TimeInterval
-    let knownPlaybackDuration: TimeInterval?
 
-    init(
-        audioTrackTimeRange: CMTimeRange? = nil,
-        knownPlaybackDuration: TimeInterval? = nil
-    ) {
+    init(audioTrackTimeRange: CMTimeRange? = nil) {
         let start = audioTrackTimeRange?.start.seconds ?? 0
         mediaStart = start.isFinite ? max(start, 0) : 0
-        if let knownPlaybackDuration,
-           knownPlaybackDuration.isFinite,
-           knownPlaybackDuration > 0 {
-            self.knownPlaybackDuration = knownPlaybackDuration
-        } else {
-            self.knownPlaybackDuration = nil
-        }
     }
 
     func playbackPosition(
@@ -47,9 +36,6 @@ struct AudioPlaybackMediaTimeline {
     func playbackDuration(
         forMediaDuration mediaDuration: CMTime
     ) -> TimeInterval? {
-        if let knownPlaybackDuration {
-            return knownPlaybackDuration
-        }
         let seconds = mediaDuration.seconds
         guard seconds.isFinite, seconds > 0 else {
             return nil
@@ -61,5 +47,4 @@ struct AudioPlaybackMediaTimeline {
 struct PreparedAudioPlaybackItem {
     let item: AVPlayerItem
     let timeline: AudioPlaybackMediaTimeline
-    let preciseTimingURL: URL?
 }

@@ -58,6 +58,7 @@ final class NeteaseAPI {
     private let pathMonitor = NWPathMonitor()
 
     private(set) var isCellularData = false
+    var onNetworkTypeChanged: ((Bool) -> Void)?
 
     @ObservationIgnored
     let client: NeteaseDirectClient
@@ -72,7 +73,10 @@ final class NeteaseAPI {
         pathMonitor.pathUpdateHandler = { [weak self] path in
             let isCellular = path.usesInterfaceType(.cellular)
             Task { @MainActor [weak self] in
-                self?.isCellularData = isCellular
+                guard let self else { return }
+                guard self.isCellularData != isCellular else { return }
+                self.isCellularData = isCellular
+                self.onNetworkTypeChanged?(isCellular)
             }
         }
         pathMonitor.start(queue: DispatchQueue(label: "MeloX.NetworkMonitor"))

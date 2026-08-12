@@ -150,21 +150,6 @@ struct ContentView: View {
                 guard !Task.isCancelled else { return }
                 player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
             }
-            .onChange(of: lyrics.songID) { _, songID in
-                // LyricsStore clears its lyric array when switching songs.
-                // Keep PlayerStore synchronized with that state transition as
-                // well, so the precise-lyrics status cannot stay attached to
-                // the previous song or remain stuck in "等待歌词".
-                player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
-            }
-            .onChange(of: lyrics.lyrics) { _, newLyrics in
-                guard let songID = lyrics.songID else { return }
-                // Keep PlayerStore's now-playing lyric snapshot synchronized
-                // with the actual LyricsStore source for both empty and
-                // non-empty updates. Empty updates are important because a
-                // song change clears LyricsStore before the new lyrics arrive.
-                player.setNowPlayingLyrics(newLyrics, for: songID)
-            }
             .task {
                 await floatingLyrics.monitor()
             }
@@ -203,19 +188,8 @@ struct ContentView: View {
             }
             .onChange(of: scenePhase) { _, phase in
                 player.refreshLyricsNotification()
-
-                switch phase {
-                case .inactive, .background:
-                    // Persist the exact current playback position before the
-                    // process can be suspended or terminated. The snapshot
-                    // uses PlaybackTimelineClock, so this is more precise
-                    // than waiting for the periodic second-based persistence.
-                    player.persistPlaybackStateForLifecycleChange()
-                case .active:
-                    player.refreshLyricsLiveActivity()
-                @unknown default:
-                    break
-                }
+                guard phase == .active else { return }
+                player.refreshLyricsLiveActivity()
             }
             .onChange(of: floatingLyrics.restorationRequestID) {
                 guard floatingLyrics.restorationRequestID > 0,

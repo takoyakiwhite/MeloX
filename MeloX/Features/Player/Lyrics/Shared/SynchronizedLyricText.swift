@@ -361,9 +361,7 @@ struct SynchronizedLyricText: View {
     }
 
     private var synchronizedPrimaryLyric: some View {
-        _ = player.lyricsTimingRevision
-        _ = player.seekRevision
-        return TimelineView(
+        TimelineView(
             .animation(
                 minimumInterval: effectiveLyricsRefreshRate.minimumInterval,
                 paused: !player.isPlaying

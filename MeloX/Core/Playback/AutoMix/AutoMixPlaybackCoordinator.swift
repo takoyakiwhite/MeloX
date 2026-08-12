@@ -253,6 +253,19 @@ final class AutoMixPlaybackCoordinator {
         }
     }
 
+    func refreshPreparedTransitionForNetworkChange() {
+        guard !transitionHasBegun else { return }
+        guard planningTask != nil
+                || deckPreparationTask != nil
+                || attempt != nil
+                || plannedTransition != nil
+                || preparedContext != nil
+                || engine.hasPreparedAutoMix else {
+            return
+        }
+        cancel()
+    }
+
     func cancel() {
         preparationGeneration += 1
         planningTask?.cancel()
@@ -383,10 +396,10 @@ final class AutoMixPlaybackCoordinator {
         transitionHasBegun = false
         attempt = nil
         if context.sourceIsDownloaded {
-            downloads.discardInvalidDownload(
-                songID: incomingSongID
-            )
-        }
+        downloads.discardInvalidDownload(
+            songID: incomingSongID
+        )
+    }
     }
 
     private static func duration(

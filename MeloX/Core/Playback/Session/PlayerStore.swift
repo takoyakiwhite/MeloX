@@ -28,58 +28,6 @@ private struct ListenTogetherSavedPlaybackOptions {
     let autoMixEnabled: Bool
 }
 
-enum LyricsAvailabilityStatus: Equatable {
-    case unavailable, loading, lrc, yrc, none, failed
-
-    var title: String {
-        switch self {
-        case .unavailable: return "不可用"
-        case .loading: return "加载中"
-        case .lrc: return "LRC"
-        case .yrc: return "YRC 逐字"
-        case .none: return "暂无歌词"
-        case .failed: return "获取失败"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .unavailable: return "minus.circle.fill"
-        case .loading: return "arrow.triangle.2.circlepath"
-        case .lrc: return "text.alignleft"
-        case .yrc: return "text.word.spacing"
-        case .none: return "nosign"
-        case .failed: return "exclamationmark.triangle.fill"
-        }
-    }
-}
-
-enum PreciseLyricsTimingStatus: Equatable {
-    case unavailable, notRequested, loading, failed, ready
-
-    var title: String {
-        switch self {
-        case .unavailable: return "不可用"
-        case .notRequested: return "未请求"
-        case .loading: return "获取中"
-        case .failed: return "获取失败"
-        case .ready: return "已获取"
-        }
-    }
-
-    var systemImage: String {
-        switch self {
-        case .ready: return "checkmark.circle.fill"
-        case .loading: return "arrow.triangle.2.circlepath"
-        case .failed: return "exclamationmark.triangle.fill"
-        case .unavailable: return "minus.circle.fill"
-        case .notRequested: return "clock"
-        }
-    }
-
-    var isReady: Bool { self == .ready }
-}
-
 @MainActor
 @Observable
 final class PlayerStore {
@@ -114,10 +62,9 @@ final class PlayerStore {
     private(set) var beatAnalysisStatus:
         PlaybackBeatAnalysisStatus = .idle
     private(set) var effectivePlaybackQuality: MusicQuality?
-    private(set) var isPreciseLyricsTimingReady = false
-    private(set) var hasRequestedPreciseLyricsTiming = false
-    private(set) var preciseLyricsTimingFailed = false
-    private(set) var lyricsTimingRevision = 0
+    var currentPlaybackSourceHost: String? {
+        currentPlaybackSource?.url.host?.lowercased()
+    }
     private(set) var sleepTimer: PlaybackSleepTimer
 
     var availablePlaybackQualities: [MusicQuality] {
@@ -158,27 +105,6 @@ final class PlayerStore {
             queue.indices.contains(index) ? queue[index].id : nil
         }
     }
-    var lyricsAvailabilityStatus: LyricsAvailabilityStatus {
-        guard currentSong != nil else { return .unavailable }
-        guard nowPlayingLyricsSongID == currentSong?.id else { return .loading }
-        if nowPlayingLyricsIsLoading { return .loading }
-        if nowPlayingLyrics.isEmpty {
-            return nowPlayingLyricsErrorMessage == nil ? .none : .failed
-        }
-        return nowPlayingLyrics.contains(where: \.isSyllableSynced) ? .yrc : .lrc
-    }
-
-    var preciseLyricsTimingStatus: PreciseLyricsTimingStatus {
-        guard currentSong != nil else { return .unavailable }
-        guard nowPlayingLyricsSongID == currentSong?.id, !nowPlayingLyrics.isEmpty else {
-            return .notRequested
-        }
-        if isPreciseLyricsTimingReady { return .ready }
-        if preciseLyricsTimingFailed { return .failed }
-        if hasRequestedPreciseLyricsTiming { return .loading }
-        return .notRequested
-    }
-
     var isAutoMixTransitioning: Bool {
         autoMixTransitionProgress != nil
     }
@@ -251,16 +177,6 @@ final class PlayerStore {
         Task<Void, Never>?
 
     @ObservationIgnored
-    private var preciseTimingRefreshTask:
-        Task<Void, Never>?
-
-    @ObservationIgnored
-    private var preciseTimingRefreshGeneration = 0
-
-    @ObservationIgnored
-    private var preciseTimingSourceRefreshCount = 0
-
-    @ObservationIgnored
     private var isResolvingSource = false
 
     @ObservationIgnored
@@ -270,7 +186,7 @@ final class PlayerStore {
     private var shouldResumeAfterInterruption = false
 
     @ObservationIgnored
-    private var lastPersistedBucket = -1
+    private var lastPersistedSecond = -1
 
     @ObservationIgnored
     private var playbackTimelineClock = PlaybackTimelineClock()
@@ -305,12 +221,6 @@ final class PlayerStore {
     @ObservationIgnored
     private var publishedLyricsLiveActivity:
         LyricsLiveActivityPublication?
-
-    @ObservationIgnored
-    private var nowPlayingLyricsIsLoading = false
-
-    @ObservationIgnored
-    private var nowPlayingLyricsErrorMessage: String?
 
     @ObservationIgnored
     private var listenTogetherSavedPlaybackOptions:
@@ -355,6 +265,12 @@ final class PlayerStore {
         sleepTimer = PlaybackSleepTimer()
         bindEngine()
         bindAutoMixCoordinator()
+        api.onNetworkTypeChanged = { [weak self] _ in
+            guard let self else { return }
+            self.autoMixCoordinator
+                .refreshPreparedTransitionForNetworkChange()
+            self.prepareAutoMixIfNeeded()
+        }
         bindRemoteCommands()
         applyVolumeControlMode()
         sleepTimer.setExpirationHandler { [weak self] in
@@ -400,20 +316,6 @@ final class PlayerStore {
             autoplay: false,
             startAt: progress
         )
-
-        // Force a fresh lyric synchronization after restoring the persisted
-        // playback position. This is intentionally separate from precise
-        // timing: it also covers the case where the lyrics view is recreated
-        // after the restore completed.
-        lyricsTimingRevision &+= 1
-        updateNowPlayingState(
-            forceNowPlayingLyrics: true,
-            forceLyricsLiveActivity: true
-        )
-    }
-
-    func persistPlaybackStateForLifecycleChange() {
-        persistSnapshot()
     }
 
     func beginListenTogetherSession() {
@@ -783,110 +685,13 @@ final class PlayerStore {
         persistSnapshot()
     }
 
-    private func refreshPreciseTimingSourceAfterFailure(
-        for error: Error
-    ) {
-        if let preciseError = error as? PreciseTimingError {
-            switch preciseError {
-            case .notPrecise, .noAudioTrack, .invalidTimeRange, .unavailable:
-                return
-            }
-        }
-        guard preciseTimingSourceRefreshCount < 1,
-              preciseTimingRefreshTask == nil,
-              let song = currentSong,
-              nowPlayingLyricsSongID == song.id,
-              !nowPlayingLyrics.isEmpty,
-              let currentSource = currentPlaybackSource,
-              !currentSource.url.isFileURL else {
-            return
-        }
-
-        preciseTimingRefreshGeneration &+= 1
-        preciseTimingSourceRefreshCount += 1
-        let refreshGeneration = preciseTimingRefreshGeneration
-        let songID = song.id
-        let currentLoadGeneration = loadGeneration
-        hasRequestedPreciseLyricsTiming = true
-        preciseLyricsTimingFailed = false
-        lyricsTimingRevision &+= 1
-
-        preciseTimingRefreshTask = Task { [weak self] in
-            defer { self?.preciseTimingRefreshTask = nil }
-
-            do {
-                guard let self else { return }
-                let refreshedSource = try await self.api.playbackSource(
-                    for: song
-                )
-                try Task.checkCancellation()
-
-                guard refreshGeneration == self.preciseTimingRefreshGeneration,
-                      currentLoadGeneration == self.loadGeneration,
-                      self.currentSong?.id == songID,
-                      self.currentPlaybackSource == currentSource,
-                      self.nowPlayingLyricsSongID == songID,
-                      !self.nowPlayingLyrics.isEmpty else {
-                    return
-                }
-
-                self.currentPlaybackSource = refreshedSource
-                self.effectivePlaybackQuality = refreshedSource.quality
-                self.preciseLyricsTimingFailed = false
-                self.hasRequestedPreciseLyricsTiming = true
-                self.lyricsTimingRevision &+= 1
-                self.engine.retryPreciseTimingForLyrics(
-                    using: refreshedSource.url
-                )
-            } catch is CancellationError {
-                return
-            } catch {
-                guard let self,
-                      refreshGeneration == self.preciseTimingRefreshGeneration,
-                      currentLoadGeneration == self.loadGeneration,
-                      self.currentSong?.id == songID else {
-                    return
-                }
-                // Keep the precise timing failure visible after a failed
-                // source refresh. Playback itself is unaffected.
-                self.preciseLyricsTimingFailed = true
-                self.lyricsTimingRevision &+= 1
-            }
-        }
-    }
-
-    func setNowPlayingLyrics(
-        _ lyrics: [LyricLine],
-        for songID: Int?,
-        isLoading: Bool = false,
-        errorMessage: String? = nil
-    ) {
-        guard let currentSong else { return }
-        if let songID {
-            guard currentSong.id == songID else { return }
-        } else {
-            guard currentSong.isPodcastProgram else { return }
-        }
-
+    func setNowPlayingLyrics(_ lyrics: [LyricLine], for songID: Int?) {
+        guard let songID, currentSong?.id == songID else { return }
         nowPlayingLyricsSongID = songID
         nowPlayingLyrics = lyrics
-        nowPlayingLyricsIsLoading = isLoading
-        nowPlayingLyricsErrorMessage = errorMessage
-        lyricsTimingRevision &+= 1
-
-        if lyrics.isEmpty {
-            hasRequestedPreciseLyricsTiming = false
-            isPreciseLyricsTimingReady = false
-            preciseLyricsTimingFailed = false
-        } else {
-            hasRequestedPreciseLyricsTiming = true
-            preciseLyricsTimingFailed = false
-            engine.requestPreciseTimingForLyrics()
-        }
-
-        updateNowPlayingLyricMetadata(force: true)
-        updateLyricsLiveActivity(force: true)
-        updateLyricsNotification(force: true)
+        updateNowPlayingLyricMetadata()
+        updateLyricsLiveActivity()
+        updateLyricsNotification()
     }
 
     func applySystemNowPlayingLyricsPreference() {
@@ -1217,18 +1022,9 @@ final class PlayerStore {
         effectivePlaybackQuality = nil
         currentLoadShouldAutoplay = autoplay
         playbackIssue = nil
-        preciseTimingRefreshTask?.cancel()
-        preciseTimingRefreshTask = nil
-        preciseTimingRefreshGeneration &+= 1
-        preciseTimingSourceRefreshCount = 0
-        isPreciseLyricsTimingReady = false
-        hasRequestedPreciseLyricsTiming = false
-        preciseLyricsTimingFailed = false
         if nowPlayingLyricsSongID != song.id {
             nowPlayingLyricsSongID = nil
             nowPlayingLyrics = []
-            nowPlayingLyricsIsLoading = false
-            nowPlayingLyricsErrorMessage = nil
             publishedNowPlayingLyricID = nil
         }
         engine.unload()
@@ -1268,18 +1064,6 @@ final class PlayerStore {
                 startAt: resolvedStartPosition,
                 autoplay: shouldAutoplay
             )
-
-            // Lyrics may have arrived before the audio item finished loading.
-            // Request precise timing again after the item exists so that this
-            // ordering cannot lose the request.
-            if generation == loadGeneration,
-               currentSong?.id == song.id,
-               nowPlayingLyricsSongID == song.id,
-               !nowPlayingLyrics.isEmpty {
-                hasRequestedPreciseLyricsTiming = true
-                preciseLyricsTimingFailed = false
-                engine.requestPreciseTimingForLyrics()
-            }
         } catch is CancellationError {
             return
         } catch {
@@ -1378,56 +1162,6 @@ final class PlayerStore {
             }
             self.updateNowPlayingState()
         }
-        engine.onPreciseTimingReady = { [weak self] isReady in
-            guard let self else { return }
-
-            if isReady {
-                // Precise timing calibrates the main playback timeline. The
-                // playing AVPlayerItem is untouched. Re-read its current time
-                // after the timeline swap so progress, lyrics and word timing
-                // all share exactly the same calibrated position.
-                if let preciseDuration = self.engine.playbackDuration,
-                   preciseDuration.isFinite,
-                   preciseDuration > 0 {
-                    self.duration = preciseDuration
-                }
-
-                if let precisePosition = self.engine.currentPlaybackTime {
-                    let rate = self.engine.currentPlaybackRate
-                    let correctedPosition = self.clampedPlaybackPosition(
-                        precisePosition
-                    )
-                    self.progress = correctedPosition
-                    self.reanchorPlaybackTimeline(
-                        to: correctedPosition,
-                        rate: rate
-                    )
-                } else {
-                    // Keep the existing clock if AVPlayer has not exposed a
-                    // valid position yet; the next clock sample will re-anchor.
-                }
-            }
-
-            self.isPreciseLyricsTimingReady = isReady
-            self.hasRequestedPreciseLyricsTiming = true
-            self.preciseLyricsTimingFailed = !isReady
-            self.lyricsTimingRevision &+= 1
-            self.updateNowPlayingState(
-                forceNowPlayingLyrics: true,
-                forceLyricsLiveActivity: true
-            )
-        }
-        engine.onPreciseTimingFailed = { [weak self] error in
-            guard let self else { return }
-            self.isPreciseLyricsTimingReady = false
-            self.preciseLyricsTimingFailed = true
-            self.lyricsTimingRevision &+= 1
-            self.refreshPreciseTimingSourceAfterFailure(for: error)
-            self.updateNowPlayingState(
-                forceNowPlayingLyrics: true,
-                forceLyricsLiveActivity: true
-            )
-        }
         engine.onPlaybackClockChanged = { [weak self] sample in
             self?.handlePlaybackClockSample(sample)
         }
@@ -1470,9 +1204,6 @@ final class PlayerStore {
             sample.position
         )
         progress = measuredProgress
-        if sample.origin == .seekCompleted {
-            lyricsTimingRevision &+= 1
-        }
         reanchorPlaybackTimeline(
             to: measuredProgress,
             rate: sample.rate,
@@ -1481,12 +1212,9 @@ final class PlayerStore {
         updateNowPlayingLyricMetadata()
         updateLyricsLiveActivity()
         updateLyricsNotification()
-        // Persist frequently enough to survive an abrupt process termination,
-        // but always capture the exact current playback position inside
-        // persistSnapshot() instead of the last UI progress sample.
-        let bucket = Int(floor(measuredProgress * 2))
-        if bucket != lastPersistedBucket {
-            lastPersistedBucket = bucket
+        let second = Int(measuredProgress)
+        if second != lastPersistedSecond {
+            lastPersistedSecond = second
             persistSnapshot()
         }
         prepareAutoMixIfNeeded()
@@ -1849,16 +1577,11 @@ final class PlayerStore {
             persistence.clear()
             return
         }
-        let exactProgress = clampedPlaybackPosition(
-            engine.currentPlaybackTime ?? estimatedProgress()
-        )
-        progress = exactProgress
-
         persistence.save(
             PlaybackSnapshot(
                 queue: queue,
                 currentIndex: currentIndex,
-                progress: exactProgress,
+                progress: progress,
                 repeatMode: repeatMode.rawValue,
                 isShuffled: isShuffled,
                 shuffledOrder: playbackQueue.persistedShuffleOrder,
@@ -2012,18 +1735,9 @@ final class PlayerStore {
         isPlaying = engine.state == .playing
         playbackIssue = nil
         hasRecordedCurrentStart = false
-        lastPersistedBucket = Int(floor(progress * 2))
-        preciseTimingRefreshTask?.cancel()
-        preciseTimingRefreshTask = nil
-        preciseTimingRefreshGeneration &+= 1
-        preciseTimingSourceRefreshCount = 0
-        isPreciseLyricsTimingReady = false
-        hasRequestedPreciseLyricsTiming = false
-        preciseLyricsTimingFailed = false
+        lastPersistedSecond = Int(progress)
         nowPlayingLyricsSongID = nil
         nowPlayingLyrics = []
-        nowPlayingLyricsIsLoading = false
-        nowPlayingLyricsErrorMessage = nil
         publishedNowPlayingLyricID = nil
         publishedLyricsLiveActivity = nil
 

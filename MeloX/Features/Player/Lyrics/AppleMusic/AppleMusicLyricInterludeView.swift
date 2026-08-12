@@ -27,7 +27,7 @@ struct AppleMusicLyricsFocusCoordinator: View {
         Color.clear
             .frame(width: 0, height: 0)
             .accessibilityHidden(true)
-            .onChange(of: player.lyricsTimingRevision) {
+            .onChange(of: player.progress, initial: true) {
                 synchronizeImmediately()
             }
             .task(id: synchronizationTrigger) {
@@ -62,19 +62,28 @@ struct AppleMusicLyricsFocusCoordinator: View {
 
     private func synchronizeAtTransitions() async {
         while !Task.isCancelled {
-            let playbackTime = player.estimatedProgress(
-                at: Date.now
-            )
-            let adjustedProgress = playbackTime + advanceTime
+            let adjustedProgress = player.estimatedProgress()
+                + advanceTime
             let position = playbackPosition(at: adjustedProgress)
             updatePlaybackFocus(to: position.focus)
 
-            guard player.isPlaying else { return }
+            guard player.isPlaying,
+                  let nextTransitionTime = position.nextTransitionTime else {
+                return
+            }
+
+            let remainingTime = nextTransitionTime
+                - (
+                    player.estimatedProgress()
+                        + advanceTime
+                )
+            guard remainingTime > 0 else {
+                await Task.yield()
+                continue
+            }
 
             do {
-                // The actual media clock is authoritative. Re-evaluate every
-                // frame instead of sleeping for a precomputed wall-clock gap.
-                try await Task.sleep(for: .milliseconds(16))
+                try await Task.sleep(for: .seconds(remainingTime))
             } catch {
                 return
             }

@@ -11,13 +11,7 @@ struct NowPlayingLyricSynchronizer: View {
         Color.clear
             .frame(width: 0, height: 0)
             .accessibilityHidden(true)
-            .onChange(of: player.lyricsTimingRevision) {
-                synchronizeImmediately()
-            }
-            .onChange(of: player.seekRevision) {
-                // Seek is a hard timeline discontinuity. Re-evaluate the
-                // highlighted lyric immediately instead of waiting for the
-                // next 16 ms task iteration.
+            .onChange(of: player.progress, initial: true) {
                 synchronizeImmediately()
             }
             .task(id: synchronizationTrigger) {
@@ -58,23 +52,27 @@ struct NowPlayingLyricSynchronizer: View {
         )
 
         while !Task.isCancelled {
-            let playbackTime = player.estimatedProgress(
-                at: Date.now
-            )
-            let adjustedProgress = playbackTime + advanceTime
+            let adjustedProgress = player.estimatedProgress() + advanceTime
             let position = LyricPlaybackTimeline.position(
                 at: adjustedProgress,
                 in: synchronizedLyrics
             )
             updateHighlightedLyric(to: position.highlightedLyricID)
 
-            guard player.isPlaying else { return }
+            guard player.isPlaying,
+                  let nextTransitionTime = position.nextTransitionTime else {
+                return
+            }
+
+            let remainingTime = nextTransitionTime
+                - (player.estimatedProgress() + advanceTime)
+            guard remainingTime > 0 else {
+                await Task.yield()
+                continue
+            }
 
             do {
-                // Always derive the next state from the shared playback clock.
-                // Never sleep until a lyric timestamp because rate changes,
-                // buffering, pause/resume, and seeks can invalidate that wait.
-                try await Task.sleep(for: .milliseconds(16))
+                try await Task.sleep(for: .seconds(remainingTime))
             } catch {
                 return
             }
