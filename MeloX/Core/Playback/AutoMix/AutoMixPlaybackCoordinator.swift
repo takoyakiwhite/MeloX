@@ -381,13 +381,12 @@ final class AutoMixPlaybackCoordinator {
         }
         preparedContext = nil
         transitionHasBegun = false
-        guard context.sourceIsDownloaded else {
-            return
-        }
-        downloads.discardInvalidDownload(
-            songID: incomingSongID
-        )
         attempt = nil
+        if context.sourceIsDownloaded {
+            downloads.discardInvalidDownload(
+                songID: incomingSongID
+            )
+        }
     }
 
     private static func duration(

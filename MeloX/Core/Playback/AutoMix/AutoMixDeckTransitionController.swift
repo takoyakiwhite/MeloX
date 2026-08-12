@@ -118,8 +118,6 @@ final class AutoMixDeckTransitionController {
         guard plan.duration > 0 else { return }
         preparationGeneration += 1
         let generation = preparationGeneration
-        prerollTask?.cancel()
-        prerollTask = nil
         clearStandbyDeck()
 
         let deckIndex = standbyDeckIndex
@@ -362,23 +360,47 @@ final class AutoMixDeckTransitionController {
             let rate = self.normalizedRate(
                 self.preparedTransition?.plan.incomingStartPlaybackRate ?? 1
             )
-            let success = await self.preroll(
-                self.decks[deckIndex].player,
-                atRate: rate
-            )
-            guard !Task.isCancelled,
-                  generation == self.preparationGeneration,
-                  self.activeTransition == nil,
-                  self.decks[deckIndex].player.currentItem === item,
-                  self.preparedTransition?.deckIndex == deckIndex,
-                  self.preparedTransition?.item === item else {
-                return
+            var attempt = 0
+            while !Task.isCancelled {
+                let success = await self.preroll(
+                    self.decks[deckIndex].player,
+                    atRate: rate
+                )
+                guard generation == self.preparationGeneration,
+                      self.activeTransition == nil,
+                      self.decks[deckIndex].player.currentItem === item,
+                      self.preparedTransition?.deckIndex == deckIndex,
+                      self.preparedTransition?.item === item else {
+                    return
+                }
+
+                if success {
+                    self.preparedTransition?.isPrerolled = true
+                    self.startIfNeeded(
+                        wantsPlayback: self.wantsPlayback
+                    )
+                    return
+                }
+
+                attempt += 1
+                guard attempt < 6 else {
+                    self.failPreparedTransition(
+                        on: deckIndex,
+                        error: nil
+                    )
+                    return
+                }
+
+                do {
+                    try await Task.sleep(
+                        for: .milliseconds(
+                            min(250 * attempt, 1_000)
+                        )
+                    )
+                } catch {
+                    return
+                }
             }
-            guard success else {
-                return
-            }
-            self.preparedTransition?.isPrerolled = true
-            self.startIfNeeded(wantsPlayback: self.wantsPlayback)
         }
     }
 

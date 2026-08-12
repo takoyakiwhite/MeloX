@@ -59,6 +59,9 @@ final class AudioPlaybackEngine {
     private var seekGeneration = 0
     private var seekRetryAttempt = 0
     private var pendingSeekRetryTask: Task<Void, Never>?
+    private var queuedSeekTime: TimeInterval?
+    private var activeSeekTarget: TimeInterval?
+    private var seekCorrectionAttempt = 0
     private var suppressesProgressUpdates = false
     private var didReportCurrentItemFailure = false
     private var loadGeneration = 0
@@ -151,6 +154,9 @@ final class AudioPlaybackEngine {
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
         seekRetryAttempt = 0
+        queuedSeekTime = nil
+        activeSeekTarget = nil
+        seekCorrectionAttempt = 0
         wantsPlayback = autoplay
         pendingSeekTime = max(0, startAt)
         seekGeneration += 1
@@ -183,6 +189,9 @@ final class AudioPlaybackEngine {
         loadGeneration += 1
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
+        queuedSeekTime = nil
+        activeSeekTarget = nil
+        seekCorrectionAttempt = 0
         wantsPlayback = false
         pendingSeekTime = nil
         seekGeneration += 1
@@ -228,25 +237,40 @@ final class AudioPlaybackEngine {
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
         seekRetryAttempt = 0
+        seekCorrectionAttempt = 0
+        cancelAutoMix()
+
         guard let item = activeDeck.player.currentItem else {
-            seekGeneration += 1
+            seekGeneration &+= 1
             pendingSeekTime = position
+            queuedSeekTime = nil
             suppressesProgressUpdates = true
             return
         }
-        cancelAutoMix()
-        if item.status != .readyToPlay {
-            seekGeneration += 1
+
+        guard item.status == .readyToPlay else {
+            seekGeneration &+= 1
             pendingSeekTime = position
+            queuedSeekTime = nil
             suppressesProgressUpdates = true
             return
         }
 
         pendingSeekTime = nil
-        applySeek(
-            to: position,
-            for: item
-        )
+        if suppressesProgressUpdates {
+            if activeSeekTarget != nil {
+                queuedSeekTime = position
+                seekGeneration &+= 1
+                item.cancelPendingSeeks()
+                scheduleQueuedSeek(for: item)
+            } else {
+                pendingSeekTime = position
+            }
+            return
+        }
+
+        queuedSeekTime = nil
+        applySeek(to: position, for: item)
     }
 
     func setVolume(_ volume: Double) {
@@ -605,11 +629,13 @@ final class AudioPlaybackEngine {
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
         pendingSeekTime = nil
-        seekGeneration += 1
+        queuedSeekTime = nil
+        seekGeneration &+= 1
         let generation = seekGeneration
         let seekingDeck = activeDeck
         let seekingPlayer = activeDeck.player
         suppressesProgressUpdates = true
+        activeSeekTarget = position
         item.cancelPendingSeeks()
         seekingPlayer.seek(
             to: seekingDeck.mediaTime(
@@ -620,26 +646,75 @@ final class AudioPlaybackEngine {
         ) { [weak self] finished in
             guard let self else { return }
             Task { @MainActor [self] in
-                guard generation == self.seekGeneration,
-                      self.activeDeck.player === seekingPlayer,
+                guard self.activeDeck.player === seekingPlayer,
                       seekingPlayer.currentItem === item else {
                     return
                 }
+
+                guard generation == self.seekGeneration else {
+                    self.startQueuedSeekIfNeeded(for: item)
+                    return
+                }
+
                 guard finished else {
                     self.pendingSeekTime = position
                     self.seekRetryAttempt += 1
                     self.schedulePendingSeekRetry(for: item)
                     return
                 }
+
                 self.seekRetryAttempt = 0
+                guard let target = self.activeSeekTarget else {
+                    self.suppressesProgressUpdates = false
+                    self.publishPlaybackClockSample(
+                        origin: .seekCompleted
+                    )
+                    self.resumePlaybackIfNeeded()
+                    return
+                }
+
+                let actual = self.activeDeck.currentPlaybackTime
+                let error = actual.map { abs($0 - target) } ?? 0
+                if error > 0.05, self.seekCorrectionAttempt == 0 {
+                    self.seekCorrectionAttempt = 1
+                    self.applySeek(to: target, for: item)
+                    return
+                }
+
+                self.seekCorrectionAttempt = 0
+                self.activeSeekTarget = nil
                 self.suppressesProgressUpdates = false
                 self.publishPlaybackClockSample(
                     origin: .seekCompleted
                 )
-                self.notifyPreciseTimingIfReady()
                 self.resumePlaybackIfNeeded()
             }
         }
+    }
+
+    private func scheduleQueuedSeek(for item: AVPlayerItem) {
+        pendingSeekRetryTask?.cancel()
+        pendingSeekRetryTask = Task {
+            @MainActor [weak self, weak item] in
+            do {
+                try await Task.sleep(for: .milliseconds(60))
+            } catch {
+                return
+            }
+            guard let self, let item,
+                  !Task.isCancelled else { return }
+            self.startQueuedSeekIfNeeded(for: item)
+        }
+    }
+
+    private func startQueuedSeekIfNeeded(for item: AVPlayerItem) {
+        guard let position = queuedSeekTime,
+              activeDeck.player.currentItem === item,
+              item.status == .readyToPlay else {
+            return
+        }
+        queuedSeekTime = nil
+        applySeek(to: position, for: item)
     }
 
     private func retryPendingSeek(

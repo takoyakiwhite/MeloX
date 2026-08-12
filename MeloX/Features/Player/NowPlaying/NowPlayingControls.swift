@@ -6,14 +6,38 @@ struct NowPlayingProgressControl: View {
 
     let song: Song
 
+    @State private var scrubPosition: TimeInterval?
+
     var body: some View {
         VStack(spacing: 2) {
             Slider(
                 value: Binding(
-                    get: { min(player.progress, progressMaximum) },
-                    set: { player.seek(to: $0) }
+                    get: {
+                        min(
+                            scrubPosition ?? player.progress,
+                            progressMaximum
+                        )
+                    },
+                    set: { value in
+                        scrubPosition = min(
+                            max(value, 0),
+                            progressMaximum
+                        )
+                    }
                 ),
-                in: 0...progressMaximum
+                in: 0...progressMaximum,
+                onEditingChanged: { editing in
+                    if editing {
+                        scrubPosition = min(
+                            max(player.progress, 0),
+                            progressMaximum
+                        )
+                    } else {
+                        let target = scrubPosition ?? player.progress
+                        scrubPosition = nil
+                        player.seek(to: target)
+                    }
+                }
             )
             .sliderThumbVisibility(.hidden)
             .tint(.white)
@@ -44,6 +68,9 @@ struct NowPlayingProgressControl: View {
             .foregroundStyle(.white.opacity(0.5))
         }
         .frame(height: 52)
+        .onChange(of: player.currentSong?.id) {
+            scrubPosition = nil
+        }
     }
 
     private var progressMaximum: TimeInterval {

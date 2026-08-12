@@ -1220,6 +1220,9 @@ final class PlayerStore {
             sample.position
         )
         progress = measuredProgress
+        if sample.origin == .seekCompleted {
+            lyricsTimingRevision &+= 1
+        }
         reanchorPlaybackTimeline(
             to: measuredProgress,
             rate: sample.rate,
