@@ -1160,10 +1160,10 @@ final class PlayerStore {
             guard let self, isReady else { return }
 
             if let precisePosition = self.engine.currentPlaybackTime {
-                let rate = self.isPlaying ? 1.0 : 0.0
                 let correctedPosition = self.clampedPlaybackPosition(
                     precisePosition
                 )
+                let rate = self.engine.currentPlaybackRate
                 self.progress = correctedPosition
                 self.reanchorPlaybackTimeline(
                     to: correctedPosition,
