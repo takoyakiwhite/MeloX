@@ -69,17 +69,30 @@ final class AudioPlaybackDeck {
         if let url = playbackItem.preciseTimingURL {
             let expectedItem = item
             preciseTimingTask = Task { [weak self] in
-                let preciseTimeline = await Self.loadPreciseTimeline(from: url)
-                guard !Task.isCancelled,
-                      let self,
-                      let preciseTimeline,
-                      self.player.currentItem === expectedItem else {
-                    return
+                for attempt in 0..<3 {
+                    guard !Task.isCancelled else { return }
+
+                    if let preciseTimeline =
+                        await Self.loadPreciseTimeline(from: url) {
+                        guard !Task.isCancelled,
+                              let self,
+                              self.player.currentItem === expectedItem else {
+                            return
+                        }
+                        self.mediaTimeline = preciseTimeline
+                        self.mediaTimelineRevision &+= 1
+                        self.isPreciseTimingReady = true
+                        self.onPreciseTimingReady?()
+                        return
+                    }
+
+                    guard attempt < 2 else { return }
+                    try? await Task.sleep(
+                        for: .milliseconds(
+                            attempt == 0 ? 200 : 500
+                        )
+                    )
                 }
-                self.mediaTimeline = preciseTimeline
-                self.mediaTimelineRevision &+= 1
-                self.isPreciseTimingReady = true
-                self.onPreciseTimingReady?()
             }
         }
     }

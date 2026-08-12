@@ -92,13 +92,18 @@ final class AudioPlaybackEngine {
     }
 
     var currentPlaybackRate: Double {
+        let rate = Double(activeDeck.player.rate)
+        guard rate.isFinite, rate > 0 else {
+            return 0
+        }
+
         switch activeDeck.player.timeControlStatus {
-        case .playing:
-            return max(Double(activeDeck.player.rate), 0.0)
-        case .paused, .waitingToPlayAtSpecifiedRate:
-            return 0.0
+        case .playing, .waitingToPlayAtSpecifiedRate:
+            return rate
+        case .paused:
+            return 0
         @unknown default:
-            return 0.0
+            return rate
         }
     }
 
