@@ -14,6 +14,12 @@ struct NowPlayingLyricSynchronizer: View {
             .onChange(of: player.lyricsTimingRevision) {
                 synchronizeImmediately()
             }
+            .onChange(of: player.seekRevision) {
+                // Seek is a hard timeline discontinuity. Re-evaluate the
+                // highlighted lyric immediately instead of waiting for the
+                // next 16 ms task iteration.
+                synchronizeImmediately()
+            }
             .task(id: synchronizationTrigger) {
                 await synchronizeAtLyricTransitions()
             }
