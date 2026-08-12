@@ -241,7 +241,7 @@ final class PlayerStore {
     private var shouldResumeAfterInterruption = false
 
     @ObservationIgnored
-    private var lastPersistedSecond = -1
+    private var lastPersistedBucket = -1
 
     @ObservationIgnored
     private var playbackTimelineClock = PlaybackTimelineClock()
@@ -1253,9 +1253,9 @@ final class PlayerStore {
             self.updateNowPlayingState()
         }
         engine.onPreciseTimingReady = { [weak self] isReady in
-            guard let self, isReady else { return }
+            guard let self else { return }
 
-            if let precisePosition = self.engine.currentPlaybackTime {
+            if isReady, let precisePosition = self.engine.currentPlaybackTime {
                 let rate = self.engine.currentPlaybackRate
                 let correctedPosition = self.clampedPlaybackPosition(
                     precisePosition
@@ -1329,9 +1329,12 @@ final class PlayerStore {
         updateNowPlayingLyricMetadata()
         updateLyricsLiveActivity()
         updateLyricsNotification()
-        let second = Int(measuredProgress)
-        if second != lastPersistedSecond {
-            lastPersistedSecond = second
+        // Persist frequently enough to survive an abrupt process termination,
+        // but always capture the exact current playback position inside
+        // persistSnapshot() instead of the last UI progress sample.
+        let bucket = Int(floor(measuredProgress * 2))
+        if bucket != lastPersistedBucket {
+            lastPersistedBucket = bucket
             persistSnapshot()
         }
         prepareAutoMixIfNeeded()
@@ -1694,11 +1697,16 @@ final class PlayerStore {
             persistence.clear()
             return
         }
+        let exactProgress = clampedPlaybackPosition(
+            engine.currentPlaybackTime ?? estimatedProgress()
+        )
+        progress = exactProgress
+
         persistence.save(
             PlaybackSnapshot(
                 queue: queue,
                 currentIndex: currentIndex,
-                progress: progress,
+                progress: exactProgress,
                 repeatMode: repeatMode.rawValue,
                 isShuffled: isShuffled,
                 shuffledOrder: playbackQueue.persistedShuffleOrder,
@@ -1852,7 +1860,7 @@ final class PlayerStore {
         isPlaying = engine.state == .playing
         playbackIssue = nil
         hasRecordedCurrentStart = false
-        lastPersistedSecond = Int(progress)
+        lastPersistedBucket = Int(floor(progress * 2))
         isPreciseLyricsTimingReady = false
         hasRequestedPreciseLyricsTiming = false
         preciseLyricsTimingFailed = false

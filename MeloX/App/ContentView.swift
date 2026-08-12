@@ -150,6 +150,17 @@ struct ContentView: View {
                 guard !Task.isCancelled else { return }
                 player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
             }
+            .onChange(of: lyrics.lyrics) { _, newLyrics in
+                guard !newLyrics.isEmpty,
+                      let songID = lyrics.songID else {
+                    return
+                }
+                // Keep PlayerStore's now-playing lyric snapshot in sync with
+                // the actual LyricsStore source. This also covers cases where
+                // the lyric list changes after the song task has already
+                // completed (for example, a refresh or cached result).
+                player.setNowPlayingLyrics(newLyrics, for: songID)
+            }
             .task {
                 await floatingLyrics.monitor()
             }
