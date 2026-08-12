@@ -86,6 +86,17 @@ final class AudioPlaybackEngine {
         return activeDeck.currentPlaybackTime
     }
 
+    var currentPlaybackRate: Double {
+        switch activeDeck.player.timeControlStatus {
+        case .playing:
+            return max(Double(activeDeck.player.rate), 0)
+        case .paused, .waitingToPlayAtSpecifiedRate:
+            return 0
+        @unknown default:
+            return 0
+        }
+    }
+
     var expectsPlaybackToContinue: Bool {
         wantsPlayback
     }
@@ -193,11 +204,8 @@ final class AudioPlaybackEngine {
         }
         do {
             try activateAudioSession()
-            let resumedAutoMix =
-                autoMixController.resumeIncomingIfNeeded()
-            if !resumedAutoMix {
-                activeDeck.player.play()
-            }
+            activeDeck.player.play()
+            autoMixController.resumeIncomingIfNeeded()
             updateStateFromPlayer()
         } catch {
             wantsPlayback = false
