@@ -28,6 +28,43 @@ private struct ListenTogetherSavedPlaybackOptions {
     let autoMixEnabled: Bool
 }
 
+enum PreciseLyricsTimingStatus {
+    case unavailable
+    case waitingForLyrics
+    case waitingForRequest
+    case loading
+    case failed
+    case ready
+
+    var title: String {
+        switch self {
+        case .unavailable: return "不可用"
+        case .waitingForLyrics: return "等待歌词"
+        case .waitingForRequest: return "等待请求"
+        case .loading: return "获取中"
+        case .failed: return "获取失败"
+        case .ready: return "已获取"
+        }
+    }
+
+    var systemImage: String {
+        switch self {
+        case .ready: return "checkmark.circle.fill"
+        case .loading: return "arrow.triangle.2.circlepath"
+        case .failed: return "exclamationmark.triangle.fill"
+        case .unavailable: return "minus.circle.fill"
+        case .waitingForLyrics, .waitingForRequest: return "clock"
+        }
+    }
+
+    var isReady: Bool {
+        switch self {
+        case .ready: return true
+        default: return false
+        }
+    }
+}
+
 @MainActor
 @Observable
 final class PlayerStore {
@@ -63,6 +100,8 @@ final class PlayerStore {
         PlaybackBeatAnalysisStatus = .idle
     private(set) var effectivePlaybackQuality: MusicQuality?
     private(set) var isPreciseLyricsTimingReady = false
+    private(set) var hasRequestedPreciseLyricsTiming = false
+    private(set) var preciseLyricsTimingFailed = false
     private(set) var lyricsTimingRevision = 0
     private(set) var sleepTimer: PlaybackSleepTimer
 
@@ -104,6 +143,23 @@ final class PlayerStore {
             queue.indices.contains(index) ? queue[index].id : nil
         }
     }
+    var preciseLyricsTimingStatus: PreciseLyricsTimingStatus {
+        guard currentSong != nil else { return .unavailable }
+        guard nowPlayingLyricsSongID == currentSong?.id, !nowPlayingLyrics.isEmpty else {
+            return .waitingForLyrics
+        }
+        if isPreciseLyricsTimingReady {
+            return .ready
+        }
+        if preciseLyricsTimingFailed {
+            return .failed
+        }
+        if hasRequestedPreciseLyricsTiming {
+            return .loading
+        }
+        return .waitingForRequest
+    }
+
     var isAutoMixTransitioning: Bool {
         autoMixTransitionProgress != nil
     }
@@ -703,6 +759,8 @@ final class PlayerStore {
         // fetched independently only now that there is lyric content that can
         // benefit from the accurate media timeline.
         if !lyrics.isEmpty {
+            hasRequestedPreciseLyricsTiming = true
+            preciseLyricsTimingFailed = false
             engine.requestPreciseTimingForLyrics()
         }
 
@@ -1040,6 +1098,8 @@ final class PlayerStore {
         currentLoadShouldAutoplay = autoplay
         playbackIssue = nil
         isPreciseLyricsTimingReady = false
+        hasRequestedPreciseLyricsTiming = false
+        preciseLyricsTimingFailed = false
         if nowPlayingLyricsSongID != song.id {
             nowPlayingLyricsSongID = nil
             nowPlayingLyrics = []
@@ -1090,6 +1150,8 @@ final class PlayerStore {
                currentSong?.id == song.id,
                nowPlayingLyricsSongID == song.id,
                !nowPlayingLyrics.isEmpty {
+                hasRequestedPreciseLyricsTiming = true
+                preciseLyricsTimingFailed = false
                 engine.requestPreciseTimingForLyrics()
             }
         } catch is CancellationError {
@@ -1205,7 +1267,9 @@ final class PlayerStore {
                 )
             }
 
-            self.isPreciseLyricsTimingReady = true
+            self.isPreciseLyricsTimingReady = isReady
+            self.hasRequestedPreciseLyricsTiming = true
+            self.preciseLyricsTimingFailed = !isReady
             self.lyricsTimingRevision &+= 1
             self.updateNowPlayingState(
                 forceNowPlayingLyrics: true,
@@ -1790,6 +1854,8 @@ final class PlayerStore {
         hasRecordedCurrentStart = false
         lastPersistedSecond = Int(progress)
         isPreciseLyricsTimingReady = false
+        hasRequestedPreciseLyricsTiming = false
+        preciseLyricsTimingFailed = false
         nowPlayingLyricsSongID = nil
         nowPlayingLyrics = []
         publishedNowPlayingLyricID = nil

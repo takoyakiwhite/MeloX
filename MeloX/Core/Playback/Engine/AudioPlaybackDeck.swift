@@ -9,6 +9,7 @@ final class AudioPlaybackDeck {
     var onItemStatusChanged: ((AVPlayerItem) -> Void)?
     var onSeekableTimeRangesChanged: ((AVPlayerItem) -> Void)?
     var onPreciseTimingReady: (() -> Void)?
+    var onPreciseTimingFailed: (() -> Void)?
     private(set) var itemIdentifier: Int?
     private(set) var mediaTimeline =
         AudioPlaybackMediaTimeline()
@@ -123,6 +124,10 @@ final class AudioPlaybackDeck {
                 return
             }
             self.preciseTimingTask = nil
+            if !Task.isCancelled,
+               self.player.currentItem === expectedItem {
+                self.onPreciseTimingFailed?()
+            }
         }
     }
 

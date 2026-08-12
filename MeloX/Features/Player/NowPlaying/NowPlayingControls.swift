@@ -68,7 +68,10 @@ struct NowPlayingProgressControl: View {
                         if player.isAutoMixTransitioning {
                             NowPlayingAutoMixStatus()
                         } else {
-                            NowPlayingQualityMenu()
+                            HStack(spacing: 6) {
+                                NowPlayingPreciseLyricsStatus()
+                                NowPlayingQualityMenu()
+                            }
                         }
                     }
                     .animation(
@@ -157,6 +160,35 @@ private struct NowPlayingAutoMixStatus: View {
                     ?? 0
             ) * 100
         )
+    }
+}
+
+private struct NowPlayingPreciseLyricsStatus: View {
+    @Environment(PlayerStore.self) private var player
+
+    var body: some View {
+        let status = player.preciseLyricsTimingStatus
+
+        HStack(spacing: 5) {
+            Image(systemName: status.systemImage)
+                .font(.system(size: 9, weight: .semibold))
+
+            Text("精准歌词")
+                .fontWeight(.medium)
+
+            Text(status.title)
+                .monospacedDigit()
+        }
+        .padding(.horizontal, 9)
+        .padding(.vertical, 4)
+        .background(
+            .white.opacity(status.isReady ? 0.18 : 0.12),
+            in: .rect(cornerRadius: 7)
+        )
+        .foregroundStyle(.white.opacity(status.isReady ? 0.95 : 0.72))
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("精准歌词时间轴")
+        .accessibilityValue(status.title)
     }
 }
 

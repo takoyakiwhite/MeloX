@@ -376,6 +376,15 @@ final class AudioPlaybackEngine {
                 }
                 self.notifyPreciseTimingIfNeeded(for: item)
             }
+            deck.onPreciseTimingFailed = {
+                [weak self, weak deck] in
+                guard let self, let deck,
+                      index == self.activeDeckIndex,
+                      deck.player.currentItem != nil else {
+                    return
+                }
+                self.onPreciseTimingReady?(false)
+            }
 
             timeObservers[index] =
                 deck.player.addPeriodicTimeObserver(
