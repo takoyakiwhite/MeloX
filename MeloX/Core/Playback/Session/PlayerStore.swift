@@ -307,6 +307,12 @@ final class PlayerStore {
         LyricsLiveActivityPublication?
 
     @ObservationIgnored
+    private var nowPlayingLyricsIsLoading = false
+
+    @ObservationIgnored
+    private var nowPlayingLyricsErrorMessage: String?
+
+    @ObservationIgnored
     private var listenTogetherSavedPlaybackOptions:
         ListenTogetherSavedPlaybackOptions?
 
