@@ -92,6 +92,19 @@ final class AudioPlaybackEngine {
         return activeDeck.currentPlaybackTime
     }
 
+    /// Duration of the currently active playback timeline.
+    ///
+    /// This deliberately delegates to the active deck instead of exposing
+    /// the precise-timing probe as a second playback clock. The deck's
+    /// `playbackDuration` is the duration used by the same timeline that
+    /// converts AVPlayer media time into song playback position.
+    var playbackDuration: TimeInterval? {
+        guard activeDeck.player.currentItem != nil else { return nil }
+        let value = activeDeck.playbackDuration
+        guard value.isFinite, value > 0 else { return nil }
+        return value
+    }
+
     var currentPlaybackRate: Double {
         let rate = Double(activeDeck.player.rate)
         guard rate.isFinite, rate > 0 else {
