@@ -151,6 +151,7 @@ final class AudioPlaybackEngine {
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
         seekRetryAttempt = 0
+        lastNotifiedPreciseTimingItem = nil
         wantsPlayback = autoplay
         pendingSeekTime = pendingSeekTime ?? max(0, startAt)
         seekGeneration += 1
@@ -188,6 +189,7 @@ final class AudioPlaybackEngine {
         seekRetryAttempt = 0
         suppressesProgressUpdates = false
         didReportCurrentItemFailure = false
+        lastNotifiedPreciseTimingItem = nil
         autoMixController.reset()
         transition(to: .idle)
     }
@@ -204,11 +206,8 @@ final class AudioPlaybackEngine {
         }
         do {
             try activateAudioSession()
-            let resumedAutoMix =
-                autoMixController.resumeIncomingIfNeeded()
-            if !resumedAutoMix {
-                activeDeck.player.play()
-            }
+            activeDeck.player.play()
+            autoMixController.resumeIncomingIfNeeded()
             updateStateFromPlayer()
         } catch {
             wantsPlayback = false
@@ -418,7 +417,13 @@ final class AudioPlaybackEngine {
     private func notifyPreciseTimingIfNeeded(
         for item: AVPlayerItem
     ) {
-        guard lastNotifiedPreciseTimingItem !== item else {
+        guard activeDeck.player.currentItem === item,
+              !suppressesProgressUpdates,
+              pendingSeekTime == nil,
+              lastNotifiedPreciseTimingItem !== item else {
+            return
+        }
+        guard activeDeck.currentPlaybackTime != nil else {
             return
         }
         lastNotifiedPreciseTimingItem = item
@@ -632,6 +637,12 @@ final class AudioPlaybackEngine {
                 self.publishPlaybackClockSample(
                     origin: .seekCompleted
                 )
+                if self.activeDeck.isPreciseTimingReady,
+                   let currentItem = self.activeDeck.player.currentItem {
+                    self.notifyPreciseTimingIfNeeded(
+                        for: currentItem
+                    )
+                }
                 self.resumePlaybackIfNeeded()
             }
         }
