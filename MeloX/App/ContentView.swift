@@ -146,61 +146,24 @@ struct ContentView: View {
                 let songID = song?.isPodcastProgram == true
                     ? nil
                     : song?.id
-
-                // Reset the PlayerStore lyric snapshot immediately for the
-                // new song. This keeps the Box out of the stale "waiting"
-                // state while LyricsStore performs the asynchronous request.
-                player.setNowPlayingLyrics(
-                    [],
-                    for: songID,
-                    isLoading: songID != nil,
-                    errorMessage: nil
-                )
-
                 await lyrics.load(for: songID)
                 guard !Task.isCancelled else { return }
-
-                player.setNowPlayingLyrics(
-                    lyrics.lyrics,
-                    for: songID,
-                    isLoading: lyrics.isLoading,
-                    errorMessage: lyrics.errorMessage
-                )
+                player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
             }
             .onChange(of: lyrics.songID) { _, songID in
-                player.setNowPlayingLyrics(
-                    lyrics.lyrics,
-                    for: songID,
-                    isLoading: lyrics.isLoading,
-                    errorMessage: lyrics.errorMessage
-                )
+                // LyricsStore clears its lyric array when switching songs.
+                // Keep PlayerStore synchronized with that state transition as
+                // well, so the precise-lyrics status cannot stay attached to
+                // the previous song or remain stuck in "等待歌词".
+                player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
             }
             .onChange(of: lyrics.lyrics) { _, newLyrics in
                 guard let songID = lyrics.songID else { return }
-                player.setNowPlayingLyrics(
-                    newLyrics,
-                    for: songID,
-                    isLoading: lyrics.isLoading,
-                    errorMessage: lyrics.errorMessage
-                )
-            }
-            .onChange(of: lyrics.isLoading) { _, isLoading in
-                guard let songID = lyrics.songID else { return }
-                player.setNowPlayingLyrics(
-                    lyrics.lyrics,
-                    for: songID,
-                    isLoading: isLoading,
-                    errorMessage: lyrics.errorMessage
-                )
-            }
-            .onChange(of: lyrics.errorMessage) { _, errorMessage in
-                guard let songID = lyrics.songID else { return }
-                player.setNowPlayingLyrics(
-                    lyrics.lyrics,
-                    for: songID,
-                    isLoading: lyrics.isLoading,
-                    errorMessage: errorMessage
-                )
+                // Keep PlayerStore's now-playing lyric snapshot synchronized
+                // with the actual LyricsStore source for both empty and
+                // non-empty updates. Empty updates are important because a
+                // song change clears LyricsStore before the new lyrics arrive.
+                player.setNowPlayingLyrics(newLyrics, for: songID)
             }
             .task {
                 await floatingLyrics.monitor()
@@ -243,6 +206,10 @@ struct ContentView: View {
 
                 switch phase {
                 case .inactive, .background:
+                    // Persist the exact current playback position before the
+                    // process can be suspended or terminated. The snapshot
+                    // uses PlaybackTimelineClock, so this is more precise
+                    // than waiting for the periodic second-based persistence.
                     player.persistPlaybackStateForLifecycleChange()
                 case .active:
                     player.refreshLyricsLiveActivity()
@@ -256,6 +223,7 @@ struct ContentView: View {
                     floatingLyrics.completeRestoration(success: false)
                     return
                 }
+
                 playerPresentation = .nowPlaying
                 Task { @MainActor in
                     await Task.yield()
@@ -348,6 +316,39 @@ struct ContentView: View {
             }
             .appLaunchExperience()
     }
+
+    private func startHeartModeOnLaunchIfNeeded() async {
+        guard !hasHandledHeartModeLaunch,
+              hasRestoredPlayback else {
+            return
+        }
+        guard settings.startsHeartModeOnLaunch else {
+            hasHandledHeartModeLaunch = true
+            return
+        }
+        guard library.isLoggedIn else {
+            hasHandledHeartModeLaunch = true
+            return
+        }
+        guard library.canStartHeartMode,
+              let playlistID = library.likedPlaylistID,
+              let seedSongID = library.randomHeartModeSeedSongID() else {
+            return
+        }
+
+        hasHandledHeartModeLaunch = true
+        do {
+            try await player.playHeartMode(
+                playlistID: playlistID,
+                seedSongID: seedSongID
+            )
+        } catch is CancellationError {
+            return
+        } catch {
+            heartModeLaunchErrorMessage = error.localizedDescription
+        }
+    }
+
     @ViewBuilder
     private var playerAwareTabView: some View {
         if player.currentSong != nil {
