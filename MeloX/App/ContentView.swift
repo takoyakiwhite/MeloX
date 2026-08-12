@@ -64,6 +64,45 @@ struct ContentView: View {
         )
     }
 
+    private var playbackIssueBinding: Binding<Bool> {
+        Binding(
+            get: {
+                player.playbackIssue != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    player.dismissPlaybackIssue()
+                }
+            }
+        )
+    }
+
+    private var heartModeLaunchErrorBinding: Binding<Bool> {
+        Binding(
+            get: {
+                heartModeLaunchErrorMessage != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    heartModeLaunchErrorMessage = nil
+                }
+            }
+        )
+    }
+
+    private var floatingLyricsErrorBinding: Binding<Bool> {
+        Binding(
+            get: {
+                floatingLyrics.errorMessage != nil
+            },
+            set: { isPresented in
+                if !isPresented {
+                    floatingLyrics.dismissError()
+                }
+            }
+        )
+    }
+
     var body: some View {
         Group {
             if settings.hasCompletedOnboarding {
@@ -270,14 +309,7 @@ struct ContentView: View {
             }
             .alert(
                 "歌曲无法播放",
-                isPresented: Binding(
-                    get: { player.playbackIssue != nil },
-                    set: { isPresented in
-                        if !isPresented {
-                            player.dismissPlaybackIssue()
-                        }
-                    }
-                )
+                isPresented: playbackIssueBinding
             ) {
                 if player.canPlayNext {
                     Button("播放下一首") {
@@ -293,14 +325,7 @@ struct ContentView: View {
             }
             .alert(
                 "无法自动启动心动模式",
-                isPresented: Binding(
-                    get: { heartModeLaunchErrorMessage != nil },
-                    set: { isPresented in
-                        if !isPresented {
-                            heartModeLaunchErrorMessage = nil
-                        }
-                    }
-                )
+                isPresented: heartModeLaunchErrorBinding
             ) {
                 Button("好", role: .cancel) {
                     heartModeLaunchErrorMessage = nil
@@ -320,14 +345,7 @@ struct ContentView: View {
             }
             .alert(
                 "无法打开悬浮歌词",
-                isPresented: Binding(
-                    get: { floatingLyrics.errorMessage != nil },
-                    set: { isPresented in
-                        if !isPresented {
-                            floatingLyrics.dismissError()
-                        }
-                    }
-                )
+                isPresented: floatingLyricsErrorBinding
             ) {
                 Button("好", role: .cancel) {
                     floatingLyrics.dismissError()
