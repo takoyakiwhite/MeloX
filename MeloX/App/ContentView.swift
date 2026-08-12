@@ -114,18 +114,20 @@ struct ContentView: View {
     }
 
     private var mainExperience: some View {
-        AnyView(playerAwareTabView)
+        playerAwareTabView
             .environment(
                 \.openMusicRoute,
-                openMusicRouteAction
+                OpenMusicRouteAction(action: openMusicRoute)
             )
             .environment(
                 \.openNeteaseShare,
-                openNeteaseShareAction
+                OpenNeteaseShareAction(action: openNeteaseShare)
             )
             .environment(
                 \.setTabViewBottomAccessorySuppressed,
-                tabViewBottomAccessorySuppressedAction
+                SetTabViewBottomAccessorySuppressedAction {
+                    isTabViewBottomAccessorySuppressed = $0
+                }
             )
             .fullScreenCover(
                 item: $playerPresentation,
@@ -136,7 +138,7 @@ struct ContentView: View {
                     NowPlayingView(initialPage: initialNowPlayingPage)
                         .environment(
                             \.openMusicRoute,
-                            openMusicRouteAction
+                            OpenMusicRouteAction(action: openMusicRoute)
                         )
                         .environment(
                             \.openNeteaseShare,
@@ -179,13 +181,31 @@ struct ContentView: View {
                 }
             }
             .task {
-                await restorePlaybackOnLaunch()
+                await player.restore()
+                guard !Task.isCancelled else { return }
+                hasRestoredPlayback = true
             }
-            .task(id: heartModeLaunchReadiness) {
+            .task(
+                id: HeartModeLaunchReadiness(
+                    hasRestoredPlayback: hasRestoredPlayback,
+                    isLoggedIn: library.isLoggedIn,
+                    canStartHeartMode: library.canStartHeartMode
+                )
+            ) {
                 await startHeartModeOnLaunchIfNeeded()
             }
             .task(id: player.currentSong?.id) {
-                await loadLyricsForCurrentSong()
+                let song = player.currentSong
+                let songID = song?.isPodcastProgram == true ? nil : song?.id
+                player.setNowPlayingLyrics([], for: songID, isLoading: songID != nil)
+                await lyrics.load(for: songID)
+                guard !Task.isCancelled else { return }
+                player.setNowPlayingLyrics(
+                    lyrics.lyrics,
+                    for: songID,
+                    isLoading: lyrics.isLoading,
+                    errorMessage: lyrics.errorMessage
+                )
             }
             .onChange(of: lyrics.songID) { _, songID in
                 player.setNowPlayingLyrics(
@@ -263,10 +283,6 @@ struct ContentView: View {
 
                 switch phase {
                 case .inactive, .background:
-                    // Persist the exact current playback position before the
-                    // process can be suspended or terminated. The snapshot
-                    // uses PlaybackTimelineClock, so this is more precise
-                    // than waiting for the periodic second-based persistence.
                     player.persistPlaybackStateForLifecycleChange()
                 case .active:
                     player.refreshLyricsLiveActivity()
@@ -275,11 +291,27 @@ struct ContentView: View {
                 }
             }
             .onChange(of: floatingLyrics.restorationRequestID) {
-                handleFloatingLyricsRestoration()
+                guard floatingLyrics.restorationRequestID > 0,
+                      player.currentSong != nil else {
+                    floatingLyrics.completeRestoration(success: false)
+                    return
+                }
+                playerPresentation = .nowPlaying
+                Task { @MainActor in
+                    await Task.yield()
+                    floatingLyrics.completeRestoration(success: true)
+                }
             }
             .alert(
                 "歌曲无法播放",
-                isPresented: playbackIssueBinding
+                isPresented: Binding(
+                    get: { player.playbackIssue != nil },
+                    set: { isPresented in
+                        if !isPresented {
+                            player.dismissPlaybackIssue()
+                        }
+                    }
+                )
             ) {
                 if player.canPlayNext {
                     Button("播放下一首") {
@@ -295,7 +327,14 @@ struct ContentView: View {
             }
             .alert(
                 "无法自动启动心动模式",
-                isPresented: heartModeLaunchErrorBinding
+                isPresented: Binding(
+                    get: { heartModeLaunchErrorMessage != nil },
+                    set: { isPresented in
+                        if !isPresented {
+                            heartModeLaunchErrorMessage = nil
+                        }
+                    }
+                )
             ) {
                 Button("好", role: .cancel) {
                     heartModeLaunchErrorMessage = nil
@@ -305,7 +344,17 @@ struct ContentView: View {
             }
             .alert(
                 "下载操作失败",
-                isPresented: downloadsErrorBinding
+                isPresented: Binding(
+                    get: {
+                        AppFeatureAvailability.downloads
+                            && downloads.errorMessage != nil
+                    },
+                    set: { isPresented in
+                        if !isPresented {
+                            downloads.clearError()
+                        }
+                    }
+                )
             ) {
                 Button("好", role: .cancel) {
                     downloads.clearError()
@@ -315,7 +364,14 @@ struct ContentView: View {
             }
             .alert(
                 "无法打开悬浮歌词",
-                isPresented: floatingLyricsErrorBinding
+                isPresented: Binding(
+                    get: { floatingLyrics.errorMessage != nil },
+                    set: { isPresented in
+                        if !isPresented {
+                            floatingLyrics.dismissError()
+                        }
+                    }
+                )
             ) {
                 Button("好", role: .cancel) {
                     floatingLyrics.dismissError()
@@ -331,57 +387,6 @@ struct ContentView: View {
                 openMusicRoute(.song(song))
             }
             .appLaunchExperience()
-    }
-
-    private var openMusicRouteAction: OpenMusicRouteAction {
-        OpenMusicRouteAction(action: openMusicRoute)
-    }
-
-    private var openNeteaseShareAction: OpenNeteaseShareAction {
-        OpenNeteaseShareAction(action: openNeteaseShare)
-    }
-
-    private var tabViewBottomAccessorySuppressedAction:
-        SetTabViewBottomAccessorySuppressedAction {
-        SetTabViewBottomAccessorySuppressedAction { isSuppressed in
-            isTabViewBottomAccessorySuppressed = isSuppressed
-        }
-    }
-
-    private var heartModeLaunchReadiness: HeartModeLaunchReadiness {
-        HeartModeLaunchReadiness(
-            hasRestoredPlayback: hasRestoredPlayback,
-            isLoggedIn: library.isLoggedIn,
-            canStartHeartMode: library.canStartHeartMode
-        )
-    }
-
-    private func loadLyricsForCurrentSong() async {
-        let song = player.currentSong
-        let songID = song?.isPodcastProgram == true ? nil : song?.id
-
-        player.setNowPlayingLyrics(
-            [],
-            for: songID,
-            isLoading: songID != nil
-        )
-
-        await lyrics.load(for: songID)
-
-        guard !Task.isCancelled else { return }
-
-        player.setNowPlayingLyrics(
-            lyrics.lyrics,
-            for: songID,
-            isLoading: lyrics.isLoading,
-            errorMessage: lyrics.errorMessage
-        )
-    }
-
-    private func restorePlaybackOnLaunch() async {
-        await player.restore()
-        guard !Task.isCancelled else { return }
-        hasRestoredPlayback = true
     }
 
     private func startHeartModeOnLaunchIfNeeded() async {
@@ -606,20 +611,6 @@ struct ContentView: View {
     private var initialNowPlayingPage: NowPlayingPage {
         guard settings.rememberNowPlayingPage else { return .artwork }
         return NowPlayingPage(rawValue: settings.rememberedNowPlayingPage) ?? .artwork
-    }
-
-    private func handleFloatingLyricsRestoration() {
-        guard floatingLyrics.restorationRequestID > 0,
-              player.currentSong != nil else {
-            floatingLyrics.completeRestoration(success: false)
-            return
-        }
-
-        playerPresentation = .nowPlaying
-        Task { @MainActor in
-            await Task.yield()
-            floatingLyrics.completeRestoration(success: true)
-        }
     }
 
     private func openMusicRoute(_ route: MusicRoute) {
