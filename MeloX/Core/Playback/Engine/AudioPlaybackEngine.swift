@@ -204,8 +204,11 @@ final class AudioPlaybackEngine {
         }
         do {
             try activateAudioSession()
-            activeDeck.player.play()
-            autoMixController.resumeIncomingIfNeeded()
+            let resumedAutoMix =
+                autoMixController.resumeIncomingIfNeeded()
+            if !resumedAutoMix {
+                activeDeck.player.play()
+            }
             updateStateFromPlayer()
         } catch {
             wantsPlayback = false
