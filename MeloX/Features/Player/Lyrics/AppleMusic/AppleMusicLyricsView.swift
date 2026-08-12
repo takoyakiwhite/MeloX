@@ -718,6 +718,9 @@ struct AppleMusicLyricsView: View {
                         return
                     }
                     requestPlaybackFocus()
+                    // Make seek a hard focus invalidation. The shared
+                    // synchronizer supplies the authoritative highlighted line.
+                    playbackFocusRequestGeneration += 1
                 }
                 .onChange(of: player.isPlaying) { wasPlaying, isPlaying in
                     guard !wasPlaying, isPlaying else { return }
