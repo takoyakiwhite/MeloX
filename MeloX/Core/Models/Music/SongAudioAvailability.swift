@@ -53,7 +53,7 @@ struct SongAudioAvailability: Codable, Hashable, Sendable {
         isKnown = false
     }
 
-    init(from decoder: Decoder) throws {
+    nonisolated init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         standard = try container.decodeIfPresent(
             SongAudioResource.self,
@@ -95,7 +95,7 @@ struct SongAudioAvailability: Codable, Hashable, Sendable {
             .contains { container.contains($0) }
     }
 
-    func encode(to encoder: Encoder) throws {
+    nonisolated func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encodeIfPresent(standard, forKey: .standard)
         try container.encodeIfPresent(medium, forKey: .medium)
@@ -119,7 +119,7 @@ struct SongAudioAvailability: Codable, Hashable, Sendable {
         }
     }
 
-    func supports(apiLevel: String) -> Bool? {
+    nonisolated func supports(apiLevel: String) -> Bool? {
         guard isKnown else { return nil }
         return switch apiLevel {
         case "standard":
