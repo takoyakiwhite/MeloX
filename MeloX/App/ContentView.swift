@@ -181,9 +181,7 @@ struct ContentView: View {
                 }
             }
             .task {
-                await player.restore()
-                guard !Task.isCancelled else { return }
-                hasRestoredPlayback = true
+                await restorePlaybackOnLaunch()
             }
             .task(
                 id: HeartModeLaunchReadiness(
@@ -351,6 +349,12 @@ struct ContentView: View {
                 openMusicRoute(.song(song))
             }
             .appLaunchExperience()
+    }
+
+    private func restorePlaybackOnLaunch() async {
+        await player.restore()
+        guard !Task.isCancelled else { return }
+        hasRestoredPlayback = true
     }
 
     private func startHeartModeOnLaunchIfNeeded() async {
