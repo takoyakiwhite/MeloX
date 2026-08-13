@@ -23,10 +23,13 @@ final class AudioPlaybackItemFactory {
         for source: PlaybackSource,
         preferredForwardBufferDuration: TimeInterval
     ) -> PreparedAudioPlaybackItem {
+        // Keep the primary playback asset on AVFoundation's fast/best-effort
+        // timing path. Precise timing is resolved asynchronously only when
+        // the normal track metadata cannot provide a usable time range.
         let asset = AVURLAsset(
             url: source.url,
             options: [
-                AVURLAssetPreferPreciseDurationAndTimingKey: true
+                AVURLAssetPreferPreciseDurationAndTimingKey: false
             ]
         )
         let item = AVPlayerItem(asset: asset)
@@ -57,9 +60,11 @@ final class AudioPlaybackItemFactory {
             operation: {
                 try Task.checkCancellation()
 
-                guard let audioTrack = try await asset.loadTracks(
+                let audioTrack = try await asset.loadTracks(
                     withMediaType: .audio
-                ).first else {
+                ).first
+
+                guard let audioTrack else {
                     return AudioPlaybackItemMetadata(
                         timeline: AudioPlaybackMediaTimeline(),
                         audioMix: nil
@@ -67,10 +72,39 @@ final class AudioPlaybackItemFactory {
                 }
 
                 try Task.checkCancellation()
-                let audioTrackTimeRange =
-                    try? await audioTrack.load(.timeRange)
+
+                // First prefer the already-loaded playback asset. This avoids a
+                // second network parser in the common case while still giving us a
+                // concrete track time range whenever the container exposes it.
+                var resolvedRange: CMTimeRange?
+                do {
+                    resolvedRange = try await audioTrack.load(.timeRange)
+                } catch {
+                    resolvedRange = nil
+                }
                 try Task.checkCancellation()
 
+                // If the fast asset cannot provide a usable range, escalate only
+                // the metadata path to a precise AVURLAsset. Playback itself never
+                // waits for this asset. The precise asset is used only as a timing
+                // authority; the audio mix is still built against the primary
+                // item's track.
+                if !isUsableTimeRange(resolvedRange) {
+                    do {
+                        if let preciseRange = try await
+                            loadPreciseTrackTimeRange(from: asset.url),
+                           isUsableTimeRange(preciseRange) {
+                            resolvedRange = preciseRange
+                        }
+                    } catch is CancellationError {
+                        throw CancellationError()
+                    } catch {
+                        // Keep the fallback media-zero timeline if the precise
+                        // metadata path is unavailable.
+                    }
+                }
+
+                try Task.checkCancellation()
                 let audioMix = equalizerProcessor.makeAudioMix(
                     for: audioTrack,
                     autoMixEqualizerState: autoMixEqualizerState
@@ -78,18 +112,59 @@ final class AudioPlaybackItemFactory {
 
                 return AudioPlaybackItemMetadata(
                     timeline: AudioPlaybackMediaTimeline(
-                        audioTrackTimeRange: audioTrackTimeRange
+                        audioTrackTimeRange: resolvedRange
                     ),
                     audioMix: audioMix
                 )
             },
             onCancel: {
-                // AVAsset property loads are independent of Swift task
-                // cancellation. Explicitly cancel them as soon as the track
-                // request becomes obsolete.
                 asset.cancelLoading()
             }
         )
+    }
+
+    private func loadPreciseTrackTimeRange(
+        from url: URL
+    ) async throws -> CMTimeRange? {
+        let preciseAsset = AVURLAsset(
+            url: url,
+            options: [
+                AVURLAssetPreferPreciseDurationAndTimingKey: true
+            ]
+        )
+
+        return try await withTaskCancellationHandler(
+            operation: {
+                try Task.checkCancellation()
+                let preciseTrack = try await preciseAsset
+                    .loadTracks(withMediaType: .audio)
+                    .first
+                guard let preciseTrack else {
+                    return nil
+                }
+                try Task.checkCancellation()
+                return try await preciseTrack.load(.timeRange)
+            },
+            onCancel: {
+                preciseAsset.cancelLoading()
+            }
+        )
+    }
+
+    private func isUsableTimeRange(
+        _ range: CMTimeRange?
+    ) -> Bool {
+        guard let range,
+              range.isValid,
+              range.start.isNumeric else {
+            return false
+        }
+        let start = range.start.seconds
+        let duration = range.duration.seconds
+        return start.isFinite
+            && start >= 0
+            && duration.isFinite
+            && duration >= 0
     }
 
     func updateEqualizer(

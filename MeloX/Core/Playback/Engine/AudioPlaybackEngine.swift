@@ -196,20 +196,19 @@ final class AudioPlaybackEngine {
         do {
             try activateAudioSession()
 
-            // For an initial start from zero, let AVPlayer begin consuming any
-            // available media immediately while precise track metadata loads
-            // in parallel. We intentionally keep playback-clock publication
-            // suppressed until the final media timeline is known, so lyrics and
-            // the progress UI never consume a provisional mediaStart of zero.
-            // Explicit seeks (pendingSeekTime != nil) still wait for metadata
-            // so the requested song position can be translated exactly.
-            if !activeDeck.isMetadataReady {
-                guard pendingSeekTime == nil else {
-                    transition(to: .loading)
-                    return
+            // Ordinary playback never waits for precise timing. If the caller
+            // requested a starting position before precise metadata is ready,
+            // perform a best-effort seek against the fallback media-zero
+            // timeline and let a later precise timeline upgrade only re-anchor
+            // the clock. Explicitly precise workflows (AutoMix) are handled by
+            // their own controller and still wait for a precise timeline.
+            if pendingSeekTime != nil {
+                if activeDeck.isPreciseMetadataReady {
+                    retryPendingSeek(for: item)
+                } else if let position = pendingSeekTime {
+                    pendingSeekTime = nil
+                    applySeek(to: position, for: item)
                 }
-                activeDeck.player.playImmediately(atRate: 1.0)
-                transition(to: .loading)
                 return
             }
 
@@ -244,7 +243,7 @@ final class AudioPlaybackEngine {
             return
         }
         cancelAutoMix()
-        if item.status != .readyToPlay || !activeDeck.isMetadataReady {
+        guard item.status == .readyToPlay else {
             seekGeneration += 1
             pendingSeekTime = position
             suppressesProgressUpdates = true
@@ -335,6 +334,16 @@ final class AudioPlaybackEngine {
                 [weak self, weak deck] item in
                 guard let self, let deck else { return }
                 self.handleSeekableTimeRangesChange(
+                    item,
+                    on: deck,
+                    at: index
+                )
+            }
+
+            deck.onPreciseMetadataReady = {
+                [weak self, weak deck] item in
+                guard let self, let deck else { return }
+                self.handlePreciseMetadataReady(
                     item,
                     on: deck,
                     at: index
@@ -434,6 +443,24 @@ final class AudioPlaybackEngine {
         )
     }
 
+    private func handlePreciseMetadataReady(
+        _ item: AVPlayerItem,
+        on deck: AudioPlaybackDeck,
+        at deckIndex: Int
+    ) {
+        guard deckIndex == activeDeckIndex,
+              deck.player.currentItem === item else { return }
+
+        // The audio clock is authoritative. Once the precise media offset is
+        // known, re-anchor the public clock from the player's current media
+        // time rather than blindly seeking again. This avoids a visible jump
+        // when precise metadata arrives after a best-effort seek.
+        if !suppressesProgressUpdates {
+            publishDurationIfAvailable()
+            publishPlaybackClockSample(origin: .stateChanged)
+        }
+    }
+
     private func handleItemStatusChange(
         _ item: AVPlayerItem,
         on deck: AudioPlaybackDeck,
@@ -455,21 +482,6 @@ final class AudioPlaybackEngine {
         case .readyToPlay:
             publishDurationIfAvailable()
             if pendingSeekTime != nil {
-                guard deck.isMetadataReady else {
-                    suppressesProgressUpdates = true
-                    transition(to: .loading)
-                    return
-                }
-                retryPendingSeek(for: item)
-                return
-            }
-            guard deck.isMetadataReady else {
-                // Fast-start playback is allowed to consume AVPlayer's media
-                // data, but the public playback clock must remain suppressed
-                // until the precise track timeline is ready. Otherwise a
-                // non-zero media start can temporarily leak into progress and
-                // lyrics as if it were the song's zero point.
-                suppressesProgressUpdates = true
                 resumePlaybackIfNeeded()
                 return
             }
@@ -551,8 +563,7 @@ final class AudioPlaybackEngine {
     }
 
     private func publishDurationIfAvailable() {
-        guard activeDeck.isMetadataReady,
-              let seconds = activeDeck.playbackDuration,
+        guard let seconds = activeDeck.playbackDuration,
               seconds > 0 else {
             return
         }
@@ -636,8 +647,7 @@ final class AudioPlaybackEngine {
     ) {
         guard let position = pendingSeekTime,
               activeDeck.player.currentItem === item,
-              item.status == .readyToPlay,
-              activeDeck.isMetadataReady else {
+              item.status == .readyToPlay else {
             return
         }
         applySeek(to: position, for: item)

@@ -6,11 +6,40 @@ import Foundation
 /// asset time zero, so passing lyric seconds directly to AVPlayer would seek
 /// into a different point after changing source quality.
 struct AudioPlaybackMediaTimeline {
+    enum Resolution: Equatable {
+        case preciseTrackTimeRange
+        case mediaZeroFallback
+    }
+
     let mediaStart: TimeInterval
+    let trackDuration: TimeInterval?
+    let resolution: Resolution
 
     init(audioTrackTimeRange: CMTimeRange? = nil) {
-        let start = audioTrackTimeRange?.start.seconds ?? 0
-        mediaStart = start.isFinite ? max(start, 0) : 0
+        if let range = audioTrackTimeRange,
+           range.isValid,
+           range.start.isNumeric,
+           range.duration.isNumeric {
+            let start = range.start.seconds
+            let duration = range.duration.seconds
+            if start.isFinite,
+               start >= 0,
+               duration.isFinite,
+               duration > 0 {
+                mediaStart = start
+                trackDuration = duration
+                resolution = .preciseTrackTimeRange
+                return
+            }
+        }
+
+        mediaStart = 0
+        trackDuration = nil
+        resolution = .mediaZeroFallback
+    }
+
+    var isFallback: Bool {
+        resolution == .mediaZeroFallback
     }
 
     func playbackPosition(
@@ -36,6 +65,11 @@ struct AudioPlaybackMediaTimeline {
     func playbackDuration(
         forMediaDuration mediaDuration: CMTime
     ) -> TimeInterval? {
+        if let trackDuration,
+           trackDuration.isFinite,
+           trackDuration > 0 {
+            return trackDuration
+        }
         let seconds = mediaDuration.seconds
         guard seconds.isFinite, seconds > 0 else {
             return nil
