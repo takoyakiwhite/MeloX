@@ -187,7 +187,7 @@ struct EVALyricsView: View {
 
     private func seek(to line: LyricLine) {
         guard settings.lyricsTapToSeek else { return }
-        player.seek(to: line.time)
+        player.seekToLyric(at: line.time)
     }
 }
 
