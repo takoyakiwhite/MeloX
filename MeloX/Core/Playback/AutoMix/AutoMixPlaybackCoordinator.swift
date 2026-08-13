@@ -24,6 +24,7 @@ final class AutoMixPlaybackCoordinator {
         let attempt: Attempt
         let context: PreparedAutoMixContext
         let plan: AutoMixTransitionPlan
+        let outgoingDuration: TimeInterval
     }
 
     private let api: NeteaseAPI
@@ -38,6 +39,7 @@ final class AutoMixPlaybackCoordinator {
     private var plannedTransition: PlannedTransition?
     private var preparedContext: PreparedAutoMixContext?
     private var transitionHasBegun = false
+
     init(
         api: NeteaseAPI,
         downloads: DownloadStore,
@@ -82,7 +84,6 @@ final class AutoMixPlaybackCoordinator {
             outgoingDuration,
             TimeInterval(outgoingSong.durationMS) / 1_000
         )
-
         if let attempt,
            attempt != nextAttempt {
             cancel()
@@ -159,7 +160,9 @@ final class AutoMixPlaybackCoordinator {
                     PlannedTransition(
                         attempt: nextAttempt,
                         context: context,
-                        plan: plan
+                        plan: plan,
+                        outgoingDuration:
+                            outgoingDuration
                     )
                 self.prepareDeckIfNeeded()
             } catch is CancellationError {
@@ -358,10 +361,10 @@ final class AutoMixPlaybackCoordinator {
         transitionHasBegun = false
         attempt = nil
         if context.sourceIsDownloaded {
-            downloads.discardInvalidDownload(
-                songID: incomingSongID
-            )
-        }
+        downloads.discardInvalidDownload(
+            songID: incomingSongID
+        )
+    }
     }
 
     private static func duration(

@@ -35,7 +35,6 @@ final class AutoMixDeckTransitionController {
         let item: AVPlayerItem
         let plan: AutoMixTransitionPlan
         var isPrerolled = false
-        var didSeekToIncomingStart = false
     }
 
     private final class ActiveTransition {
@@ -415,42 +414,38 @@ final class AutoMixDeckTransitionController {
         prerollTask?.cancel()
         prerollTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            guard let prepared = self.preparedTransition,
-                  prepared.deckIndex == deckIndex,
-                  prepared.item === item else { return }
-            if !prepared.didSeekToIncomingStart {
-                let startTime = prepared.plan.incomingStartTime
-                if startTime > 0 {
-                    var didSeek = false
-                    for _ in 0..<3 {
-                        didSeek = await self.seek(
-                            self.decks[deckIndex].player,
-                            to: self.decks[deckIndex].mediaTime(
-                                forPlaybackPosition: startTime
-                            )
-                        )
-                        if didSeek { break }
-                        do {
-                            try await Task.sleep(for: .milliseconds(100))
-                        } catch {
-                            return
-                        }
-                    }
-                    guard didSeek else {
-                        self.failPreparedTransition(
-                            on: deckIndex,
-                            error: AutoMixPreparationError.itemFailed(nil)
-                        )
-                        return
-                    }
-                }
-                self.preparedTransition?.didSeekToIncomingStart = true
-            }
             let rate = self.normalizedRate(
                 self.preparedTransition?.plan.incomingStartPlaybackRate ?? 1
             )
             var attempt = 0
             while !Task.isCancelled {
+                let positioned = await self.positionStandbyDeck(
+                    deckIndex: deckIndex,
+                    item: item,
+                    at: self.preparedTransition?.plan.incomingStartTime ?? 0,
+                    generation: generation
+                )
+                guard positioned else {
+                    attempt += 1
+                    guard attempt < 8 else {
+                        self.failPreparedTransition(
+                            on: deckIndex,
+                            error: nil
+                        )
+                        return
+                    }
+                    do {
+                        try await Task.sleep(
+                            for: .milliseconds(
+                                min(200 * attempt, 800)
+                            )
+                        )
+                    } catch {
+                        return
+                    }
+                    continue
+                }
+
                 let success = await self.preroll(
                     self.decks[deckIndex].player,
                     atRate: rate
@@ -472,7 +467,7 @@ final class AutoMixDeckTransitionController {
                 }
 
                 attempt += 1
-                guard attempt < 20 else {
+                guard attempt < 12 else {
                     self.failPreparedTransition(
                         on: deckIndex,
                         error: nil
@@ -488,6 +483,42 @@ final class AutoMixDeckTransitionController {
                     )
                 } catch {
                     return
+                }
+            }
+        }
+    }
+
+    private func positionStandbyDeck(
+        deckIndex: Int,
+        item: AVPlayerItem,
+        at position: TimeInterval,
+        generation: Int
+    ) async -> Bool {
+        guard generation == preparationGeneration,
+              activeTransition == nil,
+              decks[deckIndex].player.currentItem === item,
+              item.status == .readyToPlay else {
+            return false
+        }
+        let target = decks[deckIndex].mediaTime(
+            forPlaybackPosition: max(position, 0)
+        )
+        return await withCheckedContinuation { continuation in
+            decks[deckIndex].player.seek(
+                to: target,
+                toleranceBefore: .zero,
+                toleranceAfter: .zero
+            ) { [weak self] finished in
+                guard let self else {
+                    continuation.resume(returning: false)
+                    return
+                }
+                Task { @MainActor in
+                    let valid = finished
+                        && generation == self.preparationGeneration
+                        && self.activeTransition == nil
+                        && self.decks[deckIndex].player.currentItem === item
+                    continuation.resume(returning: valid)
                 }
             }
         }
@@ -915,15 +946,15 @@ final class AutoMixDeckTransitionController {
     private func seek(
         _ player: AVPlayer,
         to time: CMTime
-    ) async -> Bool {
+    ) async {
         await withCheckedContinuation {
             continuation in
             player.seek(
                 to: time,
                 toleranceBefore: .zero,
                 toleranceAfter: .zero
-            ) { finished in
-                continuation.resume(returning: finished)
+            ) { _ in
+                continuation.resume()
             }
         }
     }
