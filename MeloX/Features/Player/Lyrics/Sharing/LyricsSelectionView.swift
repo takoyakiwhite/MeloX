@@ -5,18 +5,12 @@ struct LyricsSelectionView: View {
     @Environment(\.dismiss) private var dismiss
 
     let store: LyricShareSelectionStore
-    let isEmbeddedInActivityController: Bool
 
     @State private var replacementIndex: Int?
     @State private var sharePayload: LyricSharePayload?
 
-    init(
-        store: LyricShareSelectionStore,
-        isEmbeddedInActivityController: Bool = false
-    ) {
+    init(store: LyricShareSelectionStore) {
         self.store = store
-        self.isEmbeddedInActivityController =
-            isEmbeddedInActivityController
     }
 
     var body: some View {
@@ -28,9 +22,7 @@ struct LyricsSelectionView: View {
         }
         .background(.regularMaterial)
         .safeAreaInset(edge: .bottom, spacing: 0) {
-            if !isEmbeddedInActivityController {
-                shareControl
-            }
+            shareControl
         }
         .alert(
             "替换之前的选择？",
@@ -53,12 +45,8 @@ struct LyricsSelectionView: View {
             LyricsShareSheet(
                 payload: payload,
                 artwork: store.artwork,
-                onComplete: { completed in
+                onComplete: { _ in
                     sharePayload = nil
-                    // The fallback is a two-stage flow. Match the embedded
-                    // path's lifecycle by ending it after either completion
-                    // or cancellation of the activity controller.
-                    _ = completed
                     dismiss()
                 }
             )

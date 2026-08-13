@@ -96,7 +96,7 @@ struct PlayerAppearanceSettingsView: View {
     private var backgroundFooter: String {
         switch settings.playerBackgroundStyle {
         case .appleMusicBackdrop:
-            "iOS 26 优先使用系统 MediaCoreUI 的 Apple Music 原版动态背景；系统实现不可用时自动回退到内置复刻。回退模式支持音乐响应，效果遵循“减少动态效果”和“调暗闪烁光线”设置。"
+            "Apple Music 背景由公开的 SwiftUI 与 Metal API 实现；可选的音乐响应默认关闭，效果遵循“减少动态效果”和“调暗闪烁光线”设置。"
         case .flowingLight:
             "流动光影会从封面提取颜色；100% 是增强后的流动基准，速度和位移约为旧效果的 2 倍。开启“重拍暗角”后，Onset 达到 0.4 且 Beat 或 Downbeat 在前后 20 ms 内达到 0.4 时触发暗角；Downbeat 达到 0.6 时会略微加深。效果遵循系统的“减少动态效果”和“调暗闪烁光线”设置。"
         case .blurredArtwork:

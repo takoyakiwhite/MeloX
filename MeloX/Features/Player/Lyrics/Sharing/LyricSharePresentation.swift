@@ -29,20 +29,4 @@ struct LyricSharePayload: Identifiable {
     var subject: String {
         "\(song.name) — \(song.artistText)"
     }
-
-    /// The excerpt ends at the last selected row's most specific model timing:
-    /// syllable timing first, then its line duration (including inferred LRC
-    /// duration). If neither exists, the private lyric payload is unavailable.
-    var excerptRange: ClosedRange<TimeInterval>? {
-        guard let first = lyrics.first,
-              let last = lyrics.last else {
-            return nil
-        }
-        return LyricShareExcerptRangeResolver.range(
-            firstStart: first.time,
-            lastStart: last.time,
-            lastDuration: last.duration,
-            lastSyllableEndTimes: last.syllables.map(\.endTime)
-        )
-    }
 }

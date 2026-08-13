@@ -74,7 +74,7 @@ final class LyricShareURLActivityItemSource: NSObject,
     func activityViewControllerLinkMetadata(
         _ activityViewController: UIActivityViewController
     ) -> LPLinkMetadata? {
-        return AppleMusicLyricsShareMetadataFactory.makeMetadata(
+        return LyricShareMetadataFactory.makeMetadata(
             payload: payload,
             artwork: artwork
         )

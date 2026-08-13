@@ -9,7 +9,7 @@ final class AppSettings {
         .appleMusicBackdrop
     static let defaultPlayerBackgroundMotionIntensity = 1.0
     static let defaultPlayerBackgroundSaturation = 1.0
-    static let defaultPlayerBackgroundAudioResponseEnabled = true
+    static let defaultPlayerBackgroundAudioResponseEnabled = false
     static let defaultPlayerBackgroundBeatEffectsEnabled = false
     static let defaultBeatNetDebugEnabled = false
     static let defaultStartsHeartModeOnLaunch = false

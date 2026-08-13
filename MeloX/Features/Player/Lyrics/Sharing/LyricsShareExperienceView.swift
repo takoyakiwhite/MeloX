@@ -14,11 +14,6 @@ struct LyricsShareExperienceView: View {
     }
 
     var body: some View {
-        // Selection is always the first stage. Never create an activity
-        // controller merely because the user long-pressed a line: without a
-        // fully constructed lyric-excerpt specialization UIKit interprets the
-        // URL item as ordinary song sharing. The explicit share button owns
-        // presentation of the public/private activity stage.
         LyricsSelectionView(store: store)
         .task(id: store.presentation.song.album?.artworkURL) {
             await loadArtwork()
