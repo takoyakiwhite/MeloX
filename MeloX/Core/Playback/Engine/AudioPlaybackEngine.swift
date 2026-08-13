@@ -194,6 +194,11 @@ final class AudioPlaybackEngine {
     func play() {
         wantsPlayback = true
         guard let item = activeDeck.player.currentItem else {
+            transition(to: .idle)
+            return
+        }
+        if item.status == .failed {
+            fail(with: item.error)
             return
         }
         guard item.status == .readyToPlay else {
