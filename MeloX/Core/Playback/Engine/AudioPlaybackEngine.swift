@@ -139,7 +139,7 @@ final class AudioPlaybackEngine {
         pendingSeekRetryTask = nil
         seekRetryAttempt = 0
         wantsPlayback = autoplay
-        pendingSeekTime = pendingSeekTime ?? max(0, startAt)
+        pendingSeekTime = startAt > 0 ? startAt : nil
         seekGeneration += 1
         suppressesProgressUpdates = true
         didReportCurrentItemFailure = false
@@ -188,13 +188,32 @@ final class AudioPlaybackEngine {
         guard let item = activeDeck.player.currentItem else {
             return
         }
-        guard item.status == .readyToPlay,
-              !suppressesProgressUpdates else {
+        guard item.status == .readyToPlay else {
             transition(to: .loading)
             return
         }
+
         do {
             try activateAudioSession()
+
+            // For an initial start from zero, let AVPlayer begin consuming any
+            // available media immediately while precise track metadata loads
+            // in parallel. We intentionally keep playback-clock publication
+            // suppressed until the final media timeline is known, so lyrics and
+            // the progress UI never consume a provisional mediaStart of zero.
+            // Explicit seeks (pendingSeekTime != nil) still wait for metadata
+            // so the requested song position can be translated exactly.
+            if !activeDeck.isMetadataReady {
+                guard pendingSeekTime == nil else {
+                    transition(to: .loading)
+                    return
+                }
+                activeDeck.player.playImmediately(atRate: 1.0)
+                transition(to: .loading)
+                return
+            }
+
+            suppressesProgressUpdates = false
             updateStateFromPlayer()
             let resumedAutoMix =
                 autoMixController.resumeIncomingIfNeeded()
@@ -225,7 +244,7 @@ final class AudioPlaybackEngine {
             return
         }
         cancelAutoMix()
-        if item.status != .readyToPlay {
+        if item.status != .readyToPlay || !activeDeck.isMetadataReady {
             seekGeneration += 1
             pendingSeekTime = position
             suppressesProgressUpdates = true
@@ -436,7 +455,22 @@ final class AudioPlaybackEngine {
         case .readyToPlay:
             publishDurationIfAvailable()
             if pendingSeekTime != nil {
+                guard deck.isMetadataReady else {
+                    suppressesProgressUpdates = true
+                    transition(to: .loading)
+                    return
+                }
                 retryPendingSeek(for: item)
+                return
+            }
+            guard deck.isMetadataReady else {
+                // Fast-start playback is allowed to consume AVPlayer's media
+                // data, but the public playback clock must remain suppressed
+                // until the precise track timeline is ready. Otherwise a
+                // non-zero media start can temporarily leak into progress and
+                // lyrics as if it were the song's zero point.
+                suppressesProgressUpdates = true
+                resumePlaybackIfNeeded()
                 return
             }
             suppressesProgressUpdates = false
@@ -517,7 +551,8 @@ final class AudioPlaybackEngine {
     }
 
     private func publishDurationIfAvailable() {
-        guard let seconds = activeDeck.playbackDuration,
+        guard activeDeck.isMetadataReady,
+              let seconds = activeDeck.playbackDuration,
               seconds > 0 else {
             return
         }
@@ -601,7 +636,8 @@ final class AudioPlaybackEngine {
     ) {
         guard let position = pendingSeekTime,
               activeDeck.player.currentItem === item,
-              item.status == .readyToPlay else {
+              item.status == .readyToPlay,
+              activeDeck.isMetadataReady else {
             return
         }
         applySeek(to: position, for: item)

@@ -8,6 +8,7 @@ final class AudioPlaybackDeck {
 
     var onItemStatusChanged: ((AVPlayerItem) -> Void)?
     var onSeekableTimeRangesChanged: ((AVPlayerItem) -> Void)?
+    var onMetadataReady: ((AVPlayerItem) -> Void)?
     private(set) var itemIdentifier: Int?
     private(set) var mediaTimeline =
         AudioPlaybackMediaTimeline()
@@ -15,6 +16,7 @@ final class AudioPlaybackDeck {
     private var itemStatusObserver: NSKeyValueObservation?
     private var seekableTimeRangesObserver: NSKeyValueObservation?
     private var metadataTask: Task<Void, Never>?
+    private(set) var isMetadataReady = false
 
     init() {
         player = AVPlayer()
@@ -33,6 +35,7 @@ final class AudioPlaybackDeck {
         metadataTask?.cancel()
         metadataTask = nil
         cancelCurrentAssetLoading()
+        player.currentItem?.cancelPendingSeeks()
         player.cancelPendingPrerolls()
         autoMixEqualizerState.reset()
         itemStatusObserver?.invalidate()
@@ -42,6 +45,7 @@ final class AudioPlaybackDeck {
         // safe timeline. The metadata task below updates this only if the item
         // is still current.
         mediaTimeline = AudioPlaybackMediaTimeline()
+        isMetadataReady = false
         itemStatusObserver = item.observe(
             \.status,
             options: [.initial, .new]
@@ -79,6 +83,8 @@ final class AudioPlaybackDeck {
                 }
                 self.mediaTimeline = metadata.timeline
                 item.audioMix = metadata.audioMix
+                self.isMetadataReady = true
+                self.onMetadataReady?(item)
                 // Metadata can finish after the item became ready. Re-run the
                 // status path so pending seeks and playback state can consume
                 // the corrected timeline.
@@ -86,21 +92,31 @@ final class AudioPlaybackDeck {
             } catch is CancellationError {
                 // Expected when next/previous/quality changes replace the item.
             } catch {
-                // Metadata is an optimization. AVPlayerItem remains responsible
-                // for reporting actual playback failures.
+                guard let self, let item,
+                      !Task.isCancelled,
+                      self.player.currentItem === item else {
+                    return
+                }
+                // Metadata is optional for basic playback. Mark the fallback
+                // timeline usable so a pending seek cannot wait forever.
+                self.isMetadataReady = true
+                self.onMetadataReady?(item)
+                self.onItemStatusChanged?(item)
             }
         }
     }
 
     var currentPlaybackTime: TimeInterval? {
-        guard player.currentItem != nil else { return nil }
+        guard player.currentItem != nil,
+              isMetadataReady else { return nil }
         return mediaTimeline.playbackPosition(
             forMediaTime: player.currentTime()
         )
     }
 
     var playbackDuration: TimeInterval? {
-        guard let item = player.currentItem else { return nil }
+        guard let item = player.currentItem,
+              isMetadataReady else { return nil }
         return mediaTimeline.playbackDuration(
             forMediaDuration: item.duration
         )
@@ -124,8 +140,11 @@ final class AudioPlaybackDeck {
         seekableTimeRangesObserver = nil
         itemIdentifier = nil
         mediaTimeline = AudioPlaybackMediaTimeline()
+        isMetadataReady = false
+        onMetadataReady = nil
         player.pause()
         cancelCurrentAssetLoading()
+        player.currentItem?.cancelPendingSeeks()
         player.cancelPendingPrerolls()
         player.replaceCurrentItem(with: nil)
         player.rate = 0
