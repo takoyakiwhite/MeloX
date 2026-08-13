@@ -6,6 +6,8 @@ struct DesktopLibraryView: View {
     let section: DesktopSection
 
     @State private var showsImporter = false
+    @State private var isPreparingPlayback = false
+    @State private var playbackErrorMessage: String?
 
     private let columns = [
         GridItem(.adaptive(minimum: 145, maximum: 205), spacing: 20)
@@ -48,16 +50,42 @@ struct DesktopLibraryView: View {
                 await model.cloud.upload(fileAt: url)
             }
         }
+        .alert(
+            "无法播放全部",
+            isPresented: Binding(
+                get: { playbackErrorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        playbackErrorMessage = nil
+                    }
+                }
+            )
+        ) {
+            Button("好", role: .cancel) {
+                playbackErrorMessage = nil
+            }
+        } message: {
+            Text(playbackErrorMessage ?? "无法读取完整歌曲列表。")
+        }
     }
 
     @ViewBuilder
     private var headerActions: some View {
         switch section {
         case .songs:
-            Button("播放全部", systemImage: "play.fill") {
-                Task { await model.player.playAll(model.library.favoriteSongs) }
+            Button(action: playFavoriteSongs) {
+                HStack(spacing: 7) {
+                    Label("播放全部", systemImage: "play.fill")
+                    if isPreparingPlayback {
+                        ProgressView()
+                            .controlSize(.small)
+                    }
+                }
             }
-            .disabled(model.library.favoriteSongs.isEmpty)
+            .disabled(
+                model.library.favoriteSongs.isEmpty
+                    || isPreparingPlayback
+            )
         case .downloads:
             Button("播放全部", systemImage: "play.fill") {
                 Task { await model.player.playAll(model.downloads.downloadedSongs) }
@@ -284,8 +312,30 @@ struct DesktopLibraryView: View {
 
     private func play(_ playlist: Playlist) {
         Task {
-            guard let detail = try? await model.api.playlist(id: playlist.id) else { return }
+            guard let detail = try? await model.api.playlist(
+                id: playlist.id,
+                trackLimit: nil
+            ) else { return }
             await model.player.playAll(detail.tracks, sourceID: playlist.id)
+        }
+    }
+
+    private func playFavoriteSongs() {
+        guard !isPreparingPlayback else { return }
+        isPreparingPlayback = true
+        playbackErrorMessage = nil
+
+        Task { @MainActor in
+            defer { isPreparingPlayback = false }
+            do {
+                let songs = try await model.library.favoriteSongsForPlayback()
+                try Task.checkCancellation()
+                await model.player.playAll(songs)
+            } catch is CancellationError {
+                return
+            } catch {
+                playbackErrorMessage = error.localizedDescription
+            }
         }
     }
 }

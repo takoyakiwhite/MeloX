@@ -12,10 +12,12 @@ struct PlaylistDetailContent: View {
     let loadedTrackOffset: Int
     let isLoadingMoreTracks: Bool
     let loadMoreTracksError: String?
+    let isPreparingPlayback: Bool
     let downloadCoordinator: MusicCollectionDownloadCoordinator?
     let onRetry: () -> Void
     let onRefresh: () async -> Void
     let onLoadMore: () async -> Void
+    let onPlayAll: (Bool) async -> Void
 
     @Environment(LibraryStore.self) private var library
     private var usesToplistLayout: Bool {
@@ -40,7 +42,9 @@ struct PlaylistDetailContent: View {
                             playlist: playlist,
                             summary: toplistSummary,
                             artworkURL: artworkURL,
-                            palette: palette
+                            palette: palette,
+                            isPreparingPlayback: isPreparingPlayback,
+                            onPlayAll: onPlayAll
                         )
                     } else {
                         StandardMusicCollectionDetailHero(
@@ -51,9 +55,11 @@ struct PlaylistDetailContent: View {
                             tracks: playlist.tracks,
                             sourceID: playlist.id,
                             isSaved: library.contains(playlist: playlist),
+                            isPreparingPlayback: isPreparingPlayback,
                             onToggleSaved: {
                                 library.toggle(playlist: playlist)
-                            }
+                            },
+                            onPlayAll: onPlayAll
                         )
                     }
 
@@ -161,7 +167,9 @@ struct StandardMusicCollectionDetailHero: View {
     let tracks: [Song]
     let sourceID: Int
     let isSaved: Bool
+    var isPreparingPlayback = false
     let onToggleSaved: () -> Void
+    var onPlayAll: ((Bool) async -> Void)? = nil
 
     var body: some View {
         VStack(spacing: 0) {
@@ -193,7 +201,9 @@ struct StandardMusicCollectionDetailHero: View {
                 tracks: tracks,
                 sourceID: sourceID,
                 isSaved: isSaved,
-                onToggleSaved: onToggleSaved
+                isPreparingPlayback: isPreparingPlayback,
+                onToggleSaved: onToggleSaved,
+                onPlayAll: onPlayAll
             )
                 .padding(.top, 17)
         }
@@ -208,6 +218,8 @@ private struct ToplistDetailHero: View {
     let summary: Playlist?
     let artworkURL: URL?
     let palette: ArtworkDetailPalette
+    let isPreparingPlayback: Bool
+    let onPlayAll: (Bool) async -> Void
 
     @Environment(LibraryStore.self) private var library
 
@@ -251,9 +263,11 @@ private struct ToplistDetailHero: View {
                 tracks: playlist.tracks,
                 sourceID: playlist.id,
                 isSaved: library.contains(playlist: playlist),
+                isPreparingPlayback: isPreparingPlayback,
                 onToggleSaved: {
                     library.toggle(playlist: playlist)
-                }
+                },
+                onPlayAll: onPlayAll
             )
                 .padding(.top, 17)
 
@@ -289,7 +303,9 @@ struct MusicCollectionPrimaryActions: View {
     let tracks: [Song]
     let sourceID: Int
     let isSaved: Bool
+    let isPreparingPlayback: Bool
     let onToggleSaved: () -> Void
+    let onPlayAll: ((Bool) async -> Void)?
 
     @Environment(PlayerStore.self) private var player
     @Environment(\.colorScheme) private var colorScheme
@@ -299,7 +315,14 @@ struct MusicCollectionPrimaryActions: View {
             HStack(spacing: 14) {
                 Button {
                     Task {
-                        await player.playAll(tracks.shuffled(), sourceID: sourceID)
+                        if let onPlayAll {
+                            await onPlayAll(true)
+                        } else {
+                            await player.playAll(
+                                tracks.shuffled(),
+                                sourceID: sourceID
+                            )
+                        }
                     }
                 } label: {
                     Image(systemName: "shuffle")
@@ -309,22 +332,40 @@ struct MusicCollectionPrimaryActions: View {
                 .buttonStyle(.glass)
                 .buttonBorderShape(.circle)
                 .controlSize(.large)
-                .disabled(tracks.isEmpty)
+                .disabled(tracks.isEmpty || isPreparingPlayback)
                 .accessibilityLabel("随机播放")
 
                 Button {
-                    Task { await player.playAll(tracks, sourceID: sourceID) }
+                    Task {
+                        if let onPlayAll {
+                            await onPlayAll(false)
+                        } else {
+                            await player.playAll(
+                                tracks,
+                                sourceID: sourceID
+                            )
+                        }
+                    }
                 } label: {
-                    Label("播放", systemImage: "play.fill")
-                        .font(.title3.weight(.bold))
-                        .frame(minWidth: 116)
+                    Group {
+                        if isPreparingPlayback {
+                            HStack(spacing: 8) {
+                                ProgressView()
+                                Text("正在准备")
+                            }
+                        } else {
+                            Label("播放", systemImage: "play.fill")
+                        }
+                    }
+                    .font(.title3.weight(.bold))
+                    .frame(minWidth: 116)
                 }
                 .buttonStyle(.glassProminent)
                 .buttonBorderShape(.capsule)
                 .controlSize(.large)
                 .tint(primaryActionBackground)
                 .foregroundStyle(primaryActionForeground)
-                .disabled(tracks.isEmpty)
+                .disabled(tracks.isEmpty || isPreparingPlayback)
 
                 Button(action: onToggleSaved) {
                     Image(

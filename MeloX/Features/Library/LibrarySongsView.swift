@@ -10,18 +10,26 @@ struct LibrarySongsView: View {
     @State private var searchPreparationID: UUID?
     @State private var isStartingHeartMode = false
     @State private var heartModeErrorMessage: String?
+    @State private var isPreparingPlayback = false
+    @State private var playbackErrorMessage: String?
 
     var body: some View {
         List {
             if !displayedSongs.isEmpty {
-                Button {
-                    Task { await player.playAll(displayedSongs) }
-                } label: {
-                    Label(
-                        isSearching ? "播放搜索结果" : "播放全部",
-                        systemImage: "play.fill"
-                    )
+                Button(action: playDisplayedSongs) {
+                    HStack {
+                        Label(
+                            isSearching ? "播放搜索结果" : "播放全部",
+                            systemImage: "play.fill"
+                        )
+                        Spacer()
+                        if isPreparingPlayback {
+                            ProgressView()
+                                .controlSize(.small)
+                        }
+                    }
                 }
+                .disabled(isPreparingPlayback)
 
                 if !isSearching {
                     heartModeButton
@@ -80,6 +88,23 @@ struct LibrarySongsView: View {
             }
         } message: {
             Text(heartModeErrorMessage ?? "请稍后重试。")
+        }
+        .alert(
+            "无法播放全部",
+            isPresented: Binding(
+                get: { playbackErrorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        playbackErrorMessage = nil
+                    }
+                }
+            )
+        ) {
+            Button("好", role: .cancel) {
+                playbackErrorMessage = nil
+            }
+        } message: {
+            Text(playbackErrorMessage ?? "无法读取完整歌曲列表。")
         }
     }
 
@@ -232,6 +257,29 @@ struct LibrarySongsView: View {
                 return
             } catch {
                 heartModeErrorMessage = error.localizedDescription
+            }
+        }
+    }
+
+    private func playDisplayedSongs() {
+        guard !isPreparingPlayback else { return }
+        isPreparingPlayback = true
+        playbackErrorMessage = nil
+
+        Task { @MainActor in
+            defer { isPreparingPlayback = false }
+            do {
+                let songs = if isSearching {
+                    displayedSongs
+                } else {
+                    try await library.favoriteSongsForPlayback()
+                }
+                try Task.checkCancellation()
+                await player.playAll(songs)
+            } catch is CancellationError {
+                return
+            } catch {
+                playbackErrorMessage = error.localizedDescription
             }
         }
     }

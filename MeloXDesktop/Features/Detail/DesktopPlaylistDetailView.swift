@@ -12,6 +12,8 @@ struct DesktopPlaylistDetailView: View {
     @State private var loadedTrackOffset = 0
     @State private var isLoadingMoreTracks = false
     @State private var loadMoreTracksError: String?
+    @State private var isPreparingPlayback = false
+    @State private var playbackErrorMessage: String?
 
     private let trackPageSize = 100
 
@@ -35,7 +37,10 @@ struct DesktopPlaylistDetailView: View {
                             },
                             shareURL: URL(
                                 string: "https://music.163.com/#/playlist?id=\(playlist.id)"
-                            )
+                            ),
+                            onPlayAll: { shuffled in
+                                await playAll(shuffled: shuffled)
+                            }
                         )
 
                         Divider()
@@ -76,6 +81,23 @@ struct DesktopPlaylistDetailView: View {
             reduceMotion ? nil : .smooth(duration: 0.30),
             value: isLoading
         )
+        .alert(
+            "无法播放全部",
+            isPresented: Binding(
+                get: { playbackErrorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        playbackErrorMessage = nil
+                    }
+                }
+            )
+        ) {
+            Button("好", role: .cancel) {
+                playbackErrorMessage = nil
+            }
+        } message: {
+            Text(playbackErrorMessage ?? "无法读取完整歌单。")
+        }
     }
 
     private func metadata(for playlist: Playlist) -> String {
@@ -154,6 +176,39 @@ struct DesktopPlaylistDetailView: View {
             return
         } catch {
             loadMoreTracksError = error.localizedDescription
+        }
+    }
+
+    private func playAll(shuffled: Bool) async {
+        guard let currentPlaylist = playlist,
+              !isPreparingPlayback else {
+            return
+        }
+
+        isPreparingPlayback = true
+        playbackErrorMessage = nil
+        defer { isPreparingPlayback = false }
+
+        do {
+            let trackIDs = currentPlaylist.trackIDs.map(\.id)
+            let completeSongs = if trackIDs.isEmpty {
+                songs
+            } else {
+                try await model.api.songDetailsCollection(
+                    ids: trackIDs,
+                    prefetched: songs
+                )
+            }
+            try Task.checkCancellation()
+            guard playlist?.id == currentPlaylist.id else { return }
+            await model.player.playAll(
+                shuffled ? completeSongs.shuffled() : completeSongs,
+                sourceID: currentPlaylist.id
+            )
+        } catch is CancellationError {
+            return
+        } catch {
+            playbackErrorMessage = error.localizedDescription
         }
     }
 }

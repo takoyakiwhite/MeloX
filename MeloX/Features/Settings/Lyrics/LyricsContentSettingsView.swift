@@ -121,6 +121,33 @@ struct LyricsContentSettingsView: View {
 
             Section {
                 Toggle(
+                    "AMLL TTML 歌词",
+                    isOn: $settings.lyricsAMLLSourceEnabled
+                )
+
+                Toggle(
+                    "QQ 音乐歌词补全",
+                    isOn: $settings.lyricsQQMusicSourceEnabled
+                )
+            } header: {
+                Text("歌词来源")
+            } footer: {
+                Text("开启后会直接访问对应歌词服务。优先级为 AMLL TTML、网易云 YRC、QQ QRC、网易云 LRC、QQ LRC。")
+            }
+
+            Section {
+                Toggle(
+                    "双人歌词分列显示",
+                    isOn: $settings.lyricsDuetLayoutEnabled
+                )
+            } header: {
+                Text("演唱者布局")
+            } footer: {
+                Text("根据歌词中的演唱者标记，将不同演唱者分别靠左、靠右显示；合唱保持靠左。")
+            }
+
+            Section {
+                Toggle(
                     "使用官方逐字歌词",
                     isOn: $settings.lyricsWordByWord
                 )
@@ -158,7 +185,7 @@ struct LyricsContentSettingsView: View {
                     } header: {
                         Text("Apple Music 26 逐字")
                     } footer: {
-                        Text("Apple 的歌词数据用 emphasis 标记强调；网易 YRC 不提供该字段，因此 MeloX 使用这个辅助阈值识别长音。")
+                        Text("根据逐字歌词中音节持续的时间识别长音；阈值越高，触发长音效果的音节越少。")
                     }
                 }
 

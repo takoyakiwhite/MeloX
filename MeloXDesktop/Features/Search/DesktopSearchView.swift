@@ -370,7 +370,10 @@ struct DesktopSearchView: View {
 
     private func play(_ playlist: Playlist) {
         Task {
-            guard let detail = try? await model.api.playlist(id: playlist.id) else { return }
+            guard let detail = try? await model.api.playlist(
+                id: playlist.id,
+                trackLimit: nil
+            ) else { return }
             await model.player.playAll(detail.tracks, sourceID: playlist.id)
         }
     }

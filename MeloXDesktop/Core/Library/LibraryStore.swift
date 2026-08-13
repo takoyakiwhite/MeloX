@@ -312,6 +312,26 @@ final class LibraryStore {
         }
     }
 
+    func favoriteSongsForPlayback() async throws -> [Song] {
+        if let favoriteSongPageLoadTask {
+            await favoriteSongPageLoadTask.value
+        }
+
+        let requestedIDs = favoriteSongIDs
+        let songs = try await api.songDetailsCollection(
+            ids: requestedIDs,
+            prefetched: favoriteSongs
+        )
+        try Task.checkCancellation()
+
+        if favoriteSongIDs == requestedIDs {
+            favoriteSongs = songs
+            favoriteSongsNextOffset = requestedIDs.count
+            favoriteSongsLoadMoreError = nil
+        }
+        return songs
+    }
+
     private func loadFavoriteSongsPage(
         ids requestedIDs: [Int],
         offset requestedOffset: Int

@@ -7,6 +7,7 @@ struct PlaylistDetailView: View {
 
     @Environment(NeteaseAPI.self) private var api
     @Environment(LibraryStore.self) private var library
+    @Environment(PlayerStore.self) private var player
     @Environment(DownloadStore.self) private var downloads
     @Environment(AppSettings.self) private var settings
     @Environment(\.colorScheme) private var systemColorScheme
@@ -23,6 +24,8 @@ struct PlaylistDetailView: View {
     @State private var loadedTrackOffset = 0
     @State private var isLoadingMoreTracks = false
     @State private var loadMoreTracksError: String?
+    @State private var isPreparingPlayback = false
+    @State private var playbackErrorMessage: String?
     @State private var downloadCoordinator =
         MusicCollectionDownloadCoordinator()
 
@@ -67,13 +70,17 @@ struct PlaylistDetailView: View {
             loadedTrackOffset: loadedTrackOffset,
             isLoadingMoreTracks: isLoadingMoreTracks,
             loadMoreTracksError: loadMoreTracksError,
+            isPreparingPlayback: isPreparingPlayback,
             downloadCoordinator:
                 downloadsEnabled
                     ? downloadCoordinator
                     : nil,
             onRetry: { reloadToken += 1 },
             onRefresh: { await load() },
-            onLoadMore: { await loadMoreTracks() }
+            onLoadMore: { await loadMoreTracks() },
+            onPlayAll: { shuffled in
+                await playAll(shuffled: shuffled)
+            }
         )
         .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
@@ -187,6 +194,23 @@ struct PlaylistDetailView: View {
                 downloadCoordinator.errorMessage
                     ?? "无法读取\(collectionTitle)歌曲。"
             )
+        }
+        .alert(
+            "无法播放全部",
+            isPresented: Binding(
+                get: { playbackErrorMessage != nil },
+                set: { isPresented in
+                    if !isPresented {
+                        playbackErrorMessage = nil
+                    }
+                }
+            )
+        ) {
+            Button("好", role: .cancel) {
+                playbackErrorMessage = nil
+            }
+        } message: {
+            Text(playbackErrorMessage ?? "无法读取完整歌单。")
         }
     }
 
@@ -420,6 +444,39 @@ struct PlaylistDetailView: View {
             return
         } catch {
             loadMoreTracksError = error.localizedDescription
+        }
+    }
+
+    private func playAll(shuffled: Bool) async {
+        guard let currentPlaylist = playlist,
+              !isPreparingPlayback else {
+            return
+        }
+
+        isPreparingPlayback = true
+        playbackErrorMessage = nil
+        defer { isPreparingPlayback = false }
+
+        do {
+            let trackIDs = currentPlaylist.trackIDs.map(\.id)
+            let songs = if trackIDs.isEmpty {
+                currentPlaylist.tracks
+            } else {
+                try await api.songDetailsCollection(
+                    ids: trackIDs,
+                    prefetched: currentPlaylist.tracks
+                )
+            }
+            try Task.checkCancellation()
+            guard playlist?.id == currentPlaylist.id else { return }
+            await player.playAll(
+                shuffled ? songs.shuffled() : songs,
+                sourceID: currentPlaylist.id
+            )
+        } catch is CancellationError {
+            return
+        } catch {
+            playbackErrorMessage = error.localizedDescription
         }
     }
 

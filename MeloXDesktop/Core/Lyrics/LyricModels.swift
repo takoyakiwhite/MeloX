@@ -1,6 +1,6 @@
 import Foundation
 
-struct LyricSyllable: Identifiable, Hashable {
+struct LyricSyllable: Identifiable, Hashable, Sendable {
     let text: String
     let startTime: TimeInterval
     let endTime: TimeInterval
@@ -10,7 +10,44 @@ struct LyricSyllable: Identifiable, Hashable {
     }
 }
 
-struct LyricLine: Identifiable, Hashable {
+enum LyricAgentAlignment: Hashable, Sendable {
+    case normal
+    case flipped
+}
+
+enum LyricAgentKind: Hashable, Sendable {
+    case person
+    case group
+}
+
+struct LyricAgent: Hashable, Sendable {
+    let identifier: String
+    let displayName: String
+    let kind: LyricAgentKind
+    let alignment: LyricAgentAlignment
+}
+
+enum LyricVocalistsType: Hashable, Sendable {
+    case single
+    case duet
+    case group
+
+    static func resolve(in lines: [LyricLine]) -> LyricVocalistsType {
+        let agents = lines.compactMap(\.agent)
+        let personIdentifiers = Set(
+            agents
+                .filter { $0.kind == .person }
+                .map(\.identifier)
+        )
+        if agents.contains(where: { $0.kind == .group })
+            || personIdentifiers.count > 2 {
+            return .group
+        }
+        return personIdentifiers.count == 2 ? .duet : .single
+    }
+}
+
+struct LyricLine: Identifiable, Hashable, Sendable {
     let time: TimeInterval
     let duration: TimeInterval?
     let text: String
@@ -18,6 +55,7 @@ struct LyricLine: Identifiable, Hashable {
     let romanization: String?
     let romanizationSyllables: [LyricSyllable]
     let translation: String?
+    let agent: LyricAgent?
 
     init(
         time: TimeInterval,
@@ -26,7 +64,8 @@ struct LyricLine: Identifiable, Hashable {
         syllables: [LyricSyllable] = [],
         romanization: String? = nil,
         romanizationSyllables: [LyricSyllable] = [],
-        translation: String? = nil
+        translation: String? = nil,
+        agent: LyricAgent? = nil
     ) {
         self.time = time
         self.duration = duration
@@ -35,6 +74,7 @@ struct LyricLine: Identifiable, Hashable {
         self.romanization = romanization
         self.romanizationSyllables = romanizationSyllables
         self.translation = translation
+        self.agent = agent
     }
 
     var id: String {
@@ -86,7 +126,8 @@ struct LyricLine: Identifiable, Hashable {
             syllables: syllables,
             romanization: romanization,
             romanizationSyllables: romanizationSyllables,
-            translation: translation
+            translation: translation,
+            agent: agent
         )
     }
 
@@ -101,7 +142,25 @@ struct LyricLine: Identifiable, Hashable {
             syllables: syllables,
             romanization: romanization,
             romanizationSyllables: romanizationSyllables,
-            translation: translation
+            translation: translation,
+            agent: agent
+        )
+    }
+
+    func attachingAgent(
+        _ agent: LyricAgent?,
+        text: String? = nil,
+        syllables: [LyricSyllable]? = nil
+    ) -> LyricLine {
+        LyricLine(
+            time: time,
+            duration: duration,
+            text: text ?? self.text,
+            syllables: syllables ?? self.syllables,
+            romanization: romanization,
+            romanizationSyllables: romanizationSyllables,
+            translation: translation,
+            agent: agent
         )
     }
 

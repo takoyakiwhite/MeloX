@@ -56,6 +56,7 @@ struct AppleMusicLyricsView: View {
         let romanizationDisplayMode: String
         let translationEnabled: Bool
         let romanizationEnabled: Bool
+        let duetLayoutEnabled: Bool
         let translationFontScale: Double
         let romanizationFontScale: Double
         let fontSize: Double
@@ -588,6 +589,11 @@ struct AppleMusicLyricsView: View {
                         romanizationFontSize:
                             context.romanizationFontSize,
                         fontWeight: resolvedLyricsFontWeight,
+                        alignment: .resolved(
+                            for: line,
+                            duetLayoutEnabled:
+                                settings.lyricsDuetLayoutEnabled
+                        ),
                         showsTranslation: showsTranslation,
                         showsRomanization:
                             settings.lyricsRomanizationEnabled
@@ -929,6 +935,7 @@ struct AppleMusicLyricsView: View {
                     : settings.lyricsRomanizationDisplayMode.rawValue,
             translationEnabled: settings.lyricsTranslationEnabled,
             romanizationEnabled: settings.lyricsRomanizationEnabled,
+            duetLayoutEnabled: settings.lyricsDuetLayoutEnabled,
             translationFontScale:
                 usesExactSupplementalLayout
                     ? 1
@@ -1215,6 +1222,11 @@ struct AppleMusicLyricsView: View {
                                 romanizationFontSize:
                                     lyricRomanizationFontSize,
                                 fontWeight: resolvedLyricsFontWeight,
+                                alignment: .resolved(
+                                    for: line,
+                                    duetLayoutEnabled:
+                                        settings.lyricsDuetLayoutEnabled
+                                ),
                                 showsTranslation: showsTranslation,
                                 showsRomanization:
                                     settings.lyricsRomanizationEnabled

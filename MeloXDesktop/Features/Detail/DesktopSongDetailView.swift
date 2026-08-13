@@ -141,7 +141,7 @@ struct DesktopSongDetailView: View {
                 throw APIError.invalidResponse
             }
             song = loadedSong
-            async let loadedLyrics = model.api.lyrics(id: songID)
+            async let loadedLyrics = model.lyrics.fetch(for: loadedSong)
             async let loadedSimilar = model.api.similarSongs(id: songID, limit: 20)
             async let loadedComments = model.api.songComments(id: songID, limit: 40)
             lyrics = (try? await loadedLyrics) ?? []

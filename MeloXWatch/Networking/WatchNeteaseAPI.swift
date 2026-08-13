@@ -60,11 +60,24 @@ final class WatchNeteaseAPI {
             data: ["id": id, "n": 100, "s": 8]
         )
         var playlist = response.playlist
-        if playlist.tracks.isEmpty, !playlist.trackIDs.isEmpty {
-            playlist.tracks = try await songDetails(
-                ids: Array(playlist.trackIDs.prefix(100).map(\.id))
-            )
+        let trackIDs = playlist.trackIDs.map(\.id)
+        guard !trackIDs.isEmpty else { return playlist }
+
+        var detailsByID = Dictionary(
+            playlist.tracks.map { ($0.id, $0) },
+            uniquingKeysWith: { first, _ in first }
+        )
+        let missingIDs = trackIDs.filter { detailsByID[$0] == nil }
+        for start in stride(from: 0, to: missingIDs.count, by: 100) {
+            try Task.checkCancellation()
+            let end = min(start + 100, missingIDs.count)
+            for song in try await songDetails(
+                ids: Array(missingIDs[start..<end])
+            ) {
+                detailsByID[song.id] = song
+            }
         }
+        playlist.tracks = trackIDs.compactMap { detailsByID[$0] }
         return playlist
     }
 

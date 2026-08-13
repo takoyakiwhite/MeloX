@@ -82,7 +82,7 @@ struct DesktopDiscoveryView: View {
         Task {
             guard let detail = try? await model.api.playlist(
                 id: playlist.id,
-                trackLimit: 100
+                trackLimit: nil
             ) else { return }
             await model.player.playAll(detail.tracks, sourceID: detail.id)
         }

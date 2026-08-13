@@ -180,6 +180,9 @@ final class AppSettings {
         static let lyricsLongPressToShare = "lyricsLongPressToShare"
         static let lyricsWordByWord = "lyricsWordByWord"
         static let lyricsPseudoWordByWord = "lyricsPseudoWordByWord"
+        static let lyricsDuetLayoutEnabled = "lyricsDuetLayoutEnabled"
+        static let lyricsAMLLSourceEnabled = "lyricsAMLLSourceEnabled"
+        static let lyricsQQMusicSourceEnabled = "lyricsQQMusicSourceEnabled"
         static let lyricsLiftMode = "lyricsLiftMode"
         static let lyricsHighlightGradientWidth =
             "lyricsHighlightGradientWidth"
@@ -824,6 +827,33 @@ final class AppSettings {
 
     var lyricsPseudoWordByWord: Bool {
         didSet { defaults.set(lyricsPseudoWordByWord, forKey: Key.lyricsPseudoWordByWord) }
+    }
+
+    var lyricsDuetLayoutEnabled: Bool {
+        didSet {
+            defaults.set(
+                lyricsDuetLayoutEnabled,
+                forKey: Key.lyricsDuetLayoutEnabled
+            )
+        }
+    }
+
+    var lyricsAMLLSourceEnabled: Bool {
+        didSet {
+            defaults.set(
+                lyricsAMLLSourceEnabled,
+                forKey: Key.lyricsAMLLSourceEnabled
+            )
+        }
+    }
+
+    var lyricsQQMusicSourceEnabled: Bool {
+        didSet {
+            defaults.set(
+                lyricsQQMusicSourceEnabled,
+                forKey: Key.lyricsQQMusicSourceEnabled
+            )
+        }
     }
 
     var lyricsLiftMode: LyricsLiftMode {
@@ -1491,6 +1521,15 @@ final class AppSettings {
         ) as? Bool ?? true
         lyricsWordByWord = defaults.object(forKey: Key.lyricsWordByWord) as? Bool ?? true
         lyricsPseudoWordByWord = defaults.object(forKey: Key.lyricsPseudoWordByWord) as? Bool ?? false
+        lyricsDuetLayoutEnabled = defaults.object(
+            forKey: Key.lyricsDuetLayoutEnabled
+        ) as? Bool ?? true
+        lyricsAMLLSourceEnabled = defaults.object(
+            forKey: Key.lyricsAMLLSourceEnabled
+        ) as? Bool ?? true
+        lyricsQQMusicSourceEnabled = defaults.object(
+            forKey: Key.lyricsQQMusicSourceEnabled
+        ) as? Bool ?? true
         lyricsLiftMode = LyricsLiftMode(
             rawValue: defaults.string(forKey: Key.lyricsLiftMode) ?? ""
         ) ?? Self.defaultLyricsLiftMode
@@ -1978,6 +2017,9 @@ final class AppSettings {
         lyricsLongPressToShare = true
         lyricsWordByWord = true
         lyricsPseudoWordByWord = false
+        lyricsDuetLayoutEnabled = true
+        lyricsAMLLSourceEnabled = true
+        lyricsQQMusicSourceEnabled = true
         lyricsLiftMode = Self.defaultLyricsLiftMode
         lyricsHighlightGradientWidth =
             Self.defaultLyricsHighlightGradientWidth

@@ -108,6 +108,28 @@ struct DesktopLyricsContentSettingsView: View {
                     }
                 }
 
+                Section("歌词来源") {
+                    Toggle(
+                        "AMLL TTML 歌词",
+                        isOn: $settings.lyricsAMLLSourceEnabled
+                    )
+                    Toggle(
+                        "QQ 音乐歌词补全",
+                        isOn: $settings.lyricsQQMusicSourceEnabled
+                    )
+                    Text("开启后会直接访问对应歌词服务。优先级为 AMLL TTML、网易云 YRC、QQ QRC、网易云 LRC、QQ LRC。")
+                        .foregroundStyle(.secondary)
+                }
+
+                Section("演唱者布局") {
+                    Toggle(
+                        "双人歌词分列显示",
+                        isOn: $settings.lyricsDuetLayoutEnabled
+                    )
+                    Text("根据歌词中的演唱者标记，将不同演唱者分别靠左、靠右显示；合唱保持靠左。")
+                        .foregroundStyle(.secondary)
+                }
+
                 Section("逐字歌词") {
                     Toggle(
                         "使用官方逐字歌词",

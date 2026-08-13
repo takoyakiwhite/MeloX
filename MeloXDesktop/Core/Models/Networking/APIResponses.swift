@@ -169,6 +169,7 @@ struct LyricResponse: Decodable {
     let ytlrc: LyricContent?
     let romalrc: LyricContent?
     let yromalrc: LyricContent?
+    let pureMusic: Bool?
 }
 
 struct LyricContent: Decodable {

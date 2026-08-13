@@ -3,11 +3,13 @@ import SwiftUI
 enum SynchronizedLyricTextAlignment: Equatable {
     case leading
     case center
+    case trailing
 
     var textAlignment: TextAlignment {
         switch self {
         case .leading: .leading
         case .center: .center
+        case .trailing: .trailing
         }
     }
 
@@ -15,6 +17,7 @@ enum SynchronizedLyricTextAlignment: Equatable {
         switch self {
         case .leading: .leading
         case .center: .center
+        case .trailing: .trailing
         }
     }
 
@@ -22,6 +25,7 @@ enum SynchronizedLyricTextAlignment: Equatable {
         switch self {
         case .leading: .leading
         case .center: .center
+        case .trailing: .trailing
         }
     }
 
@@ -29,7 +33,19 @@ enum SynchronizedLyricTextAlignment: Equatable {
         switch self {
         case .leading: .topLeading
         case .center: .top
+        case .trailing: .topTrailing
         }
+    }
+
+    static func resolved(
+        for line: LyricLine,
+        duetLayoutEnabled: Bool
+    ) -> SynchronizedLyricTextAlignment {
+        guard duetLayoutEnabled,
+              line.agent?.alignment == .flipped else {
+            return .leading
+        }
+        return .trailing
     }
 }
 

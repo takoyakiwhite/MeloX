@@ -51,7 +51,8 @@ struct MeloXApp: App {
         let phoneWatchSync = PhoneWatchSyncService(
             settings: settings
         )
-        let lyrics = LyricsStore(api: api)
+        let lyricService = LyricsService(api: api, settings: settings)
+        let lyrics = LyricsStore(service: lyricService)
         let floatingLyrics = FloatingLyricsController(
             player: player,
             settings: settings,

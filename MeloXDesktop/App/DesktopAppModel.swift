@@ -53,7 +53,8 @@ final class DesktopAppModel {
             player: player
         )
         listenTogether = ListenTogetherStore(api: api, player: player)
-        lyrics = LyricsStore(api: api)
+        let lyricService = LyricsService(api: api, settings: settings)
+        lyrics = LyricsStore(service: lyricService)
         screenAwakeCoordinator = ScreenAwakeCoordinator()
         home = DesktopHomeStore(api: api, settings: settings)
 
@@ -83,9 +84,10 @@ final class DesktopAppModel {
     }
 
     func synchronizeLyrics() async {
-        let songID = player.currentSong?.id
-        await lyrics.load(for: songID)
-        player.setNowPlayingLyrics(lyrics.lyrics, for: songID)
+        let song = player.currentSong
+        let lyricSong = song?.isPodcastProgram == true ? nil : song
+        await lyrics.load(for: lyricSong)
+        player.setNowPlayingLyrics(lyrics.lyrics, for: lyricSong?.id)
     }
 
     func refreshAll() async {

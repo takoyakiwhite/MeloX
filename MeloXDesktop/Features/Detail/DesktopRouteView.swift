@@ -54,6 +54,7 @@ struct DesktopCollectionHeader: View {
     var artworkSystemImage: String?
     var artworkTint: Color = .red
     var supplementaryAction: DesktopCollectionSupplementaryAction?
+    var onPlayAll: ((Bool) async -> Void)?
 
     @Environment(DesktopAppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -159,17 +160,27 @@ struct DesktopCollectionHeader: View {
     private var actions: some View {
         HStack(spacing: 12) {
             Button("播放", systemImage: "play.fill") {
-                Task { await model.player.playAll(songs, sourceID: sourceID) }
+                Task {
+                    if let onPlayAll {
+                        await onPlayAll(false)
+                    } else {
+                        await model.player.playAll(songs, sourceID: sourceID)
+                    }
+                }
             }
             .buttonStyle(.borderedProminent)
             .disabled(songs.isEmpty)
 
             Button("随机播放", systemImage: "shuffle") {
                 Task {
-                    await model.player.playAll(
-                        songs.shuffled(),
-                        sourceID: sourceID
-                    )
+                    if let onPlayAll {
+                        await onPlayAll(true)
+                    } else {
+                        await model.player.playAll(
+                            songs.shuffled(),
+                            sourceID: sourceID
+                        )
+                    }
                 }
             }
             .buttonStyle(.bordered)

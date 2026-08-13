@@ -115,6 +115,11 @@ struct DesktopLyricLineView: View {
                             fontSize: fontSize,
                             romanizationFontSize: romanizationFontSize,
                             fontWeight: model.settings.lyricsFontWeight,
+                            alignment: .resolved(
+                                for: line,
+                                duetLayoutEnabled:
+                                    model.settings.lyricsDuetLayoutEnabled
+                            ),
                             primaryColor: foregroundColor,
                             showsTranslation: showsTranslation,
                             showsRomanization: showsRomanization,
