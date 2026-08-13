@@ -173,12 +173,6 @@ final class PlayerStore {
     private var loadGeneration = 0
 
     @ObservationIgnored
-    private var playbackRecoveryAttempts = 0
-
-    @ObservationIgnored
-    private let maximumPlaybackRecoveryAttempts = 2
-
-    @ObservationIgnored
     private var beatAnalysisGeneration = 0
 
     @ObservationIgnored
@@ -590,7 +584,7 @@ final class PlayerStore {
             guard let self,
                   self.currentSong?.id == songID else { return }
             let startPosition =
-                self.seekRevision == qualityChangeRevision
+                self.playbackMutationRevision == qualityChangeRevision
                 ? resumePosition
                 : self.estimatedProgress()
             await self.loadCurrentSong(
@@ -1063,7 +1057,6 @@ final class PlayerStore {
         currentPlaybackSourceHost = nil
         effectivePlaybackQuality = nil
         currentLoadShouldAutoplay = autoplay
-        playbackRecoveryAttempts = 0
         playbackIssue = nil
         if nowPlayingLyricsSongID != song.id {
             nowPlayingLyricsSongID = nil
@@ -1135,32 +1128,12 @@ final class PlayerStore {
     private func handleEngineFailure(_ error: Error) async {
         if let playbackError = error as? AudioPlaybackError,
            case .itemFailed = playbackError,
+           isUsingDownloadedSource,
            let song = currentSong {
             let resumePosition = estimatedProgress()
             let shouldAutoplay = currentLoadShouldAutoplay
-
-            if isUsingDownloadedSource {
-                isUsingDownloadedSource = false
-                downloads.discardInvalidDownload(songID: song.id)
-            }
-
-            guard playbackRecoveryAttempts
-                    < maximumPlaybackRecoveryAttempts else {
-                if let song = currentSong {
-                    playbackIssue = PlaybackIssue(
-                        song: song,
-                        error: error
-                    )
-                }
-                isLoading = false
-                isPlaying = false
-                updateNowPlayingState()
-                persistSnapshot()
-                return
-            }
-
-            playbackRecoveryAttempts += 1
-            playbackIssue = nil
+            isUsingDownloadedSource = false
+            downloads.discardInvalidDownload(songID: song.id)
             await loadCurrentSong(
                 autoplay: shouldAutoplay,
                 startAt: resumePosition
@@ -1174,6 +1147,11 @@ final class PlayerStore {
         isLoading = false
         isPlaying = false
         updateNowPlayingState()
+
+        if let playbackError = error as? AudioPlaybackError,
+           case .itemFailed = playbackError {
+            engine.unload()
+        }
         persistSnapshot()
     }
 
@@ -1210,7 +1188,6 @@ final class PlayerStore {
                     self.isLoading = false
                 }
             case .playing:
-                self.playbackRecoveryAttempts = 0
                 self.isPlaying = true
                 self.isLoading = false
                 self.currentLoadShouldAutoplay = true
