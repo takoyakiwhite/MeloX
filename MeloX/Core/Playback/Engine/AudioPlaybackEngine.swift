@@ -115,7 +115,6 @@ final class AudioPlaybackEngine {
 
     deinit {
         pendingSeekRetryTask?.cancel()
-        preciseSeekFallbackTask?.cancel()
         for (player, observer) in zip(
             observedPlayers,
             timeObservers
