@@ -2410,7 +2410,7 @@ struct AppleMusicLyricsView: View {
         )
         browsingGeneration += 1
         isBrowsingLyrics = false
-        player.seek(to: line.time)
+        player.seekToLyric(at: line.time)
     }
 
     private func holdSeekFeedbackUntilFocusCompletes(
