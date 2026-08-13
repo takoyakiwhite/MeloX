@@ -158,9 +158,9 @@ private struct NowPlayingQualityMenu: View {
 
     private var displayedQualityTitle: String {
         switch player.currentPlaybackSourceHost {
-        case "kw-er.kuwo.cn":
+        case "kw-er.kuwo.cn", "kw-lv.kuwo.cn":
             return "酷我"
-        case "bd-er.kuwo.cn":
+        case "bd-er.kuwo.cn", "bd-lv.kuwo.cn":
             return "波点"
         case "fsandroid.tx.kugou.com":
             return "酷狗"
