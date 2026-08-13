@@ -61,11 +61,24 @@ final class AudioPlaybackEngine {
     private var suppressesProgressUpdates = false
     private var didReportCurrentItemFailure = false
     private var loadGeneration = 0
-    private var currentSource: PlaybackSource?
     private var playbackRecoveryTask: Task<Void, Never>?
     private var playbackRecoveryGeneration = 0
     private var playbackRecoveryAttempt = 0
-    private var isReloadingForPlaybackRecovery = false
+    private var isAudioInterrupted = false
+    private var isRouteChanging = false
+    private var routeChangeTask: Task<Void, Never>?
+    private var routeChangeGeneration = 0
+
+    private struct PreparedItemCacheKey: Equatable {
+        let url: URL
+        let quality: MusicQuality?
+        let bitrate: Int?
+    }
+
+    private var preparedItemCacheKey: PreparedItemCacheKey?
+    private var preparedItemCache: PreparedAudioPlaybackItem?
+    private var preparedItemTask: Task<Void, Never>?
+    private var preparedItemGeneration = 0
 
     private var decks: [AudioPlaybackDeck] {
         autoMixController.decks
@@ -81,6 +94,10 @@ final class AudioPlaybackEngine {
 
     var hasCurrentItem: Bool {
         activeDeck.player.currentItem != nil
+    }
+
+    var currentItemNeedsReload: Bool {
+        activeDeck.player.currentItem?.status == .failed
     }
 
     var currentPlaybackTime: TimeInterval? {
@@ -122,8 +139,10 @@ final class AudioPlaybackEngine {
     }
 
     deinit {
-        pendingSeekRetryTask?.cancel()
+        preparedItemTask?.cancel()
+        routeChangeTask?.cancel()
         playbackRecoveryTask?.cancel()
+        pendingSeekRetryTask?.cancel()
         for (player, observer) in zip(
             observedPlayers,
             timeObservers
@@ -135,6 +154,51 @@ final class AudioPlaybackEngine {
         for observer in notificationObservers {
             NotificationCenter.default.removeObserver(observer)
         }
+    }
+
+    func preload(
+        _ source: PlaybackSource
+    ) async {
+        let key = PreparedItemCacheKey(
+            url: source.url,
+            quality: source.quality,
+            bitrate: source.bitrate
+        )
+        if preparedItemCacheKey == key,
+           preparedItemCache != nil {
+            return
+        }
+        preparedItemGeneration += 1
+        let generation = preparedItemGeneration
+        preparedItemTask?.cancel()
+        preparedItemTask = Task { @MainActor [weak self] in
+            guard let self else { return }
+            do {
+                let item = try await self.itemFactory.makeItem(
+                    for: source,
+                    preferredForwardBufferDuration:
+                        source.preferredForwardBufferDuration,
+                    autoMixEqualizerState:
+                        self.activeDeck.autoMixEqualizerState
+                )
+                try Task.checkCancellation()
+                guard generation == self.preparedItemGeneration else { return }
+                self.preparedItemCacheKey = key
+                self.preparedItemCache = item
+            } catch {
+                guard generation == self.preparedItemGeneration else { return }
+            }
+        }
+        await preparedItemTask?.value
+        preparedItemTask = nil
+    }
+
+    private func invalidatePreparedItemCache() {
+        preparedItemGeneration += 1
+        preparedItemTask?.cancel()
+        preparedItemTask = nil
+        preparedItemCacheKey = nil
+        preparedItemCache = nil
     }
 
     func load(
@@ -150,7 +214,6 @@ final class AudioPlaybackEngine {
         cancelPlaybackRecovery()
         seekRetryAttempt = 0
         wantsPlayback = autoplay
-        currentSource = source
         pendingSeekTime = startAt > 0 ? startAt : nil
         // Any non-zero starting position (resume, explicit start, or a
         // restored position after relaunch) must be resolved against the
@@ -161,11 +224,25 @@ final class AudioPlaybackEngine {
         transition(to: .loading)
 
         do {
-            let playbackItem = try await itemFactory.makeItem(
-                for: source,
-                preferredForwardBufferDuration: 8,
-                autoMixEqualizerState: activeDeck.autoMixEqualizerState
+            let key = PreparedItemCacheKey(
+                url: source.url,
+                quality: source.quality,
+                bitrate: source.bitrate
             )
+            let playbackItem: PreparedAudioPlaybackItem
+            if preparedItemCacheKey == key,
+               let cached = preparedItemCache {
+                playbackItem = cached
+                preparedItemCacheKey = nil
+                preparedItemCache = nil
+            } else {
+                playbackItem = try await itemFactory.makeItem(
+                    for: source,
+                    preferredForwardBufferDuration: 8,
+                    autoMixEqualizerState: activeDeck.autoMixEqualizerState
+                )
+            }
+            invalidatePreparedItemCache()
             guard generation == loadGeneration,
                   !Task.isCancelled else {
                 return
@@ -174,7 +251,7 @@ final class AudioPlaybackEngine {
                 with: playbackItem,
                 identifier: nil
             )
-            if autoplay {
+            if autoplay && wantsPlayback {
                 play()
             }
         } catch is CancellationError {
@@ -185,39 +262,56 @@ final class AudioPlaybackEngine {
         }
     }
 
+    func stopImmediatelyForTrackChange() {
+        cancelPlaybackRecovery()
+        pendingSeekRetryTask?.cancel()
+        pendingSeekRetryTask = nil
+        seekGeneration += 1
+        pendingSeekTime = nil
+        wantsPlayback = false
+        suppressesProgressUpdates = true
+        for player in observedPlayers {
+            player.pause()
+            player.rate = 0
+            player.cancelPendingPrerolls()
+            player.currentItem?.cancelPendingSeeks()
+        }
+        autoMixController.pauseAll()
+    }
+
     func unload() {
         loadGeneration += 1
         pendingSeekRetryTask?.cancel()
-        cancelPlaybackRecovery()
         pendingSeekRetryTask = nil
+        cancelPlaybackRecovery()
+        routeChangeGeneration += 1
+        routeChangeTask?.cancel()
+        routeChangeTask = nil
         wantsPlayback = false
         pendingSeekTime = nil
         seekGeneration += 1
         seekRetryAttempt = 0
         suppressesProgressUpdates = false
         didReportCurrentItemFailure = false
-        currentSource = nil
         autoMixController.reset()
         transition(to: .idle)
     }
 
     func play() {
         wantsPlayback = true
-        cancelPlaybackRecovery()
         guard let item = activeDeck.player.currentItem else {
-            schedulePlaybackRecovery(reason: .missingItem)
+            return
+        }
+        if item.status == .failed {
+            onFailure?(AudioPlaybackError.itemFailed(item.error))
             return
         }
         guard item.status == .readyToPlay else {
-            if item.status == .failed {
-                schedulePlaybackRecovery(reason: .failedItem)
-            } else {
-                transition(to: .loading)
-                schedulePlaybackRecovery(reason: .waiting)
-            }
+            transition(to: .loading)
             return
         }
 
+        cancelPlaybackRecovery()
         do {
             try activateAudioSession()
 
@@ -234,8 +328,11 @@ final class AudioPlaybackEngine {
                 activeDeck.player.play()
             }
         } catch {
-            wantsPlayback = false
-            onFailure?(AudioPlaybackError.audioSession(error))
+            if let item = activeDeck.player.currentItem {
+                schedulePlaybackRecovery(for: item)
+            } else {
+                onFailure?(AudioPlaybackError.audioSession(error))
+            }
         }
     }
 
@@ -257,10 +354,10 @@ final class AudioPlaybackEngine {
     private func performSeek(
         to seconds: TimeInterval
     ) {
-        cancelPlaybackRecovery()
         let position = max(0, seconds)
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
+        cancelPlaybackRecovery()
         seekRetryAttempt = 0
         seekGeneration += 1
         guard let item = activeDeck.player.currentItem else {
@@ -289,6 +386,7 @@ final class AudioPlaybackEngine {
     func setEqualizerConfiguration(
         _ configuration: AudioEqualizerConfiguration
     ) {
+        invalidatePreparedItemCache()
         itemFactory.updateEqualizer(configuration)
     }
 
@@ -486,17 +584,9 @@ final class AudioPlaybackEngine {
             suppressesProgressUpdates = false
             resumePlaybackIfNeeded()
         case .failed:
-            if wantsPlayback {
-                schedulePlaybackRecovery(reason: .failedItem)
-            } else {
-                fail(with: item.error)
-            }
+            fail(with: item.error)
         @unknown default:
-            if wantsPlayback {
-                schedulePlaybackRecovery(reason: .failedItem)
-            } else {
-                fail(with: item.error)
-            }
+            fail(with: item.error)
         }
     }
 
@@ -543,12 +633,7 @@ final class AudioPlaybackEngine {
             return
         }
         if item.status == .failed {
-            if wantsPlayback {
-                schedulePlaybackRecovery(reason: .failedItem)
-                transition(to: .loading)
-            } else {
-                fail(with: item.error)
-            }
+            fail(with: item.error)
             return
         }
         if suppressesProgressUpdates {
@@ -557,18 +642,40 @@ final class AudioPlaybackEngine {
         }
         switch activeDeck.player.timeControlStatus {
         case .paused:
-            transition(
-                to:
-                    item.status == .unknown
-                        ? .loading
-                        : .paused
-            )
+            if wantsPlayback,
+               !isAudioInterrupted,
+               !isRouteChanging {
+                transition(to: .loading)
+                schedulePlaybackRecovery(for: item)
+            } else {
+                transition(
+                    to:
+                        item.status == .unknown
+                            ? .loading
+                            : .paused
+                )
+            }
         case .waitingToPlayAtSpecifiedRate:
-            transition(to: .loading)
+            if wantsPlayback,
+               !isAudioInterrupted,
+               !isRouteChanging {
+                transition(to: .loading)
+                schedulePlaybackRecovery(for: item)
+            } else {
+                transition(to: .loading)
+            }
         case .playing:
+            cancelPlaybackRecovery()
             transition(to: .playing)
         @unknown default:
-            transition(to: .paused)
+            if wantsPlayback,
+               !isAudioInterrupted,
+               !isRouteChanging {
+                transition(to: .loading)
+                schedulePlaybackRecovery(for: item)
+            } else {
+                transition(to: .paused)
+            }
         }
         publishPlaybackClockSample(origin: clockOrigin)
     }
@@ -614,7 +721,6 @@ final class AudioPlaybackEngine {
         to position: TimeInterval,
         for item: AVPlayerItem
     ) {
-        cancelPlaybackRecovery()
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
         pendingSeekTime = nil
@@ -707,189 +813,6 @@ final class AudioPlaybackEngine {
         }
     }
 
-    private enum PlaybackRecoveryReason {
-        case missingItem
-        case paused
-        case waiting
-        case failedItem
-    }
-
-    private func schedulePlaybackRecovery(
-        reason: PlaybackRecoveryReason
-    ) {
-        guard wantsPlayback,
-              !suppressesRecoveryForCurrentState,
-              let item = activeDeck.player.currentItem else {
-            if reason == .missingItem {
-                schedulePlaybackReload()
-            }
-            return
-        }
-
-        let duration = activeDeck.playbackDuration ?? 0
-        let position = activeDeck.currentPlaybackTime ?? 0
-        if duration > 0, position >= duration - 0.25 {
-            return
-        }
-
-        playbackRecoveryTask?.cancel()
-        playbackRecoveryGeneration += 1
-        let generation = playbackRecoveryGeneration
-        let delay: Duration = switch reason {
-        case .paused:
-            .milliseconds(250)
-        case .waiting:
-            .milliseconds(750)
-        case .failedItem, .missingItem:
-            .milliseconds(0)
-        }
-
-        playbackRecoveryTask = Task { @MainActor [weak self, weak item] in
-            do {
-                if delay > .zero {
-                    try await Task.sleep(for: delay)
-                }
-            } catch {
-                return
-            }
-            guard let self,
-                  !Task.isCancelled,
-                  generation == self.playbackRecoveryGeneration,
-                  self.wantsPlayback else {
-                return
-            }
-            if reason == .missingItem {
-                await self.reloadCurrentItemForPlaybackRecovery(
-                    generation: generation
-                )
-                return
-            }
-            guard let item,
-                  self.activeDeck.player.currentItem === item else {
-                return
-            }
-            if item.status == .failed {
-                await self.reloadCurrentItemForPlaybackRecovery(
-                    generation: generation
-                )
-                return
-            }
-
-            do {
-                try self.activateAudioSession()
-                self.activeDeck.player.play()
-            } catch {
-                await self.reloadCurrentItemForPlaybackRecovery(
-                    generation: generation
-                )
-                return
-            }
-
-            do {
-                try await Task.sleep(for: .milliseconds(700))
-            } catch {
-                return
-            }
-            guard !Task.isCancelled,
-                  generation == self.playbackRecoveryGeneration,
-                  self.wantsPlayback,
-                  self.activeDeck.player.currentItem === item else {
-                return
-            }
-            if self.activeDeck.player.timeControlStatus == .playing {
-                self.playbackRecoveryAttempt = 0
-                self.playbackRecoveryTask = nil
-                self.suppressesProgressUpdates = false
-                self.publishPlaybackClockSample(origin: .stateChanged)
-                return
-            }
-            self.playbackRecoveryAttempt += 1
-            if self.playbackRecoveryAttempt < 3 {
-                self.schedulePlaybackRecovery(reason: .waiting)
-            } else {
-                await self.reloadCurrentItemForPlaybackRecovery(
-                    generation: generation
-                )
-            }
-        }
-    }
-
-    private var suppressesRecoveryForCurrentState: Bool {
-        suppressesProgressUpdates || pendingSeekTime != nil
-    }
-
-    private func schedulePlaybackReload() {
-        playbackRecoveryGeneration += 1
-        let generation = playbackRecoveryGeneration
-        playbackRecoveryTask?.cancel()
-        playbackRecoveryTask = Task { @MainActor [weak self] in
-            guard let self,
-                  generation == self.playbackRecoveryGeneration,
-                  self.wantsPlayback else { return }
-            await self.reloadCurrentItemForPlaybackRecovery(
-                generation: generation
-            )
-        }
-    }
-
-    private func cancelPlaybackRecovery() {
-        playbackRecoveryGeneration += 1
-        playbackRecoveryTask?.cancel()
-        playbackRecoveryTask = nil
-    }
-
-    private func reloadCurrentItemForPlaybackRecovery(
-        generation: Int
-    ) async {
-        guard generation == playbackRecoveryGeneration,
-              wantsPlayback,
-              let source = currentSource,
-              !isReloadingForPlaybackRecovery else {
-            return
-        }
-        isReloadingForPlaybackRecovery = true
-        playbackRecoveryTask = nil
-        cancelAutoMix()
-        let loadGenerationAtStart = loadGeneration
-        let resumePosition = max(
-            activeDeck.currentPlaybackTime ?? pendingSeekTime ?? 0,
-            0
-        )
-        pendingSeekRetryTask?.cancel()
-        pendingSeekRetryTask = nil
-        pendingSeekTime = resumePosition > 0 ? resumePosition : nil
-        suppressesProgressUpdates = true
-        transition(to: .loading)
-
-        do {
-            let playbackItem = try await itemFactory.makeItem(
-                for: source,
-                preferredForwardBufferDuration: 8,
-                autoMixEqualizerState: activeDeck.autoMixEqualizerState
-            )
-            guard generation == playbackRecoveryGeneration,
-                  loadGeneration == loadGenerationAtStart,
-                  wantsPlayback,
-                  !Task.isCancelled else {
-                isReloadingForPlaybackRecovery = false
-                return
-            }
-            activeDeck.replaceCurrentItem(
-                with: playbackItem,
-                identifier: nil
-            )
-            didReportCurrentItemFailure = false
-            playbackRecoveryAttempt = 0
-            isReloadingForPlaybackRecovery = false
-        } catch is CancellationError {
-            isReloadingForPlaybackRecovery = false
-        } catch {
-            isReloadingForPlaybackRecovery = false
-            wantsPlayback = false
-            fail(with: error)
-        }
-    }
-
     private func resumePlaybackIfNeeded() {
         if wantsPlayback {
             play()
@@ -901,11 +824,87 @@ final class AudioPlaybackEngine {
     private func fail(with error: Error?) {
         guard !didReportCurrentItemFailure else { return }
         didReportCurrentItemFailure = true
-        wantsPlayback = false
+        cancelPlaybackRecovery()
         autoMixController.pauseAll()
         publishPlaybackClockSample(origin: .stateChanged)
-        transition(to: .paused)
+        transition(to: wantsPlayback ? .loading : .paused)
         onFailure?(AudioPlaybackError.itemFailed(error))
+    }
+
+    private func schedulePlaybackRecovery(
+        for item: AVPlayerItem?
+    ) {
+        guard wantsPlayback,
+              !isAudioInterrupted,
+              !isRouteChanging,
+              let item,
+              activeDeck.player.currentItem === item,
+              item.status == .readyToPlay else {
+            return
+        }
+        guard playbackRecoveryTask == nil else { return }
+        playbackRecoveryGeneration += 1
+        let generation = playbackRecoveryGeneration
+        let attempt = playbackRecoveryAttempt
+        let delayMilliseconds = min(250 * (1 << min(attempt, 4)), 2_000)
+        playbackRecoveryTask = Task { @MainActor [weak self, weak item] in
+            do {
+                try await Task.sleep(for: .milliseconds(delayMilliseconds))
+            } catch {
+                return
+            }
+            guard let self, let item, !Task.isCancelled,
+                  generation == self.playbackRecoveryGeneration,
+                  self.wantsPlayback,
+                  !self.isAudioInterrupted,
+                  !self.isRouteChanging,
+                  self.activeDeck.player.currentItem === item else {
+                return
+            }
+            self.playbackRecoveryTask = nil
+            guard item.status == .readyToPlay else {
+                self.fail(with: item.error)
+                return
+            }
+            do {
+                try self.activateAudioSession()
+            } catch {
+                self.playbackRecoveryAttempt += 1
+                if self.playbackRecoveryAttempt <= 5 {
+                    self.schedulePlaybackRecovery(for: item)
+                } else {
+                    self.onFailure?(AudioPlaybackError.audioSession(error))
+                }
+                return
+            }
+            if self.pendingSeekTime != nil {
+                self.retryPendingSeek(for: item)
+                return
+            }
+            self.activeDeck.player.play()
+            try? await Task.sleep(for: .milliseconds(150))
+            guard !Task.isCancelled,
+                  self.activeDeck.player.currentItem === item,
+                  self.wantsPlayback else { return }
+            if self.activeDeck.player.timeControlStatus == .playing {
+                self.playbackRecoveryAttempt = 0
+                self.updateStateFromPlayer()
+            } else {
+                self.playbackRecoveryAttempt += 1
+                if self.playbackRecoveryAttempt <= 5 {
+                    self.schedulePlaybackRecovery(for: item)
+                } else {
+                    self.fail(with: item.error)
+                }
+            }
+        }
+    }
+
+    private func cancelPlaybackRecovery() {
+        playbackRecoveryGeneration += 1
+        playbackRecoveryTask?.cancel()
+        playbackRecoveryTask = nil
+        playbackRecoveryAttempt = 0
     }
 
     private func transition(
@@ -964,6 +963,8 @@ final class AudioPlaybackEngine {
         }
         switch type {
         case .began:
+            isAudioInterrupted = true
+            cancelPlaybackRecovery()
             onInterruptionBegan?()
         case .ended:
             let rawOptions = notification.userInfo?[
@@ -985,12 +986,42 @@ final class AudioPlaybackEngine {
         guard let rawReason = notification.userInfo?[
             AVAudioSessionRouteChangeReasonKey
         ] as? UInt,
-              AVAudioSession.RouteChangeReason(
+              let reason = AVAudioSession.RouteChangeReason(
                 rawValue: rawReason
-              ) == .oldDeviceUnavailable else {
+              ) else {
             return
         }
-        pause()
-        onOutputDeviceDisconnected?()
+
+        switch reason {
+        case .oldDeviceUnavailable, .newDeviceAvailable, .routeConfigurationChange:
+            isRouteChanging = true
+            cancelPlaybackRecovery()
+            if wantsPlayback {
+                try? activateAudioSession()
+                routeChangeGeneration += 1
+                routeChangeTask?.cancel()
+                let generation = routeChangeGeneration
+                routeChangeTask = Task { @MainActor [weak self] in
+                    guard let self else { return }
+                    do {
+                        try await Task.sleep(for: .milliseconds(250))
+                    } catch {
+                        return
+                    }
+                    guard generation == self.routeChangeGeneration,
+                          self.wantsPlayback else { return }
+                    self.routeChangeTask = nil
+                    self.isRouteChanging = false
+                    self.schedulePlaybackRecovery(
+                        for: self.activeDeck.player.currentItem
+                    )
+                }
+            } else {
+                isRouteChanging = false
+                onOutputDeviceDisconnected?()
+            }
+        default:
+            break
+        }
     }
 }
