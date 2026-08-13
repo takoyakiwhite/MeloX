@@ -550,6 +550,13 @@ final class PlayerStore {
         playbackIssue = nil
     }
 
+    /// Persists the most recent playback position at an app lifecycle boundary.
+    /// The position is sampled from AVPlayer when the precise playback timeline
+    /// is available, avoiding a stale UI-only `progress` value.
+    func persistPlaybackStateForLifecycle() {
+        persistSnapshot()
+    }
+
     func selectPlaybackQuality(_ quality: MusicQuality) {
         let currentQuality = api.isCellularData
             ? settings.cellularQuality
@@ -1183,6 +1190,7 @@ final class PlayerStore {
         engine.onInterruptionBegan = { [weak self] in
             guard let self else { return }
             self.shouldResumeAfterInterruption = self.isPlaying
+            self.persistSnapshot()
             self.engine.pause()
         }
         engine.onInterruptionEnded = { [weak self] shouldResume in
@@ -1259,7 +1267,9 @@ final class PlayerStore {
             }
         }
         nowPlayingSession.onPause = { [weak self] in
-            self?.engine.pause()
+            guard let self else { return }
+            self.engine.pause()
+            self.persistSnapshot()
         }
         nowPlayingSession.onNext = { [weak self] in
             Task { @MainActor in await self?.next() }
@@ -1577,11 +1587,23 @@ final class PlayerStore {
             persistence.clear()
             return
         }
+
+        let liveEngineProgress = engine.currentPlaybackTime
+        let liveProgress = liveEngineProgress ?? estimatedProgress()
+        let snapshotProgress = clampedPlaybackPosition(liveProgress)
+        if liveEngineProgress != nil {
+            progress = snapshotProgress
+            reanchorPlaybackTimeline(
+                to: snapshotProgress,
+                rate: isPlaying ? 1 : 0
+            )
+        }
+
         persistence.save(
             PlaybackSnapshot(
                 queue: queue,
                 currentIndex: currentIndex,
-                progress: progress,
+                progress: snapshotProgress,
                 repeatMode: repeatMode.rawValue,
                 isShuffled: isShuffled,
                 shuffledOrder: playbackQueue.persistedShuffleOrder,
