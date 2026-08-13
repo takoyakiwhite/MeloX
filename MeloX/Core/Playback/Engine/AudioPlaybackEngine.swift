@@ -225,14 +225,14 @@ final class AudioPlaybackEngine {
     }
 
     func seek(to seconds: TimeInterval) {
-        seek(to: seconds)
+        performSeek(to: seconds)
     }
 
     func seekToLyric(at seconds: TimeInterval) {
-        seek(to: seconds)
+        performSeek(to: seconds)
     }
 
-    private func seek(
+    private func performSeek(
         to seconds: TimeInterval
     ) {
         let position = max(0, seconds)
