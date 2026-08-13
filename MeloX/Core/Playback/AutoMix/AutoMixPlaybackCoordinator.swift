@@ -24,7 +24,6 @@ final class AutoMixPlaybackCoordinator {
         let attempt: Attempt
         let context: PreparedAutoMixContext
         let plan: AutoMixTransitionPlan
-        let outgoingDuration: TimeInterval
     }
 
     private let api: NeteaseAPI
@@ -39,16 +38,6 @@ final class AutoMixPlaybackCoordinator {
     private var plannedTransition: PlannedTransition?
     private var preparedContext: PreparedAutoMixContext?
     private var transitionHasBegun = false
-    private var latestRemainingTime =
-        TimeInterval.infinity
-    private var latestPreloadLeadTime: TimeInterval = 0
-
-    // Precise timing metadata can take several seconds to resolve for
-    // streaming sources. Keep the user-visible preload setting unchanged,
-    // but start the standby deck preparation early enough to absorb that
-    // latency without changing the transition itself.
-    private let preciseTimelinePreparationMargin: TimeInterval = 30
-
     init(
         api: NeteaseAPI,
         downloads: DownloadStore,
@@ -93,20 +82,11 @@ final class AutoMixPlaybackCoordinator {
             outgoingDuration,
             TimeInterval(outgoingSong.durationMS) / 1_000
         )
-        let remaining = max(
-            outgoingDuration - outgoingProgress,
-            0
-        )
 
         if let attempt,
            attempt != nextAttempt {
             cancel()
         }
-        latestRemainingTime = remaining
-        latestPreloadLeadTime =
-            configuration.preloadLeadTime
-            + preciseTimelinePreparationMargin
-
         if plannedTransition?.attempt
             == nextAttempt {
             prepareDeckIfNeeded()
@@ -118,15 +98,6 @@ final class AutoMixPlaybackCoordinator {
               preparedContext == nil,
               !engine.hasPreparedAutoMix,
               attempt != nextAttempt else {
-            return
-        }
-
-        let effectivePreloadLeadTime =
-            configuration.preloadLeadTime
-            + preciseTimelinePreparationMargin
-
-        if configuration.mode != .smart,
-           remaining > effectivePreloadLeadTime {
             return
         }
 
@@ -188,9 +159,7 @@ final class AutoMixPlaybackCoordinator {
                     PlannedTransition(
                         attempt: nextAttempt,
                         context: context,
-                        plan: plan,
-                        outgoingDuration:
-                            outgoingDuration
+                        plan: plan
                     )
                 self.prepareDeckIfNeeded()
             } catch is CancellationError {
@@ -215,20 +184,6 @@ final class AutoMixPlaybackCoordinator {
                 == attempt else {
             return
         }
-        let transitionLeadTime = max(
-            plannedTransition
-                .outgoingDuration
-                - plannedTransition
-                    .plan
-                    .outgoingStartTime
-                + 12,
-            latestPreloadLeadTime
-        )
-        guard latestRemainingTime
-                <= transitionLeadTime else {
-            return
-        }
-
         self.plannedTransition = nil
         preparedContext =
             plannedTransition.context
@@ -287,8 +242,6 @@ final class AutoMixPlaybackCoordinator {
         plannedTransition = nil
         preparedContext = nil
         transitionHasBegun = false
-        latestRemainingTime = .infinity
-        latestPreloadLeadTime = 0
         engine.cancelAutoMix()
     }
 
@@ -383,8 +336,6 @@ final class AutoMixPlaybackCoordinator {
             self.plannedTransition = nil
             self.preparedContext = nil
             self.transitionHasBegun = false
-            self.latestRemainingTime = .infinity
-            self.latestPreloadLeadTime = 0
             self.onTransitionCompleted?(context)
         }
         engine.onAutoMixPreparationFailed = {
@@ -407,10 +358,10 @@ final class AutoMixPlaybackCoordinator {
         transitionHasBegun = false
         attempt = nil
         if context.sourceIsDownloaded {
-        downloads.discardInvalidDownload(
-            songID: incomingSongID
-        )
-    }
+            downloads.discardInvalidDownload(
+                songID: incomingSongID
+            )
+        }
     }
 
     private static func duration(
