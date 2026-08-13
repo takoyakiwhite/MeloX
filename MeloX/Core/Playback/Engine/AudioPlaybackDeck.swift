@@ -27,6 +27,7 @@ final class AudioPlaybackDeck {
         identifier: Int?
     ) {
         let item = playbackItem.item
+        cancelCurrentAssetLoading()
         player.currentItem?.cancelPendingSeeks()
         player.cancelPendingPrerolls()
         autoMixEqualizerState.reset()
@@ -34,15 +35,15 @@ final class AudioPlaybackDeck {
         seekableTimeRangesObserver?.invalidate()
         itemIdentifier = identifier
         mediaTimeline = playbackItem.timeline
+        item.audioMix = playbackItem.audioMix
+
         itemStatusObserver = item.observe(
             \.status,
             options: [.initial, .new]
         ) { [weak self, weak item] _, _ in
             guard let self, let item else { return }
             Task { @MainActor [self, item] in
-                guard self.player.currentItem === item else {
-                    return
-                }
+                guard self.player.currentItem === item else { return }
                 self.onItemStatusChanged?(item)
             }
         }
@@ -52,9 +53,7 @@ final class AudioPlaybackDeck {
         ) { [weak self, weak item] _, _ in
             guard let self, let item else { return }
             Task { @MainActor [self, item] in
-                guard self.player.currentItem === item else {
-                    return
-                }
+                guard self.player.currentItem === item else { return }
                 self.onSeekableTimeRangesChanged?(item)
             }
         }
@@ -92,12 +91,19 @@ final class AudioPlaybackDeck {
         itemIdentifier = nil
         mediaTimeline = AudioPlaybackMediaTimeline()
         player.pause()
+        cancelCurrentAssetLoading()
         player.currentItem?.cancelPendingSeeks()
         player.cancelPendingPrerolls()
-        if let asset = player.currentItem?.asset as? AVURLAsset {
-            asset.cancelLoading()
-        }
         player.replaceCurrentItem(with: nil)
         player.rate = 0
     }
+
+    private func cancelCurrentAssetLoading() {
+        guard let asset = player.currentItem?.asset
+            as? AVURLAsset else {
+            return
+        }
+        asset.cancelLoading()
+    }
+
 }
