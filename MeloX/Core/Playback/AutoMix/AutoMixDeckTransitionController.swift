@@ -121,36 +121,38 @@ final class AutoMixDeckTransitionController {
         clearStandbyDeck()
 
         let deckIndex = standbyDeckIndex
-        let playbackItem = await itemFactory.makeItem(
-            for: source,
-            preferredForwardBufferDuration:
-                max(plan.duration + 8, 12),
-            autoMixEqualizerState:
-                decks[deckIndex]
-                    .autoMixEqualizerState
-        )
-        let item = playbackItem.item
-        item.audioTimePitchAlgorithm = .spectral
+        let deck = decks[deckIndex]
+        let equalizerState = decks[deckIndex].autoMixEqualizerState
+        let playbackItem: PreparedAudioPlaybackItem
+        do {
+            playbackItem = try await itemFactory.makeItem(
+                for: source,
+                preferredForwardBufferDuration: max(plan.duration + 8, 12),
+                autoMixEqualizerState: equalizerState
+            )
+        } catch is CancellationError {
+            return
+        } catch {
+            guard generation == preparationGeneration,
+                  activeTransition == nil else {
+                return
+            }
+            onPreparationFailed?(identifier, AutoMixPreparationError.itemFailed(error))
+            return
+        }
         guard generation == preparationGeneration,
               !Task.isCancelled,
               activeTransition == nil else {
             return
         }
-
-        let deck = decks[deckIndex]
+        let item = playbackItem.item
+        item.audioTimePitchAlgorithm = .spectral
         deck.replaceCurrentItem(
             with: playbackItem,
             identifier: identifier
         )
         deckGains[deckIndex] = 0
         applyOutputVolumes()
-        await seek(
-            deck.player,
-            to: deck.mediaTime(
-                forPlaybackPosition:
-                    plan.incomingStartTime
-            )
-        )
         guard generation == preparationGeneration,
               deck.player.currentItem === item else {
             return
