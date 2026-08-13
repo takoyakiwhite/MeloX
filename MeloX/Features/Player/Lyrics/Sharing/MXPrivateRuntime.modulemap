@@ -1,4 +1,0 @@
-module MXPrivateRuntime {
-    header "MXPrivateRuntime.h"
-    export *
-}
