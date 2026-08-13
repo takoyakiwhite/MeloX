@@ -43,6 +43,7 @@ final class PlayerStore {
     private(set) var progress: TimeInterval = 0
     private(set) var duration: TimeInterval = 0
     private(set) var seekRevision = 0
+    private var playbackMutationRevision = 0
     private(set) var isLoading = false
     private(set) var playbackIssue: PlaybackIssue?
     private(set) var volume: Double = 1
@@ -573,8 +574,8 @@ final class PlayerStore {
             settings.quality = quality
         }
         guard let songID else { return }
-        seekRevision += 1
-        let qualityChangeRevision = seekRevision
+        playbackMutationRevision += 1
+        let qualityChangeRevision = playbackMutationRevision
         Task { @MainActor [weak self] in
             guard let self,
                   self.currentSong?.id == songID else { return }
@@ -690,19 +691,11 @@ final class PlayerStore {
     ) {
         let clamped = clampedPlaybackPosition(seconds)
         cancelAutoMixPreparation()
-        progress = clamped
-        reanchorPlaybackTimeline(to: clamped, rate: 0)
-        seekRevision += 1
         if requiresPreciseTimeline {
             engine.seekToLyric(at: clamped)
         } else {
             engine.seek(to: clamped)
         }
-        updateNowPlayingState(
-            forceNowPlayingLyrics: true,
-            forceLyricsLiveActivity: true
-        )
-        persistSnapshot()
     }
 
     func setNowPlayingLyrics(_ lyrics: [LyricLine], for songID: Int?) {
@@ -1146,7 +1139,6 @@ final class PlayerStore {
         engine.seek(to: 0)
         progress = 0
         reanchorPlaybackTimeline(to: 0, rate: 0)
-        seekRevision += 1
         isPlaying = false
         isLoading = false
         updateNowPlayingState()
@@ -1232,13 +1224,21 @@ final class PlayerStore {
             rate: sample.rate,
             at: sample.sampledAt
         )
+        if sample.origin == .seekCompleted {
+            seekRevision += 1
+        }
         updateNowPlayingLyricMetadata()
         updateLyricsLiveActivity()
         updateLyricsNotification()
-        let second = Int(measuredProgress)
-        if second != lastPersistedSecond {
-            lastPersistedSecond = second
+        if sample.origin == .seekCompleted {
+            lastPersistedSecond = Int(measuredProgress)
             persistSnapshot()
+        } else {
+            let second = Int(measuredProgress)
+            if second != lastPersistedSecond {
+                lastPersistedSecond = second
+                persistSnapshot()
+            }
         }
         prepareAutoMixIfNeeded()
     }
