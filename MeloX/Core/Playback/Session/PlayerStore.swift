@@ -677,12 +677,27 @@ final class PlayerStore {
     }
 
     func seek(to seconds: TimeInterval) {
+        performSeek(to: seconds, requiresPreciseTimeline: false)
+    }
+
+    func seekToLyric(at seconds: TimeInterval) {
+        performSeek(to: seconds, requiresPreciseTimeline: true)
+    }
+
+    private func performSeek(
+        to seconds: TimeInterval,
+        requiresPreciseTimeline: Bool
+    ) {
         let clamped = clampedPlaybackPosition(seconds)
         cancelAutoMixPreparation()
         progress = clamped
         reanchorPlaybackTimeline(to: clamped, rate: 0)
         seekRevision += 1
-        engine.seek(to: clamped)
+        if requiresPreciseTimeline {
+            engine.seekToLyric(at: clamped)
+        } else {
+            engine.seek(to: clamped)
+        }
         updateNowPlayingState(
             forceNowPlayingLyrics: true,
             forceLyricsLiveActivity: true
