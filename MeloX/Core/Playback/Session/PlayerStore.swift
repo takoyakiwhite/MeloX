@@ -173,6 +173,12 @@ final class PlayerStore {
     private var loadGeneration = 0
 
     @ObservationIgnored
+    private var playbackRecoveryAttempts = 0
+
+    @ObservationIgnored
+    private let maximumPlaybackRecoveryAttempts = 2
+
+    @ObservationIgnored
     private var beatAnalysisGeneration = 0
 
     @ObservationIgnored
@@ -208,17 +214,6 @@ final class PlayerStore {
 
     @ObservationIgnored
     private var currentPlaybackSource: PlaybackSource?
-
-    @ObservationIgnored
-    private var prefetchedPlaybackSources:
-        [Int: (quality: MusicQuality, isCellular: Bool, source: PlaybackSource)] = [:]
-
-    @ObservationIgnored
-    private var sourcePrefetchTasks:
-        [Int: Task<Void, Never>] = [:]
-
-    @ObservationIgnored
-    private var automaticPlaybackRetryCount = 0
 
     @ObservationIgnored
     private var isLoadingAutoplayRecommendations = false
@@ -281,9 +276,6 @@ final class PlayerStore {
         bindAutoMixCoordinator()
         api.onNetworkTypeChanged = { [weak self] _ in
             guard let self else { return }
-            self.prefetchedPlaybackSources.removeAll()
-            self.sourcePrefetchTasks.values.forEach { $0.cancel() }
-            self.sourcePrefetchTasks.removeAll()
             self.autoMixCoordinator
                 .refreshPreparedTransitionForNetworkChange()
             self.prepareAutoMixIfNeeded()
@@ -548,13 +540,7 @@ final class PlayerStore {
                 persistSnapshot()
             } else {
                 playbackIssue = nil
-                if engine.state == .idle {
-                    Task { @MainActor [weak self] in
-                        await self?.retry()
-                    }
-                } else {
-                    engine.play()
-                }
+                engine.play()
             }
         } else {
             Task { @MainActor [weak self] in
@@ -587,9 +573,6 @@ final class PlayerStore {
             ? settings.cellularQuality
             : settings.quality
         guard currentQuality != quality else { return }
-        prefetchedPlaybackSources.removeAll()
-        sourcePrefetchTasks.values.forEach { $0.cancel() }
-        sourcePrefetchTasks.removeAll()
         let shouldAutoplay = isPlaying
             || (isLoading && currentLoadShouldAutoplay)
         let resumePosition = engine.currentPlaybackTime
@@ -607,7 +590,7 @@ final class PlayerStore {
             guard let self,
                   self.currentSong?.id == songID else { return }
             let startPosition =
-                self.playbackMutationRevision == qualityChangeRevision
+                self.seekRevision == qualityChangeRevision
                 ? resumePosition
                 : self.estimatedProgress()
             await self.loadCurrentSong(
@@ -1065,9 +1048,6 @@ final class PlayerStore {
             generation: generation
         )
         resetBeatAnalysis()
-        if currentSong?.id != song.id {
-            automaticPlaybackRetryCount = 0
-        }
         duration = TimeInterval(song.durationMS) / 1_000
         let playbackStartPosition = clampedPlaybackPosition(startAt)
         progress = playbackStartPosition
@@ -1083,6 +1063,7 @@ final class PlayerStore {
         currentPlaybackSourceHost = nil
         effectivePlaybackQuality = nil
         currentLoadShouldAutoplay = autoplay
+        playbackRecoveryAttempts = 0
         playbackIssue = nil
         if nowPlayingLyricsSongID != song.id {
             nowPlayingLyricsSongID = nil
@@ -1105,24 +1086,16 @@ final class PlayerStore {
             if let downloadedSource = downloads.localPlaybackSource(songID: song.id) {
                 source = downloadedSource
                 isUsingDownloadedSource = true
-            } else if let prefetched = prefetchedPlaybackSources[song.id],
-                      prefetched.quality == (api.isCellularData ? settings.cellularQuality : settings.quality),
-                      prefetched.isCellular == api.isCellularData {
-                source = prefetched.source
-                prefetchedPlaybackSources.removeValue(forKey: song.id)
-                sourcePrefetchTasks[song.id]?.cancel()
-                sourcePrefetchTasks.removeValue(forKey: song.id)
             } else if let cachedDetailedSong {
-                // A list response can contain only part of the quality
-                // metadata. Let the source endpoint try the requested
-                // level while song details resolve in parallel.
                 source = try await api.playbackSource(
                     for: cachedDetailedSong
                 )
             } else {
+                // A list response can contain only part of the quality
+                // metadata. Let the v1 source endpoint try the requested
+                // level while song details resolve in parallel.
                 source = try await api.playbackSource(id: song.id)
             }
-            prefetchedPlaybackSources.removeValue(forKey: song.id)
             guard generation == loadGeneration, currentSong?.id == song.id else { return }
             isResolvingSource = false
             currentPlaybackSource = source
@@ -1162,27 +1135,34 @@ final class PlayerStore {
     private func handleEngineFailure(_ error: Error) async {
         if let playbackError = error as? AudioPlaybackError,
            case .itemFailed = playbackError,
-           isUsingDownloadedSource,
            let song = currentSong {
             let resumePosition = estimatedProgress()
             let shouldAutoplay = currentLoadShouldAutoplay
-            isUsingDownloadedSource = false
-            downloads.discardInvalidDownload(songID: song.id)
+
+            if isUsingDownloadedSource {
+                isUsingDownloadedSource = false
+                downloads.discardInvalidDownload(songID: song.id)
+            }
+
+            guard playbackRecoveryAttempts
+                    < maximumPlaybackRecoveryAttempts else {
+                if let song = currentSong {
+                    playbackIssue = PlaybackIssue(
+                        song: song,
+                        error: error
+                    )
+                }
+                isLoading = false
+                isPlaying = false
+                updateNowPlayingState()
+                persistSnapshot()
+                return
+            }
+
+            playbackRecoveryAttempts += 1
+            playbackIssue = nil
             await loadCurrentSong(
                 autoplay: shouldAutoplay,
-                startAt: resumePosition
-            )
-            return
-        }
-
-        if let playbackError = error as? AudioPlaybackError,
-           case .itemFailed = playbackError,
-           currentLoadShouldAutoplay,
-           automaticPlaybackRetryCount < 1 {
-            automaticPlaybackRetryCount += 1
-            let resumePosition = estimatedProgress()
-            await loadCurrentSong(
-                autoplay: true,
                 startAt: resumePosition
             )
             return
@@ -1194,11 +1174,6 @@ final class PlayerStore {
         isLoading = false
         isPlaying = false
         updateNowPlayingState()
-
-        if let playbackError = error as? AudioPlaybackError,
-           case .itemFailed = playbackError {
-            engine.unload()
-        }
         persistSnapshot()
     }
 
@@ -1235,9 +1210,9 @@ final class PlayerStore {
                     self.isLoading = false
                 }
             case .playing:
+                self.playbackRecoveryAttempts = 0
                 self.isPlaying = true
                 self.isLoading = false
-                self.automaticPlaybackRetryCount = 0
                 self.currentLoadShouldAutoplay = true
                 self.playbackIssue = nil
                 self.recordCurrentPlaybackStartIfNeeded()
@@ -1774,48 +1749,7 @@ final class PlayerStore {
         }
     }
 
-    private func prefetchNextPlaybackSource() {
-        guard isPlaying,
-              let nextIndex = upcomingQueueIndices.first,
-              queue.indices.contains(nextIndex),
-              let currentSong else { return }
-        let nextSong = queue[nextIndex]
-        guard nextSong.id != currentSong.id else { return }
-        if let prefetched = prefetchedPlaybackSources[nextSong.id],
-           prefetched.quality == (api.isCellularData ? settings.cellularQuality : settings.quality),
-           prefetched.isCellular == api.isCellularData {
-            return
-        }
-        guard sourcePrefetchTasks[nextSong.id] == nil else { return }
-
-        let quality = api.isCellularData ? settings.cellularQuality : settings.quality
-        let isCellular = api.isCellularData
-        sourcePrefetchTasks[nextSong.id] = Task { @MainActor [weak self] in
-            guard let self else { return }
-            defer { self.sourcePrefetchTasks.removeValue(forKey: nextSong.id) }
-            do {
-                let source: PlaybackSource
-                if let localSource = self.downloads.localPlaybackSource(songID: nextSong.id) {
-                    source = localSource
-                } else {
-                    source = try await self.api.playbackSource(for: nextSong)
-                }
-                try Task.checkCancellation()
-                guard self.currentSong?.id == currentSong.id,
-                      self.api.isCellularData == isCellular else { return }
-                self.prefetchedPlaybackSources[nextSong.id] = (
-                    quality: quality,
-                    isCellular: isCellular,
-                    source: source
-                )
-            } catch {
-                return
-            }
-        }
-    }
-
     private func prepareAutoMixIfNeeded() {
-        prefetchNextPlaybackSource()
         let nextSong = upcomingQueueIndices.first.flatMap {
             queue.indices.contains($0)
                 ? queue[$0]
