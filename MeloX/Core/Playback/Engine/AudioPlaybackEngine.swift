@@ -145,7 +145,10 @@ final class AudioPlaybackEngine {
         seekRetryAttempt = 0
         wantsPlayback = autoplay
         pendingSeekTime = startAt > 0 ? startAt : nil
-        pendingSeekRequiresPrecise = false
+        // Any non-zero starting position (resume, explicit start, or a
+        // restored position after relaunch) must be resolved against the
+        // precise media timeline. Starting from zero needs no seek.
+        pendingSeekRequiresPrecise = startAt > 0
         seekGeneration += 1
         suppressesProgressUpdates = true
         didReportCurrentItemFailure = false
@@ -521,7 +524,18 @@ final class AudioPlaybackEngine {
         case .readyToPlay:
             publishDurationIfAvailable()
             if pendingSeekTime != nil {
-                resumePlaybackIfNeeded()
+                // A persisted/start position is a seek request, not a request
+                // to start playback. It must be consumed as soon as the item
+                // is ready even when wantsPlayback == false (e.g. app restart).
+                // The old implementation routed this through
+                // resumePlaybackIfNeeded(), which intentionally did nothing
+                // while paused and left suppressesProgressUpdates=true
+                // forever, producing a permanent loading state after restore.
+                if activeDeck.isPreciseMetadataReady {
+                    retryPendingSeek(for: item)
+                } else if !pendingSeekRequiresPrecise {
+                    retryPendingSeek(for: item)
+                }
                 return
             }
             suppressesProgressUpdates = false
