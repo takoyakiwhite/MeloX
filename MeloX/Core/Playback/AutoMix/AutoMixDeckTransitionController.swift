@@ -121,13 +121,10 @@ final class AutoMixDeckTransitionController {
         clearStandbyDeck()
 
         let deckIndex = standbyDeckIndex
-        let playbackItem = await itemFactory.makeItem(
+        let playbackItem = itemFactory.makeItem(
             for: source,
             preferredForwardBufferDuration:
-                max(plan.duration + 8, 12),
-            autoMixEqualizerState:
-                decks[deckIndex]
-                    .autoMixEqualizerState
+                max(plan.duration + 8, 12)
         )
         let item = playbackItem.item
         item.audioTimePitchAlgorithm = .spectral
@@ -138,9 +135,17 @@ final class AutoMixDeckTransitionController {
         }
 
         let deck = decks[deckIndex]
+        let equalizerState =
+            decks[deckIndex].autoMixEqualizerState
         deck.replaceCurrentItem(
             with: playbackItem,
-            identifier: identifier
+            identifier: identifier,
+            metadataLoader: { [itemFactory, playbackItem, equalizerState] in
+                try await itemFactory.loadMetadata(
+                    for: playbackItem,
+                    autoMixEqualizerState: equalizerState
+                )
+            }
         )
         deckGains[deckIndex] = 0
         applyOutputVolumes()
