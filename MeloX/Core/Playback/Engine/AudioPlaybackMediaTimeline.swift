@@ -6,40 +6,29 @@ import Foundation
 /// asset time zero, so passing lyric seconds directly to AVPlayer would seek
 /// into a different point after changing source quality.
 struct AudioPlaybackMediaTimeline {
-    enum Resolution: Equatable {
-        case preciseTrackTimeRange
-        case mediaZeroFallback
-    }
-
     let mediaStart: TimeInterval
-    let trackDuration: TimeInterval?
-    let resolution: Resolution
+    let trackDuration: TimeInterval
 
-    init(audioTrackTimeRange: CMTimeRange? = nil) {
-        if let range = audioTrackTimeRange,
-           range.isValid,
-           range.start.isNumeric,
-           range.duration.isNumeric {
-            let start = range.start.seconds
-            let duration = range.duration.seconds
-            if start.isFinite,
-               start >= 0,
-               duration.isFinite,
-               duration > 0 {
-                mediaStart = start
-                trackDuration = duration
-                resolution = .preciseTrackTimeRange
-                return
-            }
-        }
-
+    init() {
         mediaStart = 0
-        trackDuration = nil
-        resolution = .mediaZeroFallback
+        trackDuration = 0
     }
 
-    var isFallback: Bool {
-        resolution == .mediaZeroFallback
+    init(audioTrackTimeRange: CMTimeRange) {
+        precondition(
+            audioTrackTimeRange.isValid,
+            "AudioPlaybackMediaTimeline requires a valid time range"
+        )
+        precondition(
+            audioTrackTimeRange.start.isNumeric,
+            "AudioPlaybackMediaTimeline requires a numeric start"
+        )
+        precondition(
+            audioTrackTimeRange.duration.isNumeric,
+            "AudioPlaybackMediaTimeline requires a numeric duration"
+        )
+        mediaStart = max(audioTrackTimeRange.start.seconds, 0)
+        trackDuration = max(audioTrackTimeRange.duration.seconds, 0)
     }
 
     func playbackPosition(
@@ -58,23 +47,17 @@ struct AudioPlaybackMediaTimeline {
             : 0
         return CMTime(
             seconds: normalizedPosition + mediaStart,
-            preferredTimescale: 600
+            preferredTimescale: 1_000_000
         )
     }
 
     func playbackDuration(
-        forMediaDuration mediaDuration: CMTime
+        forMediaDuration _: CMTime
     ) -> TimeInterval? {
-        if let trackDuration,
-           trackDuration.isFinite,
-           trackDuration > 0 {
-            return trackDuration
-        }
-        let seconds = mediaDuration.seconds
-        guard seconds.isFinite, seconds > 0 else {
+        guard trackDuration.isFinite, trackDuration > 0 else {
             return nil
         }
-        return max(seconds - mediaStart, 0)
+        return trackDuration
     }
 }
 
