@@ -43,6 +43,12 @@ final class AutoMixPlaybackCoordinator {
         TimeInterval.infinity
     private var latestPreloadLeadTime: TimeInterval = 0
 
+    // Precise timing metadata can take several seconds to resolve for
+    // streaming sources. Keep the user-visible preload setting unchanged,
+    // but start the standby deck preparation early enough to absorb that
+    // latency without changing the transition itself.
+    private let preciseTimelinePreparationMargin: TimeInterval = 30
+
     init(
         api: NeteaseAPI,
         downloads: DownloadStore,
@@ -99,6 +105,7 @@ final class AutoMixPlaybackCoordinator {
         latestRemainingTime = remaining
         latestPreloadLeadTime =
             configuration.preloadLeadTime
+            + preciseTimelinePreparationMargin
 
         if plannedTransition?.attempt
             == nextAttempt {
@@ -114,8 +121,12 @@ final class AutoMixPlaybackCoordinator {
             return
         }
 
+        let effectivePreloadLeadTime =
+            configuration.preloadLeadTime
+            + preciseTimelinePreparationMargin
+
         if configuration.mode != .smart,
-           remaining > configuration.preloadLeadTime {
+           remaining > effectivePreloadLeadTime {
             return
         }
 
