@@ -145,20 +145,24 @@ final class AudioPlaybackEngine {
         didReportCurrentItemFailure = false
         transition(to: .loading)
 
-        let playbackItem = await itemFactory.makeItem(
+        let playbackItem = itemFactory.makeItem(
             for: source,
-            preferredForwardBufferDuration: 8,
-            autoMixEqualizerState:
-                activeDeck
-                    .autoMixEqualizerState
+            preferredForwardBufferDuration: 8
         )
         guard generation == loadGeneration,
               !Task.isCancelled else {
             return
         }
+        let equalizerState = activeDeck.autoMixEqualizerState
         activeDeck.replaceCurrentItem(
             with: playbackItem,
-            identifier: nil
+            identifier: nil,
+            metadataLoader: { [itemFactory, playbackItem, equalizerState] in
+                try await itemFactory.loadMetadata(
+                    for: playbackItem,
+                    autoMixEqualizerState: equalizerState
+                )
+            }
         )
         if autoplay {
             play()

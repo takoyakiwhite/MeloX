@@ -46,5 +46,10 @@ struct AudioPlaybackMediaTimeline {
 
 struct PreparedAudioPlaybackItem {
     let item: AVPlayerItem
+    let asset: AVURLAsset
+}
+
+struct AudioPlaybackItemMetadata {
     let timeline: AudioPlaybackMediaTimeline
+    let audioMix: AVAudioMix?
 }
