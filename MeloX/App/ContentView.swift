@@ -188,8 +188,14 @@ struct ContentView: View {
             }
             .onChange(of: scenePhase) { _, phase in
                 player.refreshLyricsNotification()
-                guard phase == .active else { return }
-                player.refreshLyricsLiveActivity()
+                switch phase {
+                case .inactive, .background:
+                    player.persistPlaybackStateForLifecycle()
+                case .active:
+                    player.refreshLyricsLiveActivity()
+                @unknown default:
+                    player.persistPlaybackStateForLifecycle()
+                }
             }
             .onChange(of: floatingLyrics.restorationRequestID) {
                 guard floatingLyrics.restorationRequestID > 0,
