@@ -61,6 +61,9 @@ final class AudioPlaybackEngine {
     private var suppressesProgressUpdates = false
     private var didReportCurrentItemFailure = false
     private var loadGeneration = 0
+    private var playbackRecoveryTask: Task<Void, Never>?
+    private var playbackRecoveryGeneration = 0
+    private var playbackRecoveryAttempt = 0
 
     private var decks: [AudioPlaybackDeck] {
         autoMixController.decks
@@ -118,6 +121,7 @@ final class AudioPlaybackEngine {
 
     deinit {
         pendingSeekRetryTask?.cancel()
+        playbackRecoveryTask?.cancel()
         for (player, observer) in zip(
             observedPlayers,
             timeObservers
@@ -139,6 +143,7 @@ final class AudioPlaybackEngine {
         loadGeneration += 1
         let generation = loadGeneration
         cancelAutoMix()
+        cancelPlaybackRecovery()
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
         seekRetryAttempt = 0
@@ -181,6 +186,7 @@ final class AudioPlaybackEngine {
         loadGeneration += 1
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
+        cancelPlaybackRecovery()
         wantsPlayback = false
         pendingSeekTime = nil
         seekGeneration += 1
@@ -194,11 +200,6 @@ final class AudioPlaybackEngine {
     func play() {
         wantsPlayback = true
         guard let item = activeDeck.player.currentItem else {
-            transition(to: .idle)
-            return
-        }
-        if item.status == .failed {
-            fail(with: item.error)
             return
         }
         guard item.status == .readyToPlay else {
@@ -215,6 +216,7 @@ final class AudioPlaybackEngine {
             }
 
             suppressesProgressUpdates = false
+            cancelPlaybackRecovery()
             updateStateFromPlayer()
             let resumedAutoMix =
                 autoMixController.resumeIncomingIfNeeded()
@@ -530,15 +532,21 @@ final class AudioPlaybackEngine {
         }
         switch activeDeck.player.timeControlStatus {
         case .paused:
-            transition(
-                to:
-                    item.status == .unknown
-                        ? .loading
-                        : .paused
-            )
+            if wantsPlayback, item.status == .readyToPlay {
+                transition(to: .loading)
+                schedulePlaybackRecovery(for: item)
+            } else {
+                transition(
+                    to:
+                        item.status == .unknown
+                            ? .loading
+                            : .paused
+                )
+            }
         case .waitingToPlayAtSpecifiedRate:
             transition(to: .loading)
         case .playing:
+            cancelPlaybackRecovery()
             transition(to: .playing)
         @unknown default:
             transition(to: .paused)
@@ -687,10 +695,106 @@ final class AudioPlaybackEngine {
         }
     }
 
-    private func fail(with error: Error?) {
+    private func cancelPlaybackRecovery() {
+        playbackRecoveryGeneration += 1
+        playbackRecoveryTask?.cancel()
+        playbackRecoveryTask = nil
+        playbackRecoveryAttempt = 0
+    }
+
+    private func schedulePlaybackRecovery(
+        for item: AVPlayerItem
+    ) {
+        guard wantsPlayback,
+              activeDeck.player.currentItem === item,
+              item.status == .readyToPlay,
+              !suppressesProgressUpdates else {
+            return
+        }
+
+        playbackRecoveryTask?.cancel()
+        playbackRecoveryGeneration += 1
+        let generation = playbackRecoveryGeneration
+        playbackRecoveryAttempt = 0
+
+        playbackRecoveryTask = Task { @MainActor [weak self, weak item] in
+            guard let self, let item else { return }
+            defer {
+                if generation == self.playbackRecoveryGeneration {
+                    self.playbackRecoveryTask = nil
+                }
+            }
+
+            while !Task.isCancelled,
+                  generation == self.playbackRecoveryGeneration,
+                  self.wantsPlayback,
+                  self.activeDeck.player.currentItem === item,
+                  item.status == .readyToPlay {
+                switch self.activeDeck.player.timeControlStatus {
+                case .playing, .waitingToPlayAtSpecifiedRate:
+                    return
+                case .paused:
+                    break
+                @unknown default:
+                    return
+                }
+
+                self.playbackRecoveryAttempt += 1
+                guard self.playbackRecoveryAttempt <= 3 else {
+                    self.fail(with: nil,
+                              preservePlaybackIntent: true)
+                    return
+                }
+
+                do {
+                    try self.activateAudioSession()
+                    self.activeDeck.player.play()
+                    try await Task.sleep(
+                        for: .milliseconds(350)
+                    )
+                } catch is CancellationError {
+                    return
+                } catch {
+                    self.fail(
+                        with: AudioPlaybackError.audioSession(error),
+                        preservePlaybackIntent: true
+                    )
+                    return
+                }
+
+                guard generation == self.playbackRecoveryGeneration,
+                      self.wantsPlayback,
+                      self.activeDeck.player.currentItem === item else {
+                    return
+                }
+
+                if self.activeDeck.player.timeControlStatus != .paused {
+                    return
+                }
+
+                do {
+                    try await Task.sleep(
+                        for: .milliseconds(
+                            min(250 * self.playbackRecoveryAttempt, 750)
+                        )
+                    )
+                } catch {
+                    return
+                }
+            }
+        }
+    }
+
+    private func fail(
+        with error: Error?,
+        preservePlaybackIntent: Bool = false
+    ) {
         guard !didReportCurrentItemFailure else { return }
         didReportCurrentItemFailure = true
-        wantsPlayback = false
+        cancelPlaybackRecovery()
+        if !preservePlaybackIntent {
+            wantsPlayback = false
+        }
         autoMixController.pauseAll()
         publishPlaybackClockSample(origin: .stateChanged)
         transition(to: .paused)
