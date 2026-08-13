@@ -135,10 +135,10 @@ final class AutoMixDeckTransitionController {
         }
 
         let deck = decks[deckIndex]
-        deck.onMetadataReady = nil
+        deck.onPreciseMetadataReady = nil
         let equalizerState =
             decks[deckIndex].autoMixEqualizerState
-        deck.onMetadataReady = { [weak self, weak deck, weak item] readyItem in
+        deck.onPreciseMetadataReady = { [weak self, weak deck, weak item] readyItem in
             guard let self, let deck, let item,
                   readyItem === item,
                   generation == self.preparationGeneration,
@@ -352,6 +352,7 @@ final class AutoMixDeckTransitionController {
         guard activeTransition == nil,
               let preparedTransition,
               wantsPlayback,
+              activeDeck.isPreciseMetadataReady,
               preparedTransition.item.status
                 == .readyToPlay,
               preparedTransition.isPrerolled,
@@ -437,7 +438,7 @@ final class AutoMixDeckTransitionController {
               preparedTransition?.item === item,
               item.status == .readyToPlay,
               decks[deckIndex].player.status == .readyToPlay,
-              decks[deckIndex].isMetadataReady else {
+              decks[deckIndex].isPreciseMetadataReady else {
             return
         }
         prerollTask?.cancel()
@@ -816,7 +817,7 @@ final class AutoMixDeckTransitionController {
         }
         let identifier =
             preparedTransition.identifier
-        decks[deckIndex].onMetadataReady = nil
+        decks[deckIndex].onPreciseMetadataReady = nil
         decks[deckIndex].clear()
         self.preparedTransition = nil
         deckGains[deckIndex] = 0
@@ -833,7 +834,7 @@ final class AutoMixDeckTransitionController {
             return
         }
         let index = standbyDeckIndex
-        decks[index].onMetadataReady = nil
+        decks[index].onPreciseMetadataReady = nil
         decks[index].clear()
         deckGains[index] = 0
         preparedTransition = nil
