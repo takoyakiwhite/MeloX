@@ -10,9 +10,20 @@ struct LyricSyllable: Identifiable, Hashable {
     }
 }
 
+enum LyricLineTimingKind: Hashable, Sendable {
+    /// The line carries an authored content duration, usually from YRC.
+    case precise
+
+    /// LRC only tells us when this line is replaced by the next one. Its
+    /// inferred display duration must not be treated as sung-content timing.
+    case lineSynchronized
+}
+
 struct LyricLine: Identifiable, Hashable {
+    let id: String
     let time: TimeInterval
     let duration: TimeInterval?
+    let timingKind: LyricLineTimingKind
     let text: String
     let syllables: [LyricSyllable]
     let romanization: String?
@@ -20,16 +31,23 @@ struct LyricLine: Identifiable, Hashable {
     let translation: String?
 
     init(
+        id: String? = nil,
         time: TimeInterval,
         duration: TimeInterval? = nil,
+        timingKind: LyricLineTimingKind = .precise,
         text: String,
         syllables: [LyricSyllable] = [],
         romanization: String? = nil,
         romanizationSyllables: [LyricSyllable] = [],
         translation: String? = nil
     ) {
+        self.id = id ?? Self.fallbackID(
+            time: time,
+            text: text
+        )
         self.time = time
         self.duration = duration
+        self.timingKind = timingKind
         self.text = text
         self.syllables = syllables
         self.romanization = romanization
@@ -37,12 +55,41 @@ struct LyricLine: Identifiable, Hashable {
         self.translation = translation
     }
 
-    var id: String {
-        "\(time)-\(text)"
+    init(
+        id: String,
+        copying line: LyricLine
+    ) {
+        self.init(
+            id: id,
+            time: line.time,
+            duration: line.duration,
+            timingKind: line.timingKind,
+            text: line.text,
+            syllables: line.syllables,
+            romanization: line.romanization,
+            romanizationSyllables: line.romanizationSyllables,
+            translation: line.translation
+        )
     }
 
     var isSyllableSynced: Bool {
         !syllables.isEmpty
+    }
+
+    static func fallbackID(
+        time: TimeInterval,
+        text: String
+    ) -> String {
+        "line:\(time.bitPattern):\(Self.stableTextHash(text))"
+    }
+
+    static func stableTextHash(_ text: String) -> String {
+        var hash: UInt64 = 14_695_981_039_346_656_037
+        for byte in text.utf8 {
+            hash ^= UInt64(byte)
+            hash &*= 1_099_511_628_211
+        }
+        return String(hash, radix: 16)
     }
 
     var hasTranslation: Bool {
@@ -80,8 +127,10 @@ struct LyricLine: Identifiable, Hashable {
 
     func attachingTranslation(_ translation: String?) -> LyricLine {
         LyricLine(
+            id: id,
             time: time,
             duration: duration,
+            timingKind: timingKind,
             text: text,
             syllables: syllables,
             romanization: romanization,
@@ -95,8 +144,10 @@ struct LyricLine: Identifiable, Hashable {
         romanizationSyllables: [LyricSyllable] = []
     ) -> LyricLine {
         LyricLine(
+            id: id,
             time: time,
             duration: duration,
+            timingKind: timingKind,
             text: text,
             syllables: syllables,
             romanization: romanization,

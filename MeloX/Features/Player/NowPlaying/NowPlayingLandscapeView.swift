@@ -6,6 +6,7 @@ struct NowPlayingLandscapeView: View {
     @Environment(AppSettings.self) private var settings
 
     @Binding var page: NowPlayingPage
+    let pageTransition: NowPlayingTransitionCoordinator
     let showsLyricsControls: Bool
 
     let song: Song
@@ -16,6 +17,7 @@ struct NowPlayingLandscapeView: View {
     let onDismiss: () -> Void
     let onInterfaceInteraction: () -> Void
     let onInterfaceVisibilityChange: (Bool) -> Void
+    let onLyricsContentPrepared: () -> Void
 
     @State private var showsSkylineLyrics = false
 
@@ -106,18 +108,15 @@ struct NowPlayingLandscapeView: View {
         VStack(spacing: 0) {
             songHeader
 
-            if usesExpandedAppleMusicLyricsLayout {
-                pageContent
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .overlay(alignment: .bottom) {
-                        pageSelector
-                    }
-            } else {
-                pageContent
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                pageSelector
-            }
+            pageContent
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .padding(
+                    .bottom,
+                    usesExpandedAppleMusicLyricsLayout ? 0 : 50
+                )
+                .overlay(alignment: .bottom) {
+                    pageSelector
+                }
         }
     }
 
@@ -170,15 +169,40 @@ struct NowPlayingLandscapeView: View {
                 presentation: .landscape,
                 artworkNamespace: artworkNamespace
             )
-            .opacity(page == .queue ? 1 : 0)
+            .nowPlayingQueuePagePresentation(
+                visualState:
+                    NowPlayingPageTransition.motion
+                        .residentQueueState(
+                            selectedPage: page,
+                            transition: pageTransition.transition
+                        ),
+                opacityTransition:
+                    pageTransition.queueOpacityTransition,
+                spatialTransition:
+                    pageTransition.queueSpatialTransition,
+                opacitySpec:
+                    pageTransition.queueOpacityTransition
+                        .targetProgress >= 1
+                        ? NowPlayingPageTransition.motion
+                            .queueOpacityPresentation
+                        : NowPlayingPageTransition.motion
+                            .queueOpacityDismissal,
+                presentationScale:
+                    NowPlayingPageTransition.motion
+                        .queuePresentationScale,
+                reducesMotion: accessibilityReduceMotion
+            )
             .allowsHitTesting(page == .queue)
             .accessibilityHidden(page != .queue)
 
-            switch page {
-            case .artwork:
+            if page == .artwork {
                 landscapeArtworkControls
                     .transition(.opacity)
-            case .lyrics:
+            }
+
+            if settings.lyricsStyle == .appleMusic {
+                residentAppleMusicLyricsPage
+            } else if page == .lyrics {
                 NowPlayingLyricsPage(
                     song: song,
                     lyrics: lyrics,
@@ -198,9 +222,54 @@ struct NowPlayingLandscapeView: View {
                     onInterfaceInteraction()
                 }
                 .transition(.opacity)
-            case .queue:
-                EmptyView()
             }
+        }
+    }
+
+    private var residentAppleMusicLyricsPage: some View {
+        let motion = NowPlayingPageTransition.motion
+        let visualState = motion.residentLyricsState(
+            selectedPage: page,
+            transition: pageTransition.transition,
+            isEntrancePresented:
+                pageTransition.isLyricsEntrancePresented
+        )
+
+        return NowPlayingLyricsPage(
+            song: song,
+            lyrics: lyrics,
+            errorMessage: lyricError,
+            highlightedLyricID: highlightedLyricID,
+            isActive: page == .lyrics,
+            presentation: .landscape,
+            isInterfaceHidden: hidesLyricsControls,
+            artworkNamespace: artworkNamespace,
+            onInterfaceInteraction: onInterfaceInteraction,
+            onInterfaceVisibilityChange:
+                onInterfaceVisibilityChange,
+            onInitialFocusPrepared: onLyricsContentPrepared
+        )
+        .id(song.id)
+        .nowPlayingLyricsPagePresentation(
+            visualState: visualState,
+            opacityTransition:
+                pageTransition.lyricsOpacityTransition,
+            spatialTransition:
+                pageTransition.lyricsSpatialTransition,
+            opacitySpec:
+                pageTransition.lyricsOpacityTransition
+                    .targetProgress >= 1
+                    ? motion.lyricsOpacityPresentation
+                    : motion.lyricsOpacityDismissal,
+            presentationScale: motion.lyricsPresentationScale,
+            reducesMotion: accessibilityReduceMotion
+        )
+        .allowsHitTesting(page == .lyrics)
+        .accessibilityHidden(page != .lyrics)
+        .accessibilityAction(
+            named: lyricsInterfaceAccessibilityActionName
+        ) {
+            onInterfaceInteraction()
         }
     }
 

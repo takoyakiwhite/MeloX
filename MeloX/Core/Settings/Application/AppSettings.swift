@@ -6,8 +6,10 @@ import Observation
 final class AppSettings {
     static let defaultPlayerVolumeControlMode: PlayerVolumeControlMode = .system
     static let defaultPlayerBackgroundStyle: PlayerBackgroundStyle =
-        .flowingLight
+        .appleMusicBackdrop
     static let defaultPlayerBackgroundMotionIntensity = 1.0
+    static let defaultPlayerBackgroundSaturation = 1.0
+    static let defaultPlayerBackgroundAudioResponseEnabled = true
     static let defaultPlayerBackgroundBeatEffectsEnabled = false
     static let defaultBeatNetDebugEnabled = false
     static let defaultStartsHeartModeOnLaunch = false
@@ -32,7 +34,6 @@ final class AppSettings {
     static let defaultLyricsLiveActivityScrollPause = 1.0
     static let lyricsLiveActivityScrollPauseRange = 0.0...3.0
     static let automaticCachePlaybackThresholdOptions = [3, 5, 10, 20]
-    static let defaultLyricsInterludeCountdownEnabled = true
     static let defaultAppleMusicLyricsInterfaceAutoHideDelay = 5.0
     static let appleMusicLyricsInterfaceAutoHideDelayRange = 3.0...15.0
     static let defaultAppleMusicLyricsScrollHideThreshold = 200.0
@@ -144,13 +145,13 @@ final class AppSettings {
             "playerBackgroundMotionIntensity"
         static let playerBackgroundBeatEffectsEnabled =
             "playerBackgroundBeatEffectsEnabled"
+        static let playerBackgroundAudioResponseEnabled =
+            "playerBackgroundAudioResponseEnabled"
         static let beatNetDebugEnabled = "beatNetDebugEnabled"
         static let playerBackgroundBlur = "playerBackgroundBlur"
         static let playerBackgroundSaturation = "playerBackgroundSaturation"
         static let shrinksPausedArtwork = "shrinksPausedArtwork"
         static let lyricsStyle = "lyricsStyle"
-        static let lyricsInterludeCountdownEnabled =
-            "lyricsInterludeCountdownEnabled"
         static let appleMusicLyricsInterfaceAutoHideDelay =
             "appleMusicLyricsInterfaceAutoHideDelay"
         static let appleMusicLyricsScrollHideThreshold =
@@ -686,6 +687,15 @@ final class AppSettings {
         }
     }
 
+    var playerBackgroundAudioResponseEnabled: Bool {
+        didSet {
+            defaults.set(
+                playerBackgroundAudioResponseEnabled,
+                forKey: Key.playerBackgroundAudioResponseEnabled
+            )
+        }
+    }
+
     var beatNetDebugEnabled: Bool {
         didSet {
             defaults.set(
@@ -709,15 +719,6 @@ final class AppSettings {
 
     var lyricsStyle: LyricsStyle {
         didSet { defaults.set(lyricsStyle.rawValue, forKey: Key.lyricsStyle) }
-    }
-
-    var lyricsInterludeCountdownEnabled: Bool {
-        didSet {
-            defaults.set(
-                lyricsInterludeCountdownEnabled,
-                forKey: Key.lyricsInterludeCountdownEnabled
-            )
-        }
     }
 
     var appleMusicLyricsInterfaceAutoHideDelay: Double {
@@ -1104,7 +1105,10 @@ final class AppSettings {
     func effectiveLyricsAdvanceTime(
         hasSyllableSyncedLyrics: Bool
     ) -> TimeInterval {
-        hasSyllableSyncedLyrics
+        let usesWordByWordPresentation = hasSyllableSyncedLyrics
+            ? lyricsWordByWord
+            : lyricsPseudoWordByWord
+        return usesWordByWordPresentation
             ? wordByWordLyricsAdvanceTime
             : lyricsAdvanceTime
     }
@@ -1198,6 +1202,8 @@ final class AppSettings {
     }
 
     let skylineLyrics: SkylineLyricsPreferences
+    let appleMusicLyrics: AppleMusicLyricsPreferences
+    let lyricsInterlude: LyricsInterludePreferences
     let textPV: TextPVPreferences
     let equalizer: AudioEqualizerPreferences
     let autoMix: AutoMixPreferences
@@ -1212,6 +1218,8 @@ final class AppSettings {
     init(defaults: UserDefaults = .standard) {
         self.defaults = defaults
         skylineLyrics = SkylineLyricsPreferences(defaults: defaults)
+        appleMusicLyrics = AppleMusicLyricsPreferences(defaults: defaults)
+        lyricsInterlude = LyricsInterludePreferences(defaults: defaults)
         textPV = TextPVPreferences(defaults: defaults)
         equalizer = AudioEqualizerPreferences(defaults: defaults)
         autoMix = AutoMixPreferences(defaults: defaults)
@@ -1347,11 +1355,16 @@ final class AppSettings {
         playerBackgroundBeatEffectsEnabled = defaults.object(
             forKey: Key.playerBackgroundBeatEffectsEnabled
         ) as? Bool ?? Self.defaultPlayerBackgroundBeatEffectsEnabled
+        playerBackgroundAudioResponseEnabled = defaults.object(
+            forKey: Key.playerBackgroundAudioResponseEnabled
+        ) as? Bool ?? Self.defaultPlayerBackgroundAudioResponseEnabled
         beatNetDebugEnabled = defaults.object(
             forKey: Key.beatNetDebugEnabled
         ) as? Bool ?? Self.defaultBeatNetDebugEnabled
         playerBackgroundBlur = defaults.object(forKey: Key.playerBackgroundBlur) as? Double ?? 90
-        playerBackgroundSaturation = defaults.object(forKey: Key.playerBackgroundSaturation) as? Double ?? 0.82
+        playerBackgroundSaturation = defaults.object(
+            forKey: Key.playerBackgroundSaturation
+        ) as? Double ?? Self.defaultPlayerBackgroundSaturation
         shrinksPausedArtwork = defaults.object(forKey: Key.shrinksPausedArtwork) as? Bool ?? true
         let storedLyricsStyle = defaults.string(forKey: Key.lyricsStyle) ?? ""
         switch storedLyricsStyle {
@@ -1360,9 +1373,6 @@ final class AppSettings {
         default:
             lyricsStyle = LyricsStyle(rawValue: storedLyricsStyle) ?? .appleMusic
         }
-        lyricsInterludeCountdownEnabled = defaults.object(
-            forKey: Key.lyricsInterludeCountdownEnabled
-        ) as? Bool ?? Self.defaultLyricsInterludeCountdownEnabled
         let storedAppleMusicInterfaceAutoHideDelay = defaults.object(
             forKey: Key.appleMusicLyricsInterfaceAutoHideDelay
         ) as? Double ?? Self.defaultAppleMusicLyricsInterfaceAutoHideDelay
@@ -1878,14 +1888,16 @@ final class AppSettings {
             Self.defaultPlayerBackgroundMotionIntensity
         playerBackgroundBeatEffectsEnabled =
             Self.defaultPlayerBackgroundBeatEffectsEnabled
+        playerBackgroundAudioResponseEnabled =
+            Self.defaultPlayerBackgroundAudioResponseEnabled
         beatNetDebugEnabled =
             Self.defaultBeatNetDebugEnabled
         playerBackgroundBlur = 90
-        playerBackgroundSaturation = 0.82
+        playerBackgroundSaturation =
+            Self.defaultPlayerBackgroundSaturation
         shrinksPausedArtwork = true
         lyricsStyle = .appleMusic
-        lyricsInterludeCountdownEnabled =
-            Self.defaultLyricsInterludeCountdownEnabled
+        lyricsInterlude.reset()
         appleMusicLyricsInterfaceAutoHideDelay =
             Self.defaultAppleMusicLyricsInterfaceAutoHideDelay
         appleMusicLyricsScrollHideThreshold =
@@ -1963,6 +1975,7 @@ final class AppSettings {
         rememberedNowPlayingPage = "artwork"
         previousRestartsCurrentSong = true
         startsHeartModeOnLaunch = Self.defaultStartsHeartModeOnLaunch
+        appleMusicLyrics.reset()
         skylineLyrics.reset()
     }
 }

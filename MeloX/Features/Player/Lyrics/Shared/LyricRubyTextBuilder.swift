@@ -2,23 +2,6 @@ import SwiftUI
 
 @MainActor
 enum LyricRubyTextBuilder {
-    static func originalText(
-        from units: [LyricRubyPlacementUnit]
-    ) -> Text {
-        units.reduce(Text(verbatim: "")) { result, unit in
-            let fragment = timedText(
-                source: unit.lyric.originalText,
-                syllables: unit.lyric.originalSyllables
-            )
-            let placedFragment = fragment.customAttribute(
-                LyricRubyPlacementTextAttribute(
-                    horizontalOffset: unit.originalOffset
-                )
-            )
-            return Text("\(result)\(placedFragment)")
-        }
-    }
-
     static func romanizationText(
         from units: [LyricRubyPlacementUnit]
     ) -> Text {
@@ -26,10 +9,15 @@ enum LyricRubyTextBuilder {
             guard let romanization = unit.lyric.romanizationText else {
                 return result
             }
-            let fragment = timedText(
-                source: romanization,
-                syllables: unit.lyric.romanizationSyllables
-            )
+            let fragment: Text
+            if hasTimedRomanization(unit.lyric) {
+                fragment = timedText(
+                    syllables:
+                        unit.lyric.romanizationSyllables
+                )
+            } else {
+                fragment = Text(verbatim: romanization)
+            }
             let placedFragment = fragment.customAttribute(
                 LyricRubyPlacementTextAttribute(
                     horizontalOffset: unit.romanizationOffset
@@ -39,121 +27,56 @@ enum LyricRubyTextBuilder {
         }
     }
 
+    static func hasTimedRomanization(
+        _ unit: LyricRubyUnit
+    ) -> Bool {
+        guard unit.hasAuthoredRomanizationTiming,
+              let source = unit.romanizationText else {
+            return false
+        }
+        let syllables = unit.romanizationSyllables.filter {
+            !$0.text.isEmpty
+        }
+        return !syllables.isEmpty
+            && syllables.map(\.text).joined() == source
+    }
+
     private static func timedText(
-        source: String,
         syllables: [LyricSyllable]
     ) -> Text {
-        let characters = timedCharacters(from: syllables)
-        guard !characters.isEmpty,
-              characters.map(\.text).joined() == source else {
-            return Text(verbatim: source)
-        }
-
-        let timedIndices = characters.indices.filter {
-            !characters[$0].isWhitespace
-        }
-        let wordStartTime = timedIndices
-            .map { characters[$0].startTime }
-            .min() ?? 0
-        let wordEndTime = timedIndices
-            .map { characters[$0].endTime }
-            .max() ?? wordStartTime
-        let wordPositions = Dictionary(
-            uniqueKeysWithValues: timedIndices.enumerated().map {
-                ($0.element, $0.offset)
-            }
-        )
-        let usesWordTimingForLongTone =
-            timedIndices.count > 1
-                && timedIndices.allSatisfy {
-                    characters[$0].isLatinLetter
-                }
-
-        return characters.enumerated().reduce(
+        syllables.filter { !$0.text.isEmpty }.reduce(
             Text(verbatim: "")
-        ) { result, entry in
-            let index = entry.offset
-            let character = entry.element
-            let fragment = Text(verbatim: character.text)
+        ) {
+            result,
+            syllable in
+            let isWhitespace = syllable.text.allSatisfy(\.isWhitespace)
+            let fragment = Text(verbatim: syllable.text)
                 .customAttribute(
                     LyricTimingTextAttribute(
-                        startTime: character.startTime,
-                        endTime: character.endTime,
-                        syllableStartTime:
-                            character.syllableStartTime,
-                        syllableEndTime:
-                            character.syllableEndTime,
-                        characterIndex: character.characterIndex,
-                        characterCount: character.characterCount,
-                        wordStartTime: wordStartTime,
-                        wordEndTime: wordEndTime,
-                        wordCharacterIndex:
-                            wordPositions[index]
-                                ?? max(timedIndices.count - 1, 0),
-                        wordCharacterCount:
-                            max(timedIndices.count, 1),
-                        usesWordTimingForLongTone:
-                            usesWordTimingForLongTone,
-                        isWhitespace: character.isWhitespace
+                        startTime: syllable.startTime,
+                        endTime: max(
+                            syllable.endTime,
+                            syllable.startTime
+                        ),
+                        syllableStartTime: syllable.startTime,
+                        syllableEndTime: max(
+                            syllable.endTime,
+                            syllable.startTime
+                        ),
+                        characterIndex: 0,
+                        characterCount: 1,
+                        wordStartTime: syllable.startTime,
+                        wordEndTime: max(
+                            syllable.endTime,
+                            syllable.startTime
+                        ),
+                        wordCharacterIndex: 0,
+                        wordCharacterCount: 1,
+                        usesWordTimingForLongTone: false,
+                        isWhitespace: isWhitespace
                     )
                 )
             return Text("\(result)\(fragment)")
-        }
-    }
-
-    private static func timedCharacters(
-        from syllables: [LyricSyllable]
-    ) -> [TimedCharacter] {
-        syllables.flatMap { syllable -> [TimedCharacter] in
-            let characters = Array(syllable.text)
-            guard !characters.isEmpty else { return [] }
-
-            let duration = max(
-                syllable.endTime - syllable.startTime,
-                0
-            )
-            let characterDuration =
-                duration / Double(characters.count)
-            return characters.enumerated().map { entry in
-                let startTime = syllable.startTime
-                    + Double(entry.offset) * characterDuration
-                let endTime = entry.offset == characters.count - 1
-                    ? max(syllable.endTime, startTime)
-                    : startTime + characterDuration
-                return TimedCharacter(
-                    text: String(entry.element),
-                    startTime: startTime,
-                    endTime: endTime,
-                    syllableStartTime: syllable.startTime,
-                    syllableEndTime: syllable.endTime,
-                    characterIndex: entry.offset,
-                    characterCount: characters.count
-                )
-            }
-        }
-    }
-}
-
-private extension LyricRubyTextBuilder {
-    struct TimedCharacter {
-        let text: String
-        let startTime: TimeInterval
-        let endTime: TimeInterval
-        let syllableStartTime: TimeInterval
-        let syllableEndTime: TimeInterval
-        let characterIndex: Int
-        let characterCount: Int
-
-        var isWhitespace: Bool {
-            text.allSatisfy(\.isWhitespace)
-        }
-
-        var isLatinLetter: Bool {
-            !text.isEmpty
-                && text.unicodeScalars.allSatisfy { scalar in
-                    (65...90).contains(scalar.value)
-                        || (97...122).contains(scalar.value)
-                }
         }
     }
 }

@@ -66,6 +66,10 @@ final class PlayerStore {
     private(set) var currentPlaybackSourceHost: String?
     private(set) var sleepTimer: PlaybackSleepTimer
 
+    var currentAudioSpectrum: PlaybackAudioSpectrumSnapshot {
+        engine.audioSpectrumSnapshot
+    }
+
     var availablePlaybackQualities: [MusicQuality] {
         guard currentSong != nil else { return [] }
         guard !isResolvingCurrentSongAudioAvailability else { return [] }
@@ -996,6 +1000,24 @@ final class PlayerStore {
         if isEnabled {
             prepareAutoMixIfNeeded()
         }
+    }
+
+    func resetAutoMixPreference() {
+        if let saved = listenTogetherSavedPlaybackOptions {
+            listenTogetherSavedPlaybackOptions =
+                ListenTogetherSavedPlaybackOptions(
+                    repeatMode: saved.repeatMode,
+                    wasShuffled: saved.wasShuffled,
+                    autoplayEnabled: saved.autoplayEnabled,
+                    autoMixEnabled: false
+                )
+            isAutoMixEnabled = false
+            cancelAutoMixPreparation()
+            persistSnapshot()
+            return
+        }
+
+        setAutoMixEnabled(false)
     }
 
     func applyAutoMixSettings() {

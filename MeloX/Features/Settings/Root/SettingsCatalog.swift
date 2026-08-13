@@ -42,7 +42,7 @@ struct SettingsCatalogItem {
 enum SettingsCatalog {
     static let sections = [
         SettingsCatalogSection(
-            title: "播放与声音",
+            title: "播放器",
             items: [
                 SettingsCatalogItem(
                     route: .playback,
@@ -61,8 +61,8 @@ enum SettingsCatalog {
                 ),
                 SettingsCatalogItem(
                     route: .playerAppearance,
-                    title: "播放器外观",
-                    subtitle: "背景、封面动画与屏幕常亮",
+                    title: "播放器界面",
+                    subtitle: "背景、封面反馈与屏幕常亮",
                     systemImage: "paintbrush",
                     keywords: [
                         "模糊",
@@ -72,15 +72,10 @@ enum SettingsCatalog {
                         "自动锁屏",
                     ]
                 ),
-            ]
-        ),
-        SettingsCatalogSection(
-            title: "歌词与显示",
-            items: [
                 SettingsCatalogItem(
                     route: .lyrics,
                     title: "歌词",
-                    subtitle: "样式、排版、翻译、逐字、交互与动画",
+                    subtitle: "Apple Music 方案、演奏段、排版、逐字与交互",
                     systemImage: "quote.bubble",
                     keywords: [
                         "Apple Music",
@@ -88,11 +83,22 @@ enum SettingsCatalog {
                         "文字PV",
                         "字体",
                         "YRC",
+                        "LRC",
+                        "前奏",
+                        "间奏",
+                        "三点",
+                        "罗马音",
+                        "翻译",
                         "伪逐字",
                         "辉光",
                         "刷新率",
                     ]
                 ),
+            ]
+        ),
+        SettingsCatalogSection(
+            title: "系统与扩展歌词",
+            items: [
                 SettingsCatalogItem(
                     route: .systemPlayback,
                     title: "系统歌词显示",

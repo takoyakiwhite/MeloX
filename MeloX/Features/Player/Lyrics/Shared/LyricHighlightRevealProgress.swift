@@ -11,8 +11,12 @@ enum LyricHighlightRevealProgress {
         playbackTime: TimeInterval,
         timing: LyricTimingTextAttribute,
         detectionMode: LyricsLongSyllableDetectionMode,
-        durationThreshold: TimeInterval
+        durationThreshold: TimeInterval,
+        lineFinishProgressAnimationDuration: TimeInterval? = nil
     ) -> Double {
+        let finishDuration = resolvedFinishDuration(
+            lineFinishProgressAnimationDuration
+        )
         let duration = timing.endTime - timing.startTime
         let rawProgress = playedProgress(
             playbackTime: playbackTime,
@@ -20,7 +24,7 @@ enum LyricHighlightRevealProgress {
             duration: duration
         )
         let regularProgress = smootherStep(rawProgress)
-        guard duration > Metrics.attackDuration + Metrics.releaseDuration else {
+        guard duration > Metrics.attackDuration + finishDuration else {
             return regularProgress
         }
 
@@ -36,15 +40,24 @@ enum LyricHighlightRevealProgress {
         let attackProgress = smootherStep(
             elapsed / Metrics.attackDuration
         )
-        let releaseStartTime = timing.endTime - Metrics.releaseDuration
+        let releaseStartTime = timing.endTime - finishDuration
         let releaseProgress = smootherStep(
-            (playbackTime - releaseStartTime) / Metrics.releaseDuration
+            (playbackTime - releaseStartTime) / finishDuration
         )
         return unitProgress(
             Metrics.attackContribution * attackProgress
                 + Metrics.continuousContribution * rawProgress
                 + Metrics.releaseContribution * releaseProgress
         )
+    }
+
+    private static func resolvedFinishDuration(
+        _ duration: TimeInterval?
+    ) -> TimeInterval {
+        guard let duration, duration.isFinite, duration > 0 else {
+            return Metrics.releaseDuration
+        }
+        return duration
     }
 
     private static func playedProgress(

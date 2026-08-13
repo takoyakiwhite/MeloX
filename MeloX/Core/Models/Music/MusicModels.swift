@@ -1,7 +1,7 @@
 import CryptoKit
 import Foundation
 
-func makeArtworkURL(from source: String?, dimension: Int = 1_024) -> URL? {
+nonisolated func makeArtworkURL(from source: String?, dimension: Int = 1_024) -> URL? {
     guard var source = source?.trimmingCharacters(in: .whitespacesAndNewlines),
           !source.isEmpty else { return nil }
 
@@ -24,7 +24,7 @@ func makeArtworkURL(from source: String?, dimension: Int = 1_024) -> URL? {
     return components.url
 }
 
-func makeArtworkURL(fromNeteasePicID picID: Int64?, dimension: Int = 1_024) -> URL? {
+nonisolated func makeArtworkURL(fromNeteasePicID picID: Int64?, dimension: Int = 1_024) -> URL? {
     guard let picID, picID > 0 else { return nil }
 
     let source = Array(String(picID).utf8)
@@ -44,7 +44,7 @@ func makeArtworkURL(fromNeteasePicID picID: Int64?, dimension: Int = 1_024) -> U
     )
 }
 
-struct Artist: Codable, Hashable, Identifiable {
+nonisolated struct Artist: Codable, Hashable, Identifiable {
     let id: Int
     let name: String
     let picURL: String?
@@ -94,7 +94,7 @@ struct Artist: Codable, Hashable, Identifiable {
     }
 }
 
-struct Album: Codable, Hashable, Identifiable {
+nonisolated struct Album: Codable, Hashable, Identifiable {
     let id: Int
     let name: String
     let picURL: String?
@@ -197,7 +197,7 @@ struct Album: Codable, Hashable, Identifiable {
     }
 }
 
-struct Song: Codable, Hashable, Identifiable {
+nonisolated struct Song: Codable, Hashable, Identifiable {
     let id: Int
     let name: String
     let artists: [Artist]

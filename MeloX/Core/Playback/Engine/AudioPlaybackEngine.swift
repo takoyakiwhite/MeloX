@@ -96,6 +96,10 @@ final class AudioPlaybackEngine {
         autoMixController.hasPreparedTransition
     }
 
+    var audioSpectrumSnapshot: PlaybackAudioSpectrumSnapshot {
+        itemFactory.spectrumSnapshot()
+    }
+
     init(equalizerConfiguration: AudioEqualizerConfiguration) {
         let factory = AudioPlaybackItemFactory(
             equalizerConfiguration: equalizerConfiguration

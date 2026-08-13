@@ -29,8 +29,6 @@ struct LyricFocusCascadeTiming: Equatable {
 }
 
 enum LyricPlaybackTimeline {
-    private static let maximumFocusCascadeMinimumCatchUpDuration = 0.18
-
     static func position(
         at playbackTime: TimeInterval,
         in lyrics: [LyricLine]
@@ -83,7 +81,9 @@ enum LyricPlaybackTimeline {
         baseDuration: TimeInterval,
         preferredDuration: TimeInterval
     ) -> TimeInterval {
-        let duration = max(baseDuration, 0)
+        let duration = baseDuration.isFinite
+            ? max(baseDuration, 0)
+            : 0
         let configuredDuration = preferredDuration.isFinite
             ? max(preferredDuration, 0)
             : 0
@@ -111,6 +111,7 @@ enum LyricPlaybackTimeline {
               followingLineBaseDelay.isFinite,
               followingLineBaseDelay >= 0,
               preferredCatchUpCompletionRatio.isFinite,
+              focusColorLeadTime.isFinite,
               baseAnimationDuration.isFinite,
               baseAnimationDuration > 0 else {
             return nil
@@ -122,19 +123,22 @@ enum LyricPlaybackTimeline {
             max(preferredCatchUpCompletionRatio, 0),
             1
         )
-        let fullAnimationDuration = max(
-            preferredAnimationDuration,
-            baseAnimationDuration
+        let fullAnimationDuration = focusCascadeAnimationDuration(
+            baseDuration: baseAnimationDuration,
+            preferredDuration: preferredAnimationDuration
         )
+        guard let fullLineTimings = LyricFocusCascadePlanner.lineTimings(
+            maximumLineOrder: maximumLineOrder,
+            delayPerLine: delayPerLine,
+            delayIncreasePerLine: delayIncreasePerLine,
+            followingLineBaseDelay: baseDelayForFollowingLines,
+            catchUpCompletionRatio: catchUpCompletionRatio,
+            availableDuration: fullAnimationDuration
+        ) else {
+            return nil
+        }
         let fullTiming = LyricFocusCascadeTiming(
-            lineTimingsByLineOrder: focusCascadeLineTimings(
-                maximumLineOrder: maximumLineOrder,
-                delayPerLine: delayPerLine,
-                delayIncreasePerLine: delayIncreasePerLine,
-                followingLineBaseDelay: baseDelayForFollowingLines,
-                catchUpCompletionRatio: catchUpCompletionRatio,
-                animationDuration: fullAnimationDuration
-            ),
+            lineTimingsByLineOrder: fullLineTimings,
             usesBounce: prefersBounce
         )
         guard let remainingDuration, remainingDuration.isFinite else {
@@ -146,7 +150,9 @@ enum LyricPlaybackTimeline {
         let effectiveSnapThreshold = snapThreshold.isFinite
             ? max(snapThreshold, 0)
             : 0
-        guard availableDuration >= effectiveSnapThreshold else {
+        guard availableDuration.isFinite,
+              availableDuration > 0,
+              availableDuration >= effectiveSnapThreshold else {
             return nil
         }
         // Finish this cascade before the next lyric takes focus so a dense
@@ -155,67 +161,22 @@ enum LyricPlaybackTimeline {
             fullAnimationDuration,
             availableDuration
         )
+        guard let availableLineTimings = LyricFocusCascadePlanner.lineTimings(
+            maximumLineOrder: maximumLineOrder,
+            delayPerLine: delayPerLine,
+            delayIncreasePerLine: delayIncreasePerLine,
+            followingLineBaseDelay: baseDelayForFollowingLines,
+            catchUpCompletionRatio: catchUpCompletionRatio,
+            availableDuration: availableAnimationDuration
+        ) else {
+            return nil
+        }
         return LyricFocusCascadeTiming(
-            lineTimingsByLineOrder: focusCascadeLineTimings(
-                maximumLineOrder: maximumLineOrder,
-                delayPerLine: delayPerLine,
-                delayIncreasePerLine: delayIncreasePerLine,
-                followingLineBaseDelay: baseDelayForFollowingLines,
-                catchUpCompletionRatio: catchUpCompletionRatio,
-                animationDuration: availableAnimationDuration
-            ),
+            lineTimingsByLineOrder: availableLineTimings,
             usesBounce:
                 prefersBounce
                     && availableAnimationDuration >= fullAnimationDuration
         )
-    }
-
-    private static func focusCascadeLineTimings(
-        maximumLineOrder: Int,
-        delayPerLine: TimeInterval,
-        delayIncreasePerLine: TimeInterval,
-        followingLineBaseDelay: TimeInterval,
-        catchUpCompletionRatio: Double,
-        animationDuration: TimeInterval
-    ) -> [LyricFocusCascadeLineTiming] {
-        let catchUpCompletionTime =
-            animationDuration * catchUpCompletionRatio
-        let minimumCatchUpDuration = min(
-            maximumFocusCascadeMinimumCatchUpDuration,
-            animationDuration * 0.5
-        )
-        return (0...maximumLineOrder).map { lineOrder in
-            guard lineOrder > 0 else {
-                return LyricFocusCascadeLineTiming(
-                    delay: 0,
-                    duration: animationDuration
-                )
-            }
-            let delay = followingLineBaseDelay
-                + accumulatedFocusCascadeDelay(
-                    lineOrder: lineOrder,
-                    delayPerLine: delayPerLine,
-                    delayIncreasePerLine: delayIncreasePerLine
-                )
-            return LyricFocusCascadeLineTiming(
-                delay: delay,
-                duration: max(
-                    catchUpCompletionTime - delay,
-                    minimumCatchUpDuration
-                )
-            )
-        }
-    }
-
-    private static func accumulatedFocusCascadeDelay(
-        lineOrder: Int,
-        delayPerLine: TimeInterval,
-        delayIncreasePerLine: TimeInterval
-    ) -> TimeInterval {
-        let order = Double(max(lineOrder, 0))
-        let accumulatedIncrease = order * max(order - 1, 0) / 2
-        return order * delayPerLine
-            + accumulatedIncrease * delayIncreasePerLine
     }
 
     static func remainingFocusDuration(

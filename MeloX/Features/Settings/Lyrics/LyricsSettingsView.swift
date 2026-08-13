@@ -12,7 +12,7 @@ struct LyricsSettingsView: View {
                     Label {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("外观与排版")
-                            Text("样式、字体、行距、焦点和模糊")
+                            Text("呈现方案、前奏/间奏、字体、焦点和模糊")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -57,7 +57,7 @@ struct LyricsSettingsView: View {
                     Label {
                         VStack(alignment: .leading, spacing: 3) {
                             Text("动画与性能")
-                            Text("刷新频率、拖尾、追赶和回弹")
+                            Text("时间轴刷新、拖尾、追赶和回弹")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

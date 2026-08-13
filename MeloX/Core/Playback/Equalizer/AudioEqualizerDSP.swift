@@ -57,6 +57,8 @@ nonisolated final class AudioEqualizerTapContext {
     private let sharedConfiguration: SharedAudioEqualizerConfiguration
     private let autoMixEqualizerState:
         SharedAutoMixEqualizerState
+    private let spectrumAnalyzer:
+        PlaybackAudioSpectrumAnalyzer
     private var sampleRate = 0.0
     private var channelCount = 0
     private var isSupportedFormat = false
@@ -74,11 +76,15 @@ nonisolated final class AudioEqualizerTapContext {
         sharedConfiguration:
             SharedAudioEqualizerConfiguration,
         autoMixEqualizerState:
-            SharedAutoMixEqualizerState
+            SharedAutoMixEqualizerState,
+        sharedSpectrum: SharedPlaybackAudioSpectrum
     ) {
         self.sharedConfiguration = sharedConfiguration
         self.autoMixEqualizerState =
             autoMixEqualizerState
+        spectrumAnalyzer = PlaybackAudioSpectrumAnalyzer(
+            sharedSpectrum: sharedSpectrum
+        )
     }
 
     func prepare(format: AudioStreamBasicDescription) {
@@ -91,6 +97,10 @@ nonisolated final class AudioEqualizerTapContext {
             repeating: AudioEqualizerBiquadDelay(),
             count: channelCount * AudioEqualizerBand.count
         )
+        spectrumAnalyzer.prepare(
+            sampleRate: sampleRate,
+            channelCount: channelCount
+        )
         appliedRevision = nil
         appliedAutoMixRevision = nil
         isBypassed = true
@@ -98,6 +108,7 @@ nonisolated final class AudioEqualizerTapContext {
     }
 
     func unprepare() {
+        spectrumAnalyzer.reset()
         delays.removeAll(keepingCapacity: false)
         appliedRevision = nil
         appliedAutoMixRevision = nil
@@ -113,8 +124,13 @@ nonisolated final class AudioEqualizerTapContext {
 
         if flags & kMTAudioProcessingTapFlag_StartOfStream != 0 {
             resetDelays()
+            spectrumAnalyzer.reset()
         }
         refreshConfigurationIfNeeded()
+        spectrumAnalyzer.process(
+            bufferList: bufferList,
+            frameCount: Int(frameCount)
+        )
         guard !isBypassed else { return }
 
         let buffers = UnsafeMutableAudioBufferListPointer(bufferList)

@@ -7,6 +7,16 @@ struct LyricsContentSettingsView: View {
         settings.lyricsWordByWord || settings.lyricsPseudoWordByWord
     }
 
+    private var usesAppleMusic26Motion: Bool {
+        settings.lyricsStyle == .appleMusic
+            && settings.appleMusicLyrics.usesAppleMusic26Motion
+    }
+
+    private var usesCustomAppleMusicPresentation: Bool {
+        settings.lyricsStyle == .appleMusic
+            && !settings.appleMusicLyrics.usesAppleMusic26Motion
+    }
+
     var body: some View {
         @Bindable var settings = settings
 
@@ -22,7 +32,7 @@ struct LyricsContentSettingsView: View {
                     isOn: $settings.lyricsTranslationEnabled
                 )
 
-                if settings.lyricsStyle == .appleMusic,
+                if usesCustomAppleMusicPresentation,
                    settings.lyricsRomanizationEnabled {
                     Picker(
                         "罗马音显示范围",
@@ -38,7 +48,7 @@ struct LyricsContentSettingsView: View {
                     }
                 }
 
-                if settings.lyricsStyle == .appleMusic,
+                if usesCustomAppleMusicPresentation,
                    settings.lyricsTranslationEnabled {
                     Picker(
                         "翻译显示范围",
@@ -56,10 +66,11 @@ struct LyricsContentSettingsView: View {
             } header: {
                 Text("翻译与发音")
             } footer: {
-                Text("使用网易云提供的 yromalrc/romalrc 与 ytlrc/tlyric；Apple Music 样式会将小号罗马音对齐在对应原文下方，翻译显示在整行下方。")
+                Text("使用网易云提供的 yromalrc/romalrc 与 ytlrc/tlyric。Apple Music 样式将罗马音作为主歌词下方、按原词位置对齐的副行；翻译位于下一层，保持静态整行显示。")
             }
 
-            if settings.lyricsRomanizationEnabled {
+            if usesCustomAppleMusicPresentation,
+               settings.lyricsRomanizationEnabled {
                 Section {
                     valueSlider(
                         title: "罗马音大小",
@@ -83,7 +94,8 @@ struct LyricsContentSettingsView: View {
                 }
             }
 
-            if settings.lyricsTranslationEnabled {
+            if usesCustomAppleMusicPresentation,
+               settings.lyricsTranslationEnabled {
                 Section {
                     valueSlider(
                         title: "翻译歌词大小",
@@ -124,125 +136,157 @@ struct LyricsContentSettingsView: View {
             }
 
             if usesWordByWordPresentation {
-                Section {
-                    Picker(
-                        "抬升方式",
-                        selection: $settings.lyricsLiftMode
-                    ) {
-                        ForEach(LyricsLiftMode.allCases) { mode in
-                            Text(mode.title).tag(mode)
-                        }
+                if usesAppleMusic26Motion {
+                    Section {
+                        LabeledContent("高光渐变", value: "30 磅")
+                        LabeledContent("音节抬升", value: "2 磅")
+                        LabeledContent("辉光半径", value: "5 磅")
+                        LabeledContent("长音最大强调", value: "114%")
+
+                        valueSlider(
+                            title: "网易 YRC 长音阈值",
+                            value:
+                                $settings
+                                    .lyricsLongSyllableDurationThreshold,
+                            range:
+                                AppSettings
+                                    .lyricsLongSyllableDurationThresholdRange,
+                            step: 0.05,
+                            valueText:
+                                "\(settings.lyricsLongSyllableDurationThreshold.formatted(.number.precision(.fractionLength(2)))) 秒"
+                        )
+                    } header: {
+                        Text("Apple Music 26 逐字")
+                    } footer: {
+                        Text("Apple 的歌词数据用 emphasis 标记强调；网易 YRC 不提供该字段，因此 MeloX 使用这个辅助阈值识别长音。")
                     }
-                    .pickerStyle(.segmented)
-
-                    valueSlider(
-                        title: "高光渐变宽度",
-                        value: $settings.lyricsHighlightGradientWidth,
-                        range:
-                            AppSettings
-                                .lyricsHighlightGradientWidthRange,
-                        step: 0.1,
-                        valueText:
-                            "\(settings.lyricsHighlightGradientWidth.formatted(.number.precision(.fractionLength(1)))) 个字宽"
-                    )
-
-                    valueSlider(
-                        title: "渐变削减程度",
-                        value:
-                            $settings
-                                .lyricsHighlightGradientReduction,
-                        range:
-                            AppSettings
-                                .lyricsHighlightGradientReductionRange,
-                        step: 0.05,
-                        valueText: settings
-                            .lyricsHighlightGradientReduction
-                            .formatted(
-                                .percent.precision(
-                                    .fractionLength(0)
-                                )
-                            )
-                    )
-                } header: {
-                    Text("高光")
-                } footer: {
-                    Text("抬升方式只改变按字或按词分组，不改变高光时间；渐变宽度和削减程度共同控制过渡范围。")
                 }
 
-                Section {
-                    Picker(
-                        "长音识别方式",
-                        selection:
-                            $settings
-                                .lyricsLongSyllableDetectionMode
-                    ) {
-                        ForEach(
-                            LyricsLongSyllableDetectionMode.allCases
-                        ) { mode in
-                            Text(mode.title).tag(mode)
+                if !usesAppleMusic26Motion {
+                    Section {
+                        Picker(
+                            "抬升方式",
+                            selection: $settings.lyricsLiftMode
+                        ) {
+                            ForEach(LyricsLiftMode.allCases) { mode in
+                                Text(mode.title).tag(mode)
+                            }
                         }
-                    }
-                    .pickerStyle(.segmented)
+                        .pickerStyle(.segmented)
 
-                    valueSlider(
-                        title: "长音判定阈值",
-                        value:
-                            $settings
-                                .lyricsLongSyllableDurationThreshold,
-                        range:
-                            AppSettings
-                                .lyricsLongSyllableDurationThresholdRange,
-                        step: 0.05,
-                        valueText:
-                            "\(settings.lyricsLongSyllableDurationThreshold.formatted(.number.precision(.fractionLength(2)))) 秒"
-                    )
-
-                    valueSlider(
-                        title: "长音膨胀大小",
-                        value: $settings.lyricsLongToneExpansionAmount,
-                        range:
-                            AppSettings
-                                .lyricsLongToneExpansionAmountRange,
-                        step: 0.01,
-                        valueText: settings
-                            .lyricsLongToneExpansionAmount
-                            .formatted(
-                                .percent.precision(
-                                    .fractionLength(0)
-                                )
-                            )
-                    )
-
-                    Toggle(
-                        "逐字歌词光效",
-                        isOn: $settings.lyricsGlowEnabled
-                    )
-
-                    if settings.lyricsGlowEnabled {
-                        Toggle(
-                            "仅长音显示辉光",
-                            isOn:
-                                $settings
-                                    .lyricsGlowLongSyllablesOnly
+                        valueSlider(
+                            title: "高光渐变宽度",
+                            value:
+                                $settings.lyricsHighlightGradientWidth,
+                            range:
+                                AppSettings
+                                    .lyricsHighlightGradientWidthRange,
+                            step: 0.1,
+                            valueText:
+                                "\(settings.lyricsHighlightGradientWidth.formatted(.number.precision(.fractionLength(1)))) 个字宽"
                         )
 
                         valueSlider(
-                            title: "逐字光效强度",
-                            value: $settings.lyricsGlowIntensity,
-                            range: 0.4...1.6,
-                            step: 0.1,
-                            valueText:
-                                settings.lyricsGlowIntensity.formatted(
-                                    .number.precision(
-                                        .fractionLength(1)
+                            title: "渐变削减程度",
+                            value:
+                                $settings
+                                    .lyricsHighlightGradientReduction,
+                            range:
+                                AppSettings
+                                    .lyricsHighlightGradientReductionRange,
+                            step: 0.05,
+                            valueText: settings
+                                .lyricsHighlightGradientReduction
+                                .formatted(
+                                    .percent.precision(
+                                        .fractionLength(0)
                                     )
                                 )
                         )
+                    } header: {
+                        Text("高光")
+                    } footer: {
+                        Text("抬升方式只改变按字或按词分组，不改变高光时间；渐变宽度和削减程度共同控制过渡范围。")
                     }
-                } header: {
-                    Text("长音与光效")
-                } footer: {
-                    Text("达到阈值的原文字或词会依次膨胀；罗马音只同步逐字白色渐变，不参与辉光、模糊、抬升或长音膨胀。")
+
+                    Section {
+                        Picker(
+                            "长音识别方式",
+                            selection:
+                                $settings
+                                    .lyricsLongSyllableDetectionMode
+                        ) {
+                            ForEach(
+                                LyricsLongSyllableDetectionMode.allCases
+                            ) { mode in
+                                Text(mode.title).tag(mode)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        valueSlider(
+                            title: "长音判定阈值",
+                            value:
+                                $settings
+                                    .lyricsLongSyllableDurationThreshold,
+                            range:
+                                AppSettings
+                                    .lyricsLongSyllableDurationThresholdRange,
+                            step: 0.05,
+                            valueText:
+                                "\(settings.lyricsLongSyllableDurationThreshold.formatted(.number.precision(.fractionLength(2)))) 秒"
+                        )
+
+                        valueSlider(
+                            title: "长音膨胀大小",
+                            value:
+                                $settings
+                                    .lyricsLongToneExpansionAmount,
+                            range:
+                                AppSettings
+                                    .lyricsLongToneExpansionAmountRange,
+                            step: 0.01,
+                            valueText: settings
+                                .lyricsLongToneExpansionAmount
+                                .formatted(
+                                    .percent.precision(
+                                        .fractionLength(0)
+                                    )
+                                )
+                        )
+
+                        Toggle(
+                            "逐字歌词光效",
+                            isOn: $settings.lyricsGlowEnabled
+                        )
+
+                        if settings.lyricsGlowEnabled {
+                            Toggle(
+                                "仅长音显示辉光",
+                                isOn:
+                                    $settings
+                                        .lyricsGlowLongSyllablesOnly
+                            )
+
+                            valueSlider(
+                                title: "逐字光效强度",
+                                value: $settings.lyricsGlowIntensity,
+                                range: 0.4...1.6,
+                                step: 0.1,
+                                valueText:
+                                    settings.lyricsGlowIntensity
+                                        .formatted(
+                                            .number.precision(
+                                                .fractionLength(1)
+                                            )
+                                        )
+                            )
+                        }
+                    } header: {
+                        Text("长音与光效")
+                    } footer: {
+                        Text("达到阈值的原文字或词会依次膨胀；罗马音不参与辉光、抬升或长音膨胀，翻译保持静态整行。")
+                    }
                 }
             }
         }

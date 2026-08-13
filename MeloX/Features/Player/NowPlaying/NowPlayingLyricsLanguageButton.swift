@@ -16,16 +16,19 @@ struct NowPlayingLyricsLanguageButton: View {
                     isOn: $settings.lyricsRomanizationEnabled
                 )
 
-                Picker(
-                    "罗马音显示范围",
-                    selection:
-                        $settings.lyricsRomanizationDisplayMode
-                ) {
-                    ForEach(
-                        LyricsTranslationDisplayMode.allCases
-                    ) { mode in
-                        Text(mode.title)
-                            .tag(mode)
+                if supportsEditableAnnotationRange,
+                   settings.lyricsRomanizationEnabled {
+                    Picker(
+                        "罗马音显示范围",
+                        selection:
+                            $settings.lyricsRomanizationDisplayMode
+                    ) {
+                        ForEach(
+                            LyricsTranslationDisplayMode.allCases
+                        ) { mode in
+                            Text(mode.title)
+                                .tag(mode)
+                        }
                     }
                 }
             }
@@ -36,19 +39,23 @@ struct NowPlayingLyricsLanguageButton: View {
                     isOn: $settings.lyricsTranslationEnabled
                 )
 
-                Picker(
-                    "翻译显示范围",
-                    selection:
-                        $settings.lyricsTranslationDisplayMode
-                ) {
-                    ForEach(
-                        LyricsTranslationDisplayMode.allCases
-                    ) { mode in
-                        Text(mode.title)
-                            .tag(mode)
+                if supportsEditableAnnotationRange,
+                   settings.lyricsTranslationEnabled {
+                    Picker(
+                        "翻译显示范围",
+                        selection:
+                            $settings.lyricsTranslationDisplayMode
+                    ) {
+                        ForEach(
+                            LyricsTranslationDisplayMode.allCases
+                        ) { mode in
+                            Text(mode.title)
+                                .tag(mode)
+                        }
                     }
                 }
             }
+
         } label: {
             Image(systemName: "translate")
                 .font(.system(size: 20, weight: .semibold))
@@ -67,7 +74,17 @@ struct NowPlayingLyricsLanguageButton: View {
         .buttonStyle(.plain)
         .accessibilityLabel("翻译与发音")
         .accessibilityValue(accessibilityValue)
-        .accessibilityHint("选择是否显示罗马音、翻译及标注范围")
+        .accessibilityHint(accessibilityHint)
+    }
+
+    private var usesAppleMusic26Presentation: Bool {
+        settings.lyricsStyle == .appleMusic
+            && settings.appleMusicLyrics.usesAppleMusic26Motion
+    }
+
+    private var supportsEditableAnnotationRange: Bool {
+        settings.lyricsStyle == .appleMusic
+            && !usesAppleMusic26Presentation
     }
 
     private var hasEnabledAnnotation: Bool {
@@ -86,6 +103,13 @@ struct NowPlayingLyricsLanguageButton: View {
         guard !enabledAnnotations.isEmpty else {
             return "标注已隐藏"
         }
+
+        if usesAppleMusic26Presentation {
+            return enabledAnnotations.joined(separator: "、")
+        }
+        guard supportsEditableAnnotationRange else {
+            return enabledAnnotations.joined(separator: "、")
+        }
         let scopes: [String] = [
             hasRomanizations && settings.lyricsRomanizationEnabled
                 ? "罗马音\(settings.lyricsRomanizationDisplayMode.title)"
@@ -95,5 +119,15 @@ struct NowPlayingLyricsLanguageButton: View {
                 : nil,
         ].compactMap { $0 }
         return scopes.joined(separator: "，")
+    }
+
+    private var accessibilityHint: String {
+        if usesAppleMusic26Presentation {
+            return "选择是否显示罗马音和翻译"
+        }
+        if supportsEditableAnnotationRange {
+            return "选择是否显示罗马音、翻译及标注范围"
+        }
+        return "选择是否显示罗马音和翻译"
     }
 }

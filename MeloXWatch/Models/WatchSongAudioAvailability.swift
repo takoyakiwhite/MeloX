@@ -1,6 +1,6 @@
 import Foundation
 
-struct WatchSongAudioResource: Codable, Hashable {
+nonisolated struct WatchSongAudioResource: Codable, Hashable {
     let bitrate: Int?
     let fileID: Int64?
     let size: Int64?
@@ -16,7 +16,7 @@ struct WatchSongAudioResource: Codable, Hashable {
     }
 }
 
-struct WatchSongAudioAvailability: Codable, Hashable {
+nonisolated struct WatchSongAudioAvailability: Codable, Hashable {
     static let unknown = WatchSongAudioAvailability()
 
     let standard: WatchSongAudioResource?

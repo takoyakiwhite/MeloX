@@ -5,6 +5,9 @@ import SwiftUI
 struct LyricRomanizationTextRenderer: TextRenderer {
     var playbackTime: TimeInterval
     let unplayedOpacity: Double
+    let focusOpacityEndpoints: LyricFocusOpacityEndpoints?
+    let revealFeatherWidth: CGFloat?
+    let lineFinishProgressAnimationDuration: TimeInterval?
     let trailingVisualOverflow: CGFloat
     let appliesTimingEffects: Bool
     var timingEffectsStrength: Double
@@ -77,13 +80,20 @@ struct LyricRomanizationTextRenderer: TextRenderer {
         in context: inout GraphicsContext
     ) {
         var unplayedContext = context
-        let normalizedUnplayedOpacity = min(
-            max(unplayedOpacity, 0),
-            1
-        )
-        unplayedContext.opacity =
-            1
-            - (1 - normalizedUnplayedOpacity) * effectsStrength
+        if let focusOpacityEndpoints {
+            unplayedContext.opacity =
+                focusOpacityEndpoints.relativeUpcomingOpacity(
+                    at: effectsStrength
+                )
+        } else {
+            let normalizedUnplayedOpacity = min(
+                max(unplayedOpacity, 0),
+                1
+            )
+            unplayedContext.opacity =
+                1
+                - (1 - normalizedUnplayedOpacity) * effectsStrength
+        }
         unplayedContext.draw(run)
     }
 
@@ -103,18 +113,19 @@ struct LyricRomanizationTextRenderer: TextRenderer {
             return
         }
 
-        let frontX: CGFloat
-        if run.layoutDirection == .rightToLeft {
-            frontX = bounds.maxX
-                - bounds.width * CGFloat(progress)
-        } else {
-            frontX = bounds.minX
-                + bounds.width * CGFloat(progress)
-        }
         let featherWidth = max(
-            bounds.width * Metrics.gradientWidth,
+            revealFeatherWidth
+                ?? bounds.width * Metrics.gradientWidth,
             Metrics.minimumFeatherWidth
         )
+        let frontX: CGFloat
+        if run.layoutDirection == .rightToLeft {
+            frontX = bounds.maxX + featherWidth
+                - (bounds.width + featherWidth) * CGFloat(progress)
+        } else {
+            frontX = bounds.minX - featherWidth
+                + (bounds.width + featherWidth) * CGFloat(progress)
+        }
         let startPoint: CGPoint
         let endPoint: CGPoint
         let gradient: Gradient
@@ -158,17 +169,15 @@ struct LyricRomanizationTextRenderer: TextRenderer {
     private func playedProgress(
         for timing: LyricTimingTextAttribute
     ) -> Double {
-        guard playbackTime >= timing.startTime else { return 0 }
-        guard playbackTime < timing.endTime else { return 1 }
-
-        let duration = timing.endTime - timing.startTime
-        guard duration > 0 else { return 1 }
-        return min(
-            max(
-                (playbackTime - timing.startTime) / duration,
-                0
-            ),
-            1
+        LyricHighlightRevealProgress.progress(
+            playbackTime: playbackTime,
+            timing: timing,
+            // Transliteration shares the source line's progression but never
+            // opts into MeloX's synthetic long-tone emphasis path.
+            detectionMode: .character,
+            durationThreshold: .greatestFiniteMagnitude,
+            lineFinishProgressAnimationDuration:
+                lineFinishProgressAnimationDuration
         )
     }
 

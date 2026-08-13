@@ -1,14 +1,19 @@
 import SwiftUI
 
+/// Renders the supplemental transliteration stream only. The primary lyric is
+/// owned by `SynchronizedLyricText`, keeping its wrapping and animation tree
+/// stable when pronunciation is shown or hidden.
 struct LyricRubyText: View {
     let rows: [LyricRubyRow]
-    let fontSize: CGFloat
     let romanizationFontSize: CGFloat
     let fontWeight: LyricsFontWeight
     let primaryColor: Color
     let romanizationOpacity: Double
+    let staticRomanizationOpacity: Double
     let alignment: SynchronizedLyricTextAlignment
-    let annotationExpansion: CGFloat
+    /// Extra height Apple reserves after each Core Text visual line. The
+    /// parent owns the separate primary-to-transliteration spacing.
+    let lineHeightAdjustment: CGFloat
     let playbackTime: TimeInterval
     let rendererStyle: LyricGlowTextRenderer.Style
     let appliesTimingEffects: Bool
@@ -17,61 +22,21 @@ struct LyricRubyText: View {
     var body: some View {
         VStack(
             alignment: alignment.horizontalAlignment,
-            spacing: max(fontSize * 0.06, 2)
+            spacing: max(lineHeightAdjustment, 0)
         ) {
             ForEach(rows) { row in
-                LyricAnnotationLayout(
-                    expansion: annotationExpansion,
-                    spacing:
-                        LyricAnnotationMetrics.verticalSpacing
-                ) {
-                    originalView(for: row)
-                    romanizationView(for: row)
-                }
-                .frame(
-                    width: row.width,
-                    alignment: .leading
-                )
-                .frame(
-                    maxWidth: .infinity,
-                    alignment: alignment.frameAlignment
-                )
-                .accessibilityElement(children: .ignore)
-                .accessibilityLabel(row.plainOriginalText)
+                romanizationView(for: row)
+                    .frame(
+                        width: row.width,
+                        alignment: .leading
+                    )
+                    .frame(
+                        maxWidth: .infinity,
+                        alignment: alignment.frameAlignment
+                    )
             }
         }
-    }
-
-    private func originalView(
-        for row: LyricRubyRow
-    ) -> some View {
-        row.originalText
-            .font(
-                .system(
-                    size: fontSize,
-                    weight: fontWeight.swiftUIWeight
-                )
-            )
-            .foregroundStyle(primaryColor)
-            .fixedSize()
-            .textRenderer(
-                LyricGlowTextRenderer(
-                    playbackTime: playbackTime,
-                    style: rendererStyle,
-                    layoutConfiguration: .init(
-                        width: nil,
-                        centersLines: false,
-                        trailingVisualOverflow:
-                            row.originalTrailingVisualOverflow
-                    ),
-                    appliesTimingEffects: appliesTimingEffects,
-                    timingEffectsStrength: timingEffectsStrength
-                )
-            )
-            .frame(
-                width: row.width,
-                alignment: .leading
-            )
+        .accessibilityHidden(true)
     }
 
     private func romanizationView(
@@ -85,24 +50,38 @@ struct LyricRubyText: View {
                 )
             )
             .foregroundStyle(
-                primaryColor.opacity(romanizationOpacity)
+                primaryColor.opacity(
+                    appliesTimingEffects && row.hasTimedContent
+                        ? romanizationOpacity
+                        : staticRomanizationOpacity
+                )
             )
             .fixedSize()
             .textRenderer(
                 LyricRomanizationTextRenderer(
                     playbackTime: playbackTime,
-                    unplayedOpacity: rendererStyle.unplayedOpacity,
+                    unplayedOpacity:
+                        rendererStyle.unplayedOpacity,
+                    focusOpacityEndpoints:
+                        rendererStyle.focusOpacityEndpoints,
+                    revealFeatherWidth:
+                        rendererStyle
+                            .lineProgressionGradientFeather,
+                    lineFinishProgressAnimationDuration:
+                        rendererStyle
+                            .lineFinishProgressAnimationDuration,
                     trailingVisualOverflow:
                         row.romanizationTrailingVisualOverflow,
-                    appliesTimingEffects: appliesTimingEffects,
-                    timingEffectsStrength: timingEffectsStrength
+                    appliesTimingEffects:
+                        appliesTimingEffects
+                            && row.hasTimedContent,
+                    timingEffectsStrength:
+                        timingEffectsStrength
                 )
             )
             .frame(
                 width: row.width,
                 alignment: .leading
             )
-            .opacity(annotationExpansion)
-            .accessibilityHidden(true)
     }
 }

@@ -41,11 +41,13 @@ enum LyricParser {
             .split(whereSeparator: \Character.isNewline)
             .flatMap { parseLRCLines($0) }
             .sorted { $0.time < $1.time }
-        return inferringDurations(in: lines)
+        return inferringDurations(
+            in: assigningStableIDs(to: lines, kind: "lrc")
+        )
     }
 
     static func parseYRC(_ source: String) -> [LyricLine] {
-        source
+        let lines = source
             .split(whereSeparator: \Character.isNewline)
             .compactMap { rawLine in
                 let line = String(rawLine).trimmingCharacters(in: .whitespacesAndNewlines)
@@ -55,6 +57,27 @@ enum LyricParser {
                 return parseYRCSyllableLine(line)
             }
             .sorted { $0.time < $1.time }
+        return assigningStableIDs(to: lines, kind: "yrc")
+    }
+
+    private static func assigningStableIDs(
+        to lines: [LyricLine],
+        kind: String
+    ) -> [LyricLine] {
+        var occurrenceBySignature: [String: Int] = [:]
+        return lines.map { line in
+            let signature = "\(line.time.bitPattern):\(stableTextHash(line.text))"
+            let occurrence = occurrenceBySignature[signature, default: 0]
+            occurrenceBySignature[signature] = occurrence + 1
+            return LyricLine(
+                id: "\(kind):\(signature):\(occurrence)",
+                copying: line
+            )
+        }
+    }
+
+    private static func stableTextHash(_ text: String) -> String {
+        LyricLine.stableTextHash(text)
     }
 
     private static func parseLRCLines(_ rawLine: Substring) -> [LyricLine] {
@@ -78,7 +101,11 @@ enum LyricParser {
             let rawSeconds = storage.substring(with: match.range(at: 2))
                 .replacingOccurrences(of: ":", with: ".")
             guard let seconds = Double(rawSeconds) else { return nil }
-            return LyricLine(time: Double(minutes) * 60 + seconds, text: text)
+            return LyricLine(
+                time: Double(minutes) * 60 + seconds,
+                timingKind: .lineSynchronized,
+                text: text
+            )
         }
     }
 
@@ -93,8 +120,10 @@ enum LyricParser {
             } ?? estimatedLastLineDuration(for: line.text)
 
             return LyricLine(
+                id: line.id,
                 time: line.time,
                 duration: inferredDuration,
+                timingKind: line.timingKind,
                 text: line.text,
                 syllables: line.syllables,
                 romanization: line.romanization,
@@ -105,8 +134,7 @@ enum LyricParser {
     }
 
     private static func estimatedLastLineDuration(for text: String) -> TimeInterval {
-        let visibleCharacterCount = text.filter { !$0.isWhitespace }.count
-        return min(max(Double(visibleCharacterCount) * 0.32, 2), 8)
+        LyricVocalDurationEstimator.estimatedDuration(for: text)
     }
 
     private static func parseYRCSyllableLine(_ line: String) -> LyricLine? {
@@ -285,7 +313,7 @@ enum LyricParser {
             }
 
             guard abs(lines[lineIndex].time - romanizedLine.time)
-                    <= annotationTolerance,
+                    <= romanizationTimingTolerance,
                   romanizedLineByIndex[lineIndex] == nil else {
                 continue
             }
@@ -297,7 +325,7 @@ enum LyricParser {
                 return line
             }
             return line.attachingRomanization(
-                line.romanization ?? romanizedLine.text,
+                romanizedLine.text,
                 romanizationSyllables: romanizedLine.syllables
             )
         }
@@ -445,6 +473,10 @@ enum LyricParser {
     /// a few hundred milliseconds. A narrow tolerance preserves alignment
     /// while avoiding reuse across neighboring lyric lines.
     private static let annotationTolerance: TimeInterval = 0.75
+    /// Apple rejects transliteration lines whose authored start time does not
+    /// match the primary line. Keep a tiny allowance for millisecond parsing,
+    /// then fall back to a static annotation instead of inventing timings.
+    private static let romanizationTimingTolerance: TimeInterval = 0.01
     private static let textMatchWindow: TimeInterval = 5
 }
 

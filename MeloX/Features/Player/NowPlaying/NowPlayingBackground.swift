@@ -7,16 +7,19 @@ struct NowPlayingBackground: View {
 
     let artworkURL: URL?
     let beatTimeline: PlaybackBeatTimeline?
+    let isBehindLyrics: Bool
 
     @State private var flowingLightPalette:
         ArtworkFlowingLightPalette
 
     init(
         artworkURL: URL?,
-        beatTimeline: PlaybackBeatTimeline?
+        beatTimeline: PlaybackBeatTimeline?,
+        isBehindLyrics: Bool
     ) {
         self.artworkURL = artworkURL
         self.beatTimeline = beatTimeline
+        self.isBehindLyrics = isBehindLyrics
         _flowingLightPalette = State(
             initialValue:
                 ArtworkAccentColorProvider
@@ -68,6 +71,23 @@ struct NowPlayingBackground: View {
         in size: CGSize
     ) -> some View {
         switch settings.playerBackgroundStyle {
+        case .appleMusicBackdrop:
+            NowPlayingAppleMusicBackground(
+                artworkURL: artworkURL,
+                isBehindLyrics: isBehindLyrics,
+                motionIntensity:
+                    settings.playerBackgroundMotionIntensity,
+                saturation:
+                    settings.playerBackgroundSaturation,
+                audioResponseEnabled:
+                    settings
+                        .playerBackgroundAudioResponseEnabled
+            )
+            .frame(
+                width: size.width,
+                height: size.height
+            )
+
         case .flowingLight:
             NowPlayingFlowingLightBackground(
                 palette: flowingLightPalette,
@@ -121,6 +141,8 @@ struct NowPlayingBackground: View {
 
     private var backgroundVeilOpacity: Double {
         switch settings.playerBackgroundStyle {
+        case .appleMusicBackdrop:
+            0
         case .flowingLight:
             0.02
         case .blurredArtwork:
@@ -130,6 +152,11 @@ struct NowPlayingBackground: View {
 
     private var legibilityGradientColors: [Color] {
         switch settings.playerBackgroundStyle {
+        case .appleMusicBackdrop:
+            [
+                .clear,
+                .clear,
+            ]
         case .flowingLight:
             [
                 .black.opacity(0.015),

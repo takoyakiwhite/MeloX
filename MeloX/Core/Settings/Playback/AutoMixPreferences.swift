@@ -53,7 +53,7 @@ enum AutoMixTailCutBars: Int, CaseIterable, Identifiable, Sendable {
     }
 }
 
-enum AutoMixFadeCurve: String, CaseIterable, Identifiable, Sendable {
+nonisolated enum AutoMixFadeCurve: String, CaseIterable, Identifiable, Sendable {
     case equalPower
     case smooth
     case linear

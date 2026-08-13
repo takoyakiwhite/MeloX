@@ -15,6 +15,7 @@ enum PlayerSettingsResetter {
         }
 
         await Task.yield()
+        player.resetAutoMixPreference()
         player.applyVolumeControlMode()
         player.applyEqualizerSettings()
         player.applyAutoMixSettings()

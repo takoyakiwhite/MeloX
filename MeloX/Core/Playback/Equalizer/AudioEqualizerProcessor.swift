@@ -3,6 +3,7 @@ import MediaToolbox
 
 nonisolated final class AudioEqualizerProcessor {
     private let sharedConfiguration: SharedAudioEqualizerConfiguration
+    private let sharedSpectrum = SharedPlaybackAudioSpectrum()
 
     init(configuration: AudioEqualizerConfiguration) {
         sharedConfiguration = SharedAudioEqualizerConfiguration(
@@ -15,6 +16,10 @@ nonisolated final class AudioEqualizerProcessor {
         sharedConfiguration.update(configuration)
     }
 
+    func spectrumSnapshot() -> PlaybackAudioSpectrumSnapshot {
+        sharedSpectrum.snapshot()
+    }
+
     func makeAudioMix(
         for track: AVAssetTrack,
         autoMixEqualizerState:
@@ -24,7 +29,8 @@ nonisolated final class AudioEqualizerProcessor {
             sharedConfiguration:
                 sharedConfiguration,
             autoMixEqualizerState:
-                autoMixEqualizerState
+                autoMixEqualizerState,
+            sharedSpectrum: sharedSpectrum
         )
         let retainedContext = Unmanaged.passRetained(context)
 

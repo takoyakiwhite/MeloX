@@ -15,6 +15,46 @@ struct LyricTimingTextAttribute: TextAttribute, Hashable, Sendable {
     let isWhitespace: Bool
 }
 
+/// Absolute alpha endpoints used while a lyric line gains focus. Apple Music
+/// animates the played and upcoming glyph colors on the same line-change
+/// spring. The upcoming renderer sits inside the line's outer opacity, so it
+/// must compensate for that parent alpha instead of multiplying a second
+/// independent fade onto it.
+struct LyricFocusOpacityEndpoints: Equatable, Sendable {
+    let deselected: Double
+    let selected: Double
+    let selectedUpcoming: Double
+
+    func relativeUpcomingOpacity(at progress: Double) -> Double {
+        let progress = Self.unitProgress(progress)
+        let outerOpacity = Self.interpolate(
+            from: deselected,
+            to: selected,
+            progress: progress
+        )
+        let absoluteUpcomingOpacity = Self.interpolate(
+            from: deselected,
+            to: selectedUpcoming,
+            progress: progress
+        )
+        guard outerOpacity > 0 else { return 0 }
+        return Self.unitProgress(absoluteUpcomingOpacity / outerOpacity)
+    }
+
+    private static func interpolate(
+        from start: Double,
+        to end: Double,
+        progress: Double
+    ) -> Double {
+        start + (end - start) * progress
+    }
+
+    private static func unitProgress(_ value: Double) -> Double {
+        guard value.isFinite else { return 0 }
+        return min(max(value, 0), 1)
+    }
+}
+
 /// Renders timed lyric runs in the coordinates supplied by SwiftUI.
 /// Each glyph keeps its unplayed style while the played style is revealed
 /// horizontally across it. Long tones use a staggered per-character emphasis
@@ -30,12 +70,15 @@ struct LyricGlowTextRenderer: TextRenderer {
             LyricsLongSyllableDetectionMode
         let longSyllableDurationThreshold: TimeInterval
         let unplayedOpacity: Double
+        let focusOpacityEndpoints: LyricFocusOpacityEndpoints?
         let maximumUnplayedBlurRadius: CGFloat
         let playedRise: CGFloat
         let maximumLongSyllableScale: CGFloat
         let longSyllableExpansionPadding: CGFloat
         let highlightGradientWidth: CGFloat
+        let lineProgressionGradientFeather: CGFloat?
         let highlightGradientReduction: CGFloat
+        let lineFinishProgressAnimationDuration: TimeInterval?
         let liftMode: LyricsLiftMode
 
         fileprivate var drawsGlow: Bool {
@@ -165,7 +208,9 @@ struct LyricGlowTextRenderer: TextRenderer {
             playbackTime: playbackTime,
             timing: timing,
             detectionMode: style.longSyllableDetectionMode,
-            durationThreshold: style.longSyllableDurationThreshold
+            durationThreshold: style.longSyllableDurationThreshold,
+            lineFinishProgressAnimationDuration:
+                style.lineFinishProgressAnimationDuration
         )
         let gradientWidth = style.highlightGradientWidth.isFinite
             ? max(style.highlightGradientWidth, 0.1)
@@ -173,10 +218,20 @@ struct LyricGlowTextRenderer: TextRenderer {
         let gradientReduction = style.highlightGradientReduction.isFinite
             ? min(max(style.highlightGradientReduction, 0), 1)
             : Metrics.defaultHighlightGradientReduction
-        let featherWidth = max(
-            bounds.width * gradientWidth,
-            Metrics.minimumRevealFeatherWidth
-        )
+        let featherWidth: CGFloat
+        if let profileFeather = style.lineProgressionGradientFeather,
+           profileFeather.isFinite,
+           profileFeather > 0 {
+            featherWidth = max(
+                profileFeather,
+                Metrics.minimumRevealFeatherWidth
+            )
+        } else {
+            featherWidth = max(
+                bounds.width * gradientWidth,
+                Metrics.minimumRevealFeatherWidth
+            )
+        }
         let direction = run.layoutDirection
         let frontX: CGFloat
         if direction == .rightToLeft {
@@ -361,13 +416,20 @@ struct LyricGlowTextRenderer: TextRenderer {
         in context: inout GraphicsContext
     ) {
         var unplayedContext = context
-        let unplayedOpacity = min(
-            max(style.unplayedOpacity, 0),
-            1
-        )
-        unplayedContext.opacity =
-            1
-            - (1 - unplayedOpacity) * effectsStrength
+        if let focusOpacityEndpoints = style.focusOpacityEndpoints {
+            unplayedContext.opacity =
+                focusOpacityEndpoints.relativeUpcomingOpacity(
+                    at: effectsStrength
+                )
+        } else {
+            let unplayedOpacity = min(
+                max(style.unplayedOpacity, 0),
+                1
+            )
+            unplayedContext.opacity =
+                1
+                - (1 - unplayedOpacity) * effectsStrength
+        }
         if blurRadius > 0 {
             unplayedContext.addFilter(.blur(radius: blurRadius))
         }

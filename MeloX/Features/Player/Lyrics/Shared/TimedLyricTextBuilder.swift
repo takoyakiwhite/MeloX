@@ -2,6 +2,11 @@ import CoreText
 import SwiftUI
 import UIKit
 
+private struct LyricTextHorizontalOffset: Hashable {
+    let characterOffset: Int
+    let horizontalOffset: CGFloat
+}
+
 @MainActor
 enum TimedLyricTextBuilder {
     private static let cache = LyricTextCache()
@@ -10,13 +15,21 @@ enum TimedLyricTextBuilder {
         from syllables: [LyricSyllable],
         constrainedWidth: CGFloat?,
         fontSize: CGFloat,
-        fontWeight: LyricsFontWeight = .bold
+        fontWeight: LyricsFontWeight = .bold,
+        forcedLineBreakCharacterOffsets: Set<Int>? = nil,
+        forcedHorizontalOffsetsByCharacterOffset: [Int: CGFloat] = [:]
     ) -> Text {
+        let horizontalOffsets = normalizedHorizontalOffsets(
+            forcedHorizontalOffsetsByCharacterOffset
+        )
         let key = LyricTextCache.Key.timed(
             syllables: syllables,
             constrainedWidth: constrainedWidth,
             fontSize: fontSize,
-            fontWeight: fontWeight.rawValue
+            fontWeight: fontWeight.rawValue,
+            forcedLineBreakCharacterOffsets:
+                forcedLineBreakCharacterOffsets,
+            forcedHorizontalOffsets: horizontalOffsets
         )
         if let cachedText = cache.text(for: key) {
             return cachedText
@@ -26,7 +39,10 @@ enum TimedLyricTextBuilder {
             from: syllables,
             constrainedWidth: constrainedWidth,
             fontSize: fontSize,
-            fontWeight: fontWeight
+            fontWeight: fontWeight,
+            forcedLineBreakCharacterOffsets:
+                forcedLineBreakCharacterOffsets,
+            forcedHorizontalOffsets: horizontalOffsets
         )
         cache.insert(text, for: key)
         return text
@@ -36,13 +52,21 @@ enum TimedLyricTextBuilder {
         from source: String,
         constrainedWidth: CGFloat?,
         fontSize: CGFloat,
-        fontWeight: LyricsFontWeight = .bold
+        fontWeight: LyricsFontWeight = .bold,
+        forcedLineBreakCharacterOffsets: Set<Int>? = nil,
+        forcedHorizontalOffsetsByCharacterOffset: [Int: CGFloat] = [:]
     ) -> Text {
+        let horizontalOffsets = normalizedHorizontalOffsets(
+            forcedHorizontalOffsetsByCharacterOffset
+        )
         let key = LyricTextCache.Key.plain(
             source: source,
             constrainedWidth: constrainedWidth,
             fontSize: fontSize,
-            fontWeight: fontWeight.rawValue
+            fontWeight: fontWeight.rawValue,
+            forcedLineBreakCharacterOffsets:
+                forcedLineBreakCharacterOffsets,
+            forcedHorizontalOffsets: horizontalOffsets
         )
         if let cachedText = cache.text(for: key) {
             return cachedText
@@ -52,7 +76,10 @@ enum TimedLyricTextBuilder {
             from: source,
             constrainedWidth: constrainedWidth,
             fontSize: fontSize,
-            fontWeight: fontWeight
+            fontWeight: fontWeight,
+            forcedLineBreakCharacterOffsets:
+                forcedLineBreakCharacterOffsets,
+            forcedHorizontalOffsets: horizontalOffsets
         )
         cache.insert(text, for: key)
         return text
@@ -62,7 +89,9 @@ enum TimedLyricTextBuilder {
         from syllables: [LyricSyllable],
         constrainedWidth: CGFloat?,
         fontSize: CGFloat,
-        fontWeight: LyricsFontWeight
+        fontWeight: LyricsFontWeight,
+        forcedLineBreakCharacterOffsets: Set<Int>?,
+        forcedHorizontalOffsets: [LyricTextHorizontalOffset]
     ) -> Text {
         let characters = timedCharacters(from: syllables)
         let source = characters.map(\.text).joined()
@@ -70,14 +99,21 @@ enum TimedLyricTextBuilder {
             for: characters,
             source: source
         )
-        let lineBreakOffsets = lineBreakCharacterOffsets(
-            in: source,
+        let lineBreakOffsets = resolvedLineBreakCharacterOffsets(
+            forced: forcedLineBreakCharacterOffsets,
+            source: source,
             constrainedWidth: constrainedWidth,
             fontSize: fontSize,
             fontWeight: fontWeight,
             usesTimedRunBoundaries: true
         )
 
+        let horizontalOffsetByCharacterOffset = Dictionary(
+            uniqueKeysWithValues: forcedHorizontalOffsets.map {
+                ($0.characterOffset, $0.horizontalOffset)
+            }
+        )
+        var activeHorizontalOffset: CGFloat = 0
         return characters.enumerated().reduce(Text(verbatim: "")) {
             result,
             entry in
@@ -87,11 +123,16 @@ enum TimedLyricTextBuilder {
                offset > 0,
                !characters[offset - 1].isLineBreak {
                 text = Text("\(text)\(Text(verbatim: "\n"))")
+                activeHorizontalOffset = 0
+            }
+            if let horizontalOffset =
+                horizontalOffsetByCharacterOffset[offset] {
+                activeHorizontalOffset = horizontalOffset
             }
 
             let character = entry.element
             let wordTiming = wordTimings[offset]
-            let fragment = Text(verbatim: character.text).customAttribute(
+            var fragment = Text(verbatim: character.text).customAttribute(
                 LyricTimingTextAttribute(
                     startTime: character.startTime,
                     endTime: character.endTime,
@@ -108,6 +149,13 @@ enum TimedLyricTextBuilder {
                     isWhitespace: character.isWhitespace
                 )
             )
+            if activeHorizontalOffset != 0 {
+                fragment = fragment.customAttribute(
+                    LyricRubyPlacementTextAttribute(
+                        horizontalOffset: activeHorizontalOffset
+                    )
+                )
+            }
             return Text("\(text)\(fragment)")
         }
     }
@@ -116,34 +164,93 @@ enum TimedLyricTextBuilder {
         from source: String,
         constrainedWidth: CGFloat?,
         fontSize: CGFloat,
-        fontWeight: LyricsFontWeight
+        fontWeight: LyricsFontWeight,
+        forcedLineBreakCharacterOffsets: Set<Int>?,
+        forcedHorizontalOffsets: [LyricTextHorizontalOffset]
     ) -> Text {
-        let lineBreakOffsets = lineBreakCharacterOffsets(
-            in: source,
+        let lineBreakOffsets = resolvedLineBreakCharacterOffsets(
+            forced: forcedLineBreakCharacterOffsets,
+            source: source,
             constrainedWidth: constrainedWidth,
             fontSize: fontSize,
             fontWeight: fontWeight,
             usesTimedRunBoundaries: false
         )
-        guard !lineBreakOffsets.isEmpty else {
+        guard !lineBreakOffsets.isEmpty
+                || !forcedHorizontalOffsets.isEmpty else {
             return Text(verbatim: source)
         }
 
         let characters = Array(source)
-        var plannedSource = ""
-        plannedSource.reserveCapacity(
-            source.utf8.count + lineBreakOffsets.count
+        let horizontalOffsetByCharacterOffset = Dictionary(
+            uniqueKeysWithValues: forcedHorizontalOffsets.map {
+                ($0.characterOffset, $0.horizontalOffset)
+            }
         )
+        var activeHorizontalOffset: CGFloat = 0
+        var result = Text(verbatim: "")
         for (offset, character) in characters.enumerated() {
             if lineBreakOffsets.contains(offset),
                offset > 0,
                !characters[offset - 1].isNewline,
                !character.isNewline {
-                plannedSource.append("\n")
+                result = Text("\(result)\(Text(verbatim: "\n"))")
+                activeHorizontalOffset = 0
             }
-            plannedSource.append(character)
+            if let horizontalOffset =
+                horizontalOffsetByCharacterOffset[offset] {
+                activeHorizontalOffset = horizontalOffset
+            }
+            var fragment = Text(verbatim: String(character))
+            if activeHorizontalOffset != 0 {
+                fragment = fragment.customAttribute(
+                    LyricRubyPlacementTextAttribute(
+                        horizontalOffset: activeHorizontalOffset
+                    )
+                )
+            }
+            result = Text("\(result)\(fragment)")
         }
-        return Text(verbatim: plannedSource)
+        return result
+    }
+
+    private static func resolvedLineBreakCharacterOffsets(
+        forced: Set<Int>?,
+        source: String,
+        constrainedWidth: CGFloat?,
+        fontSize: CGFloat,
+        fontWeight: LyricsFontWeight,
+        usesTimedRunBoundaries: Bool
+    ) -> Set<Int> {
+        if let forced {
+            let characterCount = source.count
+            return Set(
+                forced.filter { $0 > 0 && $0 < characterCount }
+            )
+        }
+        return lineBreakCharacterOffsets(
+            in: source,
+            constrainedWidth: constrainedWidth,
+            fontSize: fontSize,
+            fontWeight: fontWeight,
+            usesTimedRunBoundaries: usesTimedRunBoundaries
+        )
+    }
+
+    private static func normalizedHorizontalOffsets(
+        _ offsets: [Int: CGFloat]
+    ) -> [LyricTextHorizontalOffset] {
+        offsets.compactMap { characterOffset, horizontalOffset in
+            guard characterOffset > 0,
+                  horizontalOffset.isFinite,
+                  horizontalOffset >= 0 else {
+                return nil
+            }
+            return LyricTextHorizontalOffset(
+                characterOffset: characterOffset,
+                horizontalOffset: horizontalOffset
+            )
+        }.sorted { $0.characterOffset < $1.characterOffset }
     }
 
     private static func wordTimings(
@@ -406,13 +513,17 @@ private final class LyricTextCache {
             syllables: [LyricSyllable],
             constrainedWidth: CGFloat?,
             fontSize: CGFloat,
-            fontWeight: String
+            fontWeight: String,
+            forcedLineBreakCharacterOffsets: Set<Int>?,
+            forcedHorizontalOffsets: [LyricTextHorizontalOffset]
         )
         case plain(
             source: String,
             constrainedWidth: CGFloat?,
             fontSize: CGFloat,
-            fontWeight: String
+            fontWeight: String,
+            forcedLineBreakCharacterOffsets: Set<Int>?,
+            forcedHorizontalOffsets: [LyricTextHorizontalOffset]
         )
     }
 

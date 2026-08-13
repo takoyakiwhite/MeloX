@@ -1,32 +1,28 @@
 import SwiftUI
 
-struct LyricSharePresentation: Identifiable, Hashable {
-    let song: Song
-    let lyric: LyricLine
-
-    var id: String {
-        "\(song.id)-\(lyric.id)"
-    }
-}
-
 struct LyricPressInteraction<Content: View>: View {
     @Environment(\.accessibilityReduceMotion) private var accessibilityReduceMotion
 
     let isSelected: Bool
+    let allowsTap: Bool
+    let allowsLongPress: Bool
     let onTap: () -> Void
     let onLongPress: () -> Void
     private let content: (Double) -> Content
 
     @State private var suppressesTap = false
-    @State private var feedbackTrigger = 0
 
     init(
         isSelected: Bool,
+        allowsTap: Bool = true,
+        allowsLongPress: Bool = true,
         onTap: @escaping () -> Void,
         onLongPress: @escaping () -> Void,
         @ViewBuilder content: @escaping (Double) -> Content
     ) {
         self.isSelected = isSelected
+        self.allowsTap = allowsTap
+        self.allowsLongPress = allowsLongPress
         self.onTap = onTap
         self.onLongPress = onLongPress
         self.content = content
@@ -46,33 +42,24 @@ struct LyricPressInteraction<Content: View>: View {
             )
         )
         .simultaneousGesture(
-            LongPressGesture(
-                minimumDuration: 0.48,
-                maximumDistance: 18
-            )
+            LongPressGesture()
             .onEnded { didComplete in
-                guard didComplete else { return }
+                guard didComplete, allowsLongPress else { return }
                 suppressesTap = true
-                feedbackTrigger &+= 1
                 onLongPress()
-            }
+            },
+            isEnabled: allowsLongPress
         )
-        .sensoryFeedback(
-            .impact(weight: .medium),
-            trigger: feedbackTrigger
-        )
-        .task(id: suppressesTap) {
-            guard suppressesTap else { return }
-            do {
-                try await Task.sleep(for: .seconds(0.8))
-            } catch {
-                return
+        .onChange(of: isSelected) { _, isSelected in
+            if !isSelected {
+                suppressesTap = false
             }
-            suppressesTap = false
         }
+        .allowsHitTesting(allowsTap || allowsLongPress)
     }
 
     private func performTap() {
+        guard allowsTap else { return }
         guard !suppressesTap else {
             suppressesTap = false
             return

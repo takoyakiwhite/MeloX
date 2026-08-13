@@ -1,6 +1,6 @@
 import Foundation
 
-struct PodcastHost: Decodable, Hashable, Identifiable {
+nonisolated struct PodcastHost: Decodable, Hashable, Identifiable {
     let id: Int
     let nickname: String
     let avatarURLString: String?
@@ -39,7 +39,7 @@ struct PodcastHost: Decodable, Hashable, Identifiable {
     }
 }
 
-struct Podcast: Decodable, Hashable, Identifiable {
+nonisolated struct Podcast: Decodable, Hashable, Identifiable {
     let id: Int
     let name: String
     let picURLString: String?
@@ -405,7 +405,7 @@ struct PodcastProgram: Decodable, Hashable, Identifiable {
     }
 }
 
-struct PodcastPlaybackMetadata: Codable, Hashable {
+nonisolated struct PodcastPlaybackMetadata: Codable, Hashable {
     let programID: Int
     let radioID: Int
     let radioName: String
@@ -477,7 +477,7 @@ private extension KeyedDecodingContainer {
 }
 
 extension String {
-    var podcastNonempty: String? {
+    nonisolated var podcastNonempty: String? {
         let value = trimmingCharacters(
             in: .whitespacesAndNewlines
         )

@@ -670,6 +670,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/MeloX/Features/Player/Lyrics/Sharing/MXPrivateRuntime.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = azki.moye.MeloX;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -712,6 +713,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 2.0;
+				OTHER_SWIFT_FLAGS = "$(inherited) -Xcc -fmodule-map-file=$(SRCROOT)/MeloX/Features/Player/Lyrics/Sharing/MXPrivateRuntime.modulemap";
 				PRODUCT_BUNDLE_IDENTIFIER = azki.moye.MeloX;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";

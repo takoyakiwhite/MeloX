@@ -21,13 +21,34 @@ struct AppleMusicLyricsFocusCoordinator: View {
 
     let lyrics: [LyricLine]
     let interludes: [LyricInterlude]
+    let isActive: Bool
     @Binding var playbackFocus: AppleMusicLyricsPlaybackFocus?
+    @Binding var visibleInterludeID: LyricInterlude.ID?
+
+    init(
+        lyrics: [LyricLine],
+        interludes: [LyricInterlude],
+        isActive: Bool = true,
+        playbackFocus: Binding<AppleMusicLyricsPlaybackFocus?>,
+        visibleInterludeID: Binding<LyricInterlude.ID?>
+    ) {
+        self.lyrics = lyrics
+        self.interludes = interludes
+        self.isActive = isActive
+        _playbackFocus = playbackFocus
+        _visibleInterludeID = visibleInterludeID
+    }
 
     var body: some View {
         Color.clear
             .frame(width: 0, height: 0)
             .accessibilityHidden(true)
             .onChange(of: player.progress, initial: true) {
+                guard isActive else { return }
+                synchronizeImmediately()
+            }
+            .onChange(of: isActive) { _, isActive in
+                guard isActive else { return }
                 synchronizeImmediately()
             }
             .task(id: synchronizationTrigger) {
@@ -41,7 +62,10 @@ struct AppleMusicLyricsFocusCoordinator: View {
             songID: player.currentSong?.id,
             seekRevision: player.seekRevision,
             isPlaying: player.isPlaying,
-            isEnabled: settings.lyricsInterludeCountdownEnabled,
+            isActive: isActive,
+            interludeMode: settings.lyricsInterlude.mode,
+            minimumInferredGapDuration:
+                settings.lyricsInterlude.minimumInferredGapDuration,
             advanceTime: advanceTime,
             lyricCount: lyrics.count,
             firstLyricID: lyrics.first?.id,
@@ -57,15 +81,16 @@ struct AppleMusicLyricsFocusCoordinator: View {
             at: player.estimatedProgress()
                 + advanceTime
         )
-        updatePlaybackFocus(to: position.focus)
+        updatePlaybackState(to: position)
     }
 
     private func synchronizeAtTransitions() async {
+        guard isActive else { return }
         while !Task.isCancelled {
             let adjustedProgress = player.estimatedProgress()
                 + advanceTime
             let position = playbackPosition(at: adjustedProgress)
-            updatePlaybackFocus(to: position.focus)
+            updatePlaybackState(to: position)
 
             guard player.isPlaying,
                   let nextTransitionTime = position.nextTransitionTime else {
@@ -97,59 +122,41 @@ struct AppleMusicLyricsFocusCoordinator: View {
             at: playbackTime,
             in: lyrics
         )
-        let interludePosition = settings.lyricsInterludeCountdownEnabled
-            ? LyricInterludeTimeline.position(
-                at: playbackTime,
-                in: interludes
-            )
-            : LyricInterludePlaybackPosition(
-                activeInterludeID: nil,
-                nextTransitionTime: nil
-            )
-        let activeInterlude = interludePosition.activeInterludeID
-            .flatMap { activeInterludeID in
-                interludes.first { $0.id == activeInterludeID }
-            }
-        let focus: AppleMusicLyricsPlaybackFocus?
-        let interludeHandoffTime: TimeInterval?
-        if let activeInterlude,
-           lyricPosition.highlightedLyricID
-            != activeInterlude.followingLyricID {
-            if playbackTime < activeInterlude.countdownEndTime {
-                focus = .interlude(activeInterlude.id)
-                interludeHandoffTime = activeInterlude.countdownEndTime
-            } else {
-                // The dots finish slightly before the lyric starts. Begin the
-                // same promotion used by an ordinary lyric change during this
-                // handoff window instead of leaving an empty focused row.
-                focus = .lyric(activeInterlude.followingLyricID)
-                interludeHandoffTime = nil
-            }
-        } else {
-            focus = lyricPosition.highlightedLyricID.map {
-                .lyric($0)
-            }
-            interludeHandoffTime = nil
+        let interludePosition = LyricInterludeTimeline.position(
+            at: playbackTime,
+            in: interludes
+        )
+        let focus = interludePosition.focusedInterludeID.map {
+            AppleMusicLyricsPlaybackFocus.interlude($0)
+        } ?? interludePosition.promotedLyricID.map {
+            AppleMusicLyricsPlaybackFocus.lyric($0)
+        } ?? lyricPosition.highlightedLyricID.map {
+            AppleMusicLyricsPlaybackFocus.lyric($0)
         }
         let nextTransitionTime = [
             lyricPosition.nextTransitionTime,
             interludePosition.nextTransitionTime,
-            interludeHandoffTime,
         ]
         .compactMap { $0 }
         .min()
 
         return AppleMusicLyricsPlaybackFocusPosition(
             focus: focus,
+            visibleInterludeID:
+                interludePosition.visibleInterludeID,
             nextTransitionTime: nextTransitionTime
         )
     }
 
-    private func updatePlaybackFocus(
-        to focus: AppleMusicLyricsPlaybackFocus?
+    private func updatePlaybackState(
+        to position: AppleMusicLyricsPlaybackFocusPosition
     ) {
-        guard playbackFocus != focus else { return }
-        playbackFocus = focus
+        guard playbackFocus != position.focus
+                || visibleInterludeID != position.visibleInterludeID else {
+            return
+        }
+        playbackFocus = position.focus
+        visibleInterludeID = position.visibleInterludeID
     }
 
     private var advanceTime: TimeInterval {
@@ -158,6 +165,8 @@ struct AppleMusicLyricsFocusCoordinator: View {
 }
 
 struct AppleMusicLyricInterludeView: View {
+    private let motionProfile = AppleMusicInterludeMotionProfile.iOS26_6
+
     @Environment(\.accessibilityReduceMotion)
     private var accessibilityReduceMotion
     @Environment(\.effectiveLyricsRefreshRate)
@@ -165,13 +174,34 @@ struct AppleMusicLyricInterludeView: View {
     @Environment(PlayerStore.self) private var player
 
     let interlude: LyricInterlude
+    let isVisible: Bool
+    let isAnimationActive: Bool
     let advanceTime: TimeInterval
-    let fontSize: CGFloat
     let onInterfaceInteraction: (() -> Void)?
+
+    init(
+        interlude: LyricInterlude,
+        isVisible: Bool,
+        isAnimationActive: Bool = true,
+        advanceTime: TimeInterval,
+        onInterfaceInteraction: (() -> Void)?
+    ) {
+        self.interlude = interlude
+        self.isVisible = isVisible
+        self.isAnimationActive = isAnimationActive
+        self.advanceTime = advanceTime
+        self.onInterfaceInteraction = onInterfaceInteraction
+    }
 
     var body: some View {
         Group {
-            if accessibilityReduceMotion {
+            if !isVisible {
+                Color.clear
+                    .frame(
+                        width: motionProfile.contentWidth,
+                        height: motionProfile.viewHeight
+                    )
+            } else if accessibilityReduceMotion {
                 dots(
                     presentation: presentation(
                         at: player.estimatedProgress()
@@ -183,7 +213,7 @@ struct AppleMusicLyricInterludeView: View {
                     .animation(
                         minimumInterval:
                             effectiveLyricsRefreshRate.minimumInterval,
-                        paused: !player.isPlaying
+                        paused: !player.isPlaying || !isAnimationActive
                     )
                 ) { timeline in
                     dots(
@@ -198,7 +228,8 @@ struct AppleMusicLyricInterludeView: View {
         }
         .frame(
             maxWidth: .infinity,
-            minHeight: dotDiameter,
+            minHeight: motionProfile.viewHeight,
+            maxHeight: motionProfile.viewHeight,
             alignment: .leading
         )
         .contentShape(.rect)
@@ -208,18 +239,10 @@ struct AppleMusicLyricInterludeView: View {
         .accessibilityHidden(true)
     }
 
-    private var dotDiameter: CGFloat {
-        max(fontSize * 0.5, 10)
-    }
-
-    private var dotSpacing: CGFloat {
-        max(fontSize * 0.35, 7)
-    }
-
     private func dots(
         presentation: AppleMusicInterludeDotsPresentation
     ) -> some View {
-        HStack(spacing: dotSpacing) {
+        HStack(spacing: motionProfile.dotMargin) {
             ForEach(presentation.dotOpacities.indices, id: \.self) {
                 index in
                 Circle()
@@ -229,17 +252,22 @@ struct AppleMusicLyricInterludeView: View {
                         )
                     )
                     .frame(
-                        width: dotDiameter,
-                        height: dotDiameter
+                        width: motionProfile.dotLength,
+                        height: motionProfile.dotLength
                     )
                     .scaleEffect(
-                        presentation.dotScales[index]
+                        presentation.scale,
+                        anchor: UnitPoint(
+                            x: motionProfile.dotAnchorX(at: index),
+                            y: 0.5
+                        )
                     )
             }
         }
-        .scaleEffect(
-            presentation.scale,
-            anchor: .leading
+        .frame(
+            width: motionProfile.contentWidth,
+            height: motionProfile.viewHeight,
+            alignment: .leading
         )
         .opacity(presentation.opacity)
     }
@@ -250,7 +278,8 @@ struct AppleMusicLyricInterludeView: View {
         return AppleMusicInterludeDotsPresentation.make(
             playbackTime: playbackTime,
             interlude: interlude,
-            reducesMotion: accessibilityReduceMotion
+            reducesMotion: accessibilityReduceMotion,
+            profile: motionProfile
         )
     }
 }
@@ -259,7 +288,9 @@ private struct AppleMusicLyricsFocusSynchronizationTrigger: Hashable {
     let songID: Int?
     let seekRevision: Int
     let isPlaying: Bool
-    let isEnabled: Bool
+    let isActive: Bool
+    let interludeMode: LyricsInterludePresentationMode
+    let minimumInferredGapDuration: TimeInterval
     let advanceTime: TimeInterval
     let lyricCount: Int
     let firstLyricID: LyricLine.ID?
@@ -271,178 +302,6 @@ private struct AppleMusicLyricsFocusSynchronizationTrigger: Hashable {
 
 private struct AppleMusicLyricsPlaybackFocusPosition {
     let focus: AppleMusicLyricsPlaybackFocus?
+    let visibleInterludeID: LyricInterlude.ID?
     let nextTransitionTime: TimeInterval?
-}
-
-private struct AppleMusicInterludeDotsPresentation {
-    private static let dotCount = 3
-    private static let entryDelay: TimeInterval = 0.5
-    private static let entryFadeDuration: TimeInterval = 0.5
-    private static let entryScaleDuration: TimeInterval = 2
-    private static let exitScaleDuration: TimeInterval = 0.75
-    private static let exitFadeDuration: TimeInterval = 0.375
-    private static let targetBreatheDuration: TimeInterval = 1.5
-    private static let baseScale = 0.7
-
-    let dotOpacities: [Double]
-    let dotScales: [CGFloat]
-    let scale: CGFloat
-    let opacity: Double
-
-    static func make(
-        playbackTime: TimeInterval,
-        interlude: LyricInterlude,
-        reducesMotion: Bool
-    ) -> AppleMusicInterludeDotsPresentation {
-        let duration = max(
-            interlude.countdownEndTime - interlude.startTime,
-            0.001
-        )
-        let elapsed = clamped(
-            playbackTime - interlude.startTime,
-            minimum: 0,
-            maximum: duration
-        )
-        let remaining = interlude.countdownEndTime - playbackTime
-        guard playbackTime < interlude.countdownEndTime else {
-            return AppleMusicInterludeDotsPresentation(
-                dotOpacities: Array(repeating: 0, count: dotCount),
-                dotScales: Array(repeating: 1, count: dotCount),
-                scale: 0,
-                opacity: 0
-            )
-        }
-
-        let dotsDuration = max(duration - exitScaleDuration, 0.001)
-        let dotOpacities = (0..<dotCount).map { index in
-            let segmentOffset =
-                dotsDuration * Double(index) / Double(dotCount)
-            let progress =
-                (
-                    (elapsed - segmentOffset)
-                        * Double(dotCount)
-                        / dotsDuration
-                ) * 0.75
-            return clamped(
-                progress,
-                minimum: 0.25,
-                maximum: 1
-            )
-        }
-        let thirdDotProgress = smoothStep(
-            clamped(
-                (dotOpacities[dotCount - 1] - 0.25) / 0.75,
-                minimum: 0,
-                maximum: 1
-            )
-        )
-        let dotScales = (0..<dotCount).map { index in
-            guard index == dotCount - 1, !reducesMotion else {
-                return CGFloat(1)
-            }
-            return CGFloat(1 + thirdDotProgress * 0.26)
-        }
-        var globalOpacity: Double
-        switch elapsed {
-        case ..<entryDelay:
-            globalOpacity = 0
-        case ..<(entryDelay + entryFadeDuration):
-            globalOpacity =
-                (elapsed - entryDelay) / entryFadeDuration
-        default:
-            globalOpacity = 1
-        }
-        if remaining < exitFadeDuration {
-            globalOpacity *= clamped(
-                remaining / exitFadeDuration,
-                minimum: 0,
-                maximum: 1
-            )
-        }
-
-        let scale: Double
-        if reducesMotion {
-            scale = baseScale
-        } else {
-            let breatheCount = max(
-                ceil(duration / targetBreatheDuration),
-                1
-            )
-            let breatheDuration = duration / breatheCount
-            var animatedScale =
-                sin(
-                    1.5 * .pi
-                        - (elapsed / breatheDuration) * 2
-                ) / 20 + 1
-
-            if elapsed < entryScaleDuration {
-                animatedScale *= easeOutExpo(
-                    elapsed / entryScaleDuration
-                )
-            }
-            if remaining < exitScaleDuration {
-                let exitProgress =
-                    (exitScaleDuration - remaining)
-                        / exitScaleDuration
-                        / 2
-                animatedScale *= 1 - easeInOutBack(
-                    clamped(
-                        exitProgress,
-                        minimum: 0,
-                        maximum: 0.5
-                    )
-                )
-            }
-            scale = max(animatedScale, 0) * baseScale
-        }
-
-        return AppleMusicInterludeDotsPresentation(
-            dotOpacities: dotOpacities,
-            dotScales: dotScales,
-            scale: CGFloat(scale),
-            opacity: clamped(
-                globalOpacity,
-                minimum: 0,
-                maximum: 1
-            )
-        )
-    }
-
-    private static func smoothStep(_ value: Double) -> Double {
-        value * value * (3 - 2 * value)
-    }
-
-    private static func easeOutExpo(_ value: Double) -> Double {
-        value >= 1 ? 1 : 1 - pow(2, -10 * value)
-    }
-
-    private static func easeInOutBack(_ value: Double) -> Double {
-        let firstCoefficient = 1.70158
-        let secondCoefficient = firstCoefficient * 1.525
-        if value < 0.5 {
-            return (
-                pow(2 * value, 2)
-                    * (
-                        (secondCoefficient + 1) * 2 * value
-                            - secondCoefficient
-                    )
-            ) / 2
-        }
-        return (
-            pow(2 * value - 2, 2)
-                * (
-                    (secondCoefficient + 1) * (value * 2 - 2)
-                        + secondCoefficient
-                )
-                + 2
-        ) / 2
-    }
-
-    private static func clamped(
-        _ value: Double,
-        minimum: Double,
-        maximum: Double
-    ) -> Double {
-        min(max(value, minimum), maximum)
-    }
 }

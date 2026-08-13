@@ -6,6 +6,10 @@ struct LyricRubyUnit: Identifiable, Hashable {
     let originalSyllables: [LyricSyllable]
     let romanizationText: String?
     let romanizationSyllables: [LyricSyllable]
+
+    /// True only when the service supplied timing for this transliteration.
+    /// Static fallbacks must never fabricate a second per-character timeline.
+    let hasAuthoredRomanizationTiming: Bool
 }
 
 enum LyricRomanizationAligner {
@@ -78,7 +82,8 @@ enum LyricRomanizationAligner {
                 makeUnit(
                     originalText: original.text,
                     originalSyllables: [original],
-                    romanization: normalizedAnnotation(romanization.text)
+                    romanization: normalizedAnnotation(romanization.text),
+                    authoredRomanizationSyllables: [romanization]
                 )
             }
         }
@@ -126,7 +131,10 @@ enum LyricRomanizationAligner {
                     originalSyllables: group,
                     romanization: normalizedAnnotation(
                         romanizations[romanizationIndex].text
-                    )
+                    ),
+                    authoredRomanizationSyllables: [
+                        romanizations[romanizationIndex],
+                    ]
                 )
             )
             lowerBound = upperBound
@@ -155,13 +163,16 @@ enum LyricRomanizationAligner {
         }
 
         return originals.enumerated().map { index, original in
-            let romanization = romanizationsByOriginal[index, default: []]
+            let authoredRomanizations =
+                romanizationsByOriginal[index, default: []]
+            let romanization = authoredRomanizations
                 .map(\.text)
                 .joined()
             return makeUnit(
                 originalText: original.text,
                 originalSyllables: [original],
-                romanization: normalizedAnnotation(romanization)
+                romanization: normalizedAnnotation(romanization),
+                authoredRomanizationSyllables: authoredRomanizations
             )
         }
     }
@@ -532,7 +543,8 @@ enum LyricRomanizationAligner {
     private static func makeUnit(
         originalText: String,
         originalSyllables: [LyricSyllable],
-        romanization: String?
+        romanization: String?,
+        authoredRomanizationSyllables: [LyricSyllable] = []
     ) -> UnitDraft {
         let normalizedRomanization: String?
         if let romanization {
@@ -540,26 +552,20 @@ enum LyricRomanizationAligner {
         } else {
             normalizedRomanization = nil
         }
-        let romanizationSyllables: [LyricSyllable]
-        if let normalizedRomanization,
-           let first = originalSyllables.first,
-           let last = originalSyllables.last {
-            romanizationSyllables = [
-                LyricSyllable(
-                    text: normalizedRomanization,
-                    startTime: first.startTime,
-                    endTime: max(last.endTime, first.startTime)
-                ),
-            ]
-        } else {
-            romanizationSyllables = []
-        }
+        let normalizedAuthoredSyllables =
+            normalizedRomanization == nil
+                ? []
+                : authoredRomanizationSyllables.filter {
+                    normalizedAnnotation($0.text) != nil
+                }
 
         return UnitDraft(
             originalText: originalText,
             originalSyllables: originalSyllables,
             romanizationText: normalizedRomanization,
-            romanizationSyllables: romanizationSyllables
+            romanizationSyllables: normalizedAuthoredSyllables,
+            hasAuthoredRomanizationTiming:
+                !normalizedAuthoredSyllables.isEmpty
         )
     }
 
@@ -572,7 +578,9 @@ enum LyricRomanizationAligner {
                 originalText: unit.originalText,
                 originalSyllables: unit.originalSyllables,
                 romanizationText: unit.romanizationText,
-                romanizationSyllables: unit.romanizationSyllables
+                romanizationSyllables: unit.romanizationSyllables,
+                hasAuthoredRomanizationTiming:
+                    unit.hasAuthoredRomanizationTiming
             )
         }
     }
@@ -627,6 +635,7 @@ private struct UnitDraft {
     let originalSyllables: [LyricSyllable]
     let romanizationText: String?
     let romanizationSyllables: [LyricSyllable]
+    let hasAuthoredRomanizationTiming: Bool
 }
 
 private struct PhoneticMatchState: Hashable {
