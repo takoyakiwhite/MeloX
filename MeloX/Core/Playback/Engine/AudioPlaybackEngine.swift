@@ -1015,7 +1015,7 @@ final class AudioPlaybackEngine {
 
         let previousRoute = notification.userInfo?[
             AVAudioSessionRouteChangePreviousRouteKey
-        ] as? AVAudioSession.Route
+        ] as? AVAudioSessionRouteDescription
 
         switch reason {
         case .oldDeviceUnavailable:
@@ -1066,8 +1066,8 @@ final class AudioPlaybackEngine {
     }
 
     private func shouldPauseAfterOutputRemoval(
-        previousRoute: AVAudioSession.Route,
-        currentRoute: AVAudioSession.Route
+        previousRoute: AVAudioSessionRouteDescription,
+        currentRoute: AVAudioSessionRouteDescription
     ) -> Bool {
         guard wantsPlayback else { return false }
         let removedPersonalAudioOutput =
@@ -1078,7 +1078,7 @@ final class AudioPlaybackEngine {
     }
 
     private func isPersonalAudioOutput(
-        _ output: AVAudioSession.PortDescription
+        _ output: AVAudioSessionPortDescription
     ) -> Bool {
         switch output.portType {
         case .headphones,
