@@ -1,0 +1,96 @@
+name: Apply minimal headphone route fix
+
+on:
+  push:
+    branches:
+      - upstream/fix-headphone-only
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: upstream/fix-headphone-only
+          fetch-depth: 0
+      - name: Apply minimal route fix
+        shell: python3 {0}
+        run: |
+          from pathlib import Path
+          import subprocess
+
+          path = Path('MeloX/Core/Playback/Engine/AudioPlaybackEngine.swift')
+          text = path.read_text(encoding='utf-8')
+          old = '''    private func handleRouteChange(
+        _ notification: Notification
+    ) {
+        guard let rawReason = notification.userInfo?[
+            AVAudioSessionRouteChangeReasonKey
+        ] as? UInt,
+              AVAudioSession.RouteChangeReason(
+                rawValue: rawReason
+              ) == .oldDeviceUnavailable else {
+            return
+        }
+        pause()
+        onOutputDeviceDisconnected?()
+    }
+}'''
+          new = '''    private func handleRouteChange(
+        _ notification: Notification
+    ) {
+        guard let rawReason = notification.userInfo?[
+            AVAudioSessionRouteChangeReasonKey
+        ] as? UInt,
+              AVAudioSession.RouteChangeReason(
+                rawValue: rawReason
+              ) == .oldDeviceUnavailable else {
+            return
+        }
+
+        let previousRoute = notification.userInfo?[
+            AVAudioSessionRouteChangePreviousRouteKey
+        ] as? AVAudioSessionRouteDescription
+        let currentRoute = AVAudioSession.sharedInstance().currentRoute
+
+        guard let previousRoute,
+              previousRoute.outputs.contains(where: isPersonalAudioOutput),
+              !currentRoute.outputs.contains(where: isPersonalAudioOutput) else {
+            return
+        }
+
+        pause()
+        onOutputDeviceDisconnected?()
+    }
+
+    private func isPersonalAudioOutput(
+        _ output: AVAudioSessionPortDescription
+    ) -> Bool {
+        switch output.portType {
+        case .headphones,
+             .headsetMic,
+             .bluetoothA2DP,
+             .bluetoothHFP,
+             .bluetoothLE,
+             .usbAudio:
+            return true
+        default:
+            return false
+        }
+    }
+}'''
+          if text.count(old) != 1:
+              raise SystemExit(f'unexpected route handler count: {text.count(old)}')
+          path.write_text(text.replace(old, new, 1), encoding='utf-8')
+
+          subprocess.run(['xcrun', 'swiftc', '-parse', str(path)], check=True)
+          subprocess.run(['git', 'rm', '.github/workflows/apply-minimal-headphone-fix.yml'], check=True)
+          subprocess.run(['git', 'config', 'user.name', 'ChatGPT'], check=True)
+          subprocess.run(['git', 'config', 'user.email', 'noreply@openai.com'], check=True)
+          subprocess.run(['git', 'add', str(path), '.github/workflows/apply-minimal-headphone-fix.yml'], check=True)
+          subprocess.run(['git', 'commit', '-m', 'fix: avoid speaker playback after headphone disconnect', '-m', 'Co-authored-by: ChatGPT <noreply@openai.com>'], check=True)
+          subprocess.run(['git', 'push', 'origin', 'HEAD:upstream/fix-headphone-only'], check=True)
