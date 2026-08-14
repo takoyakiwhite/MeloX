@@ -65,6 +65,8 @@ final class AudioPlaybackEngine {
     private var playbackRecoveryGeneration = 0
     private var playbackRecoveryAttempt = 0
     private var isAudioInterrupted = false
+    private var shouldResumeAfterInterruption = false
+    private var isPreservingInterruptionIntent = false
     private var isRouteChanging = false
     private var routeChangeTask: Task<Void, Never>?
     private var routeChangeGeneration = 0
@@ -337,6 +339,9 @@ final class AudioPlaybackEngine {
     }
 
     func pause() {
+        if !isPreservingInterruptionIntent {
+            shouldResumeAfterInterruption = false
+        }
         wantsPlayback = false
         cancelPlaybackRecovery()
         autoMixController.pauseAll()
@@ -963,20 +968,36 @@ final class AudioPlaybackEngine {
         }
         switch type {
         case .began:
+            if !isAudioInterrupted {
+                shouldResumeAfterInterruption = wantsPlayback
+            }
             isAudioInterrupted = true
             cancelPlaybackRecovery()
+            isPreservingInterruptionIntent = true
             onInterruptionBegan?()
+            isPreservingInterruptionIntent = false
+
         case .ended:
-            let rawOptions = notification.userInfo?[
-                AVAudioSessionInterruptionOptionKey
-            ] as? UInt ?? 0
+            isAudioInterrupted = false
+            let itemCanResume = activeDeck.player.currentItem?.status == .readyToPlay
+                && !currentItemNeedsReload
             let shouldResume =
-                AVAudioSession.InterruptionOptions(
-                    rawValue: rawOptions
-                ).contains(.shouldResume)
+                shouldResumeAfterInterruption
+                && itemCanResume
+                && !isRouteChanging
+            shouldResumeAfterInterruption = false
             onInterruptionEnded?(shouldResume)
+
+            if shouldResume,
+               activeDeck.player.timeControlStatus != .playing {
+                schedulePlaybackRecovery(
+                    for: activeDeck.player.currentItem
+                )
+            }
+
         @unknown default:
-            break
+            isAudioInterrupted = false
+            shouldResumeAfterInterruption = false
         }
     }
 
@@ -1080,6 +1101,7 @@ final class AudioPlaybackEngine {
         cancelPlaybackRecovery()
         pendingSeekRetryTask?.cancel()
         pendingSeekRetryTask = nil
+        shouldResumeAfterInterruption = false
         wantsPlayback = false
         autoMixController.pauseAll()
         for player in observedPlayers {
