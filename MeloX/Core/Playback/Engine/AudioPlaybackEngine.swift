@@ -728,7 +728,35 @@ final class AudioPlaybackEngine {
               ) == .oldDeviceUnavailable else {
             return
         }
+
+        let previousRoute = notification.userInfo?[
+            AVAudioSessionRouteChangePreviousRouteKey
+        ] as? AVAudioSessionRouteDescription
+        let currentRoute = AVAudioSession.sharedInstance().currentRoute
+
+        guard let previousRoute,
+              previousRoute.outputs.contains(where: isPersonalAudioOutput),
+              !currentRoute.outputs.contains(where: isPersonalAudioOutput) else {
+            return
+        }
+
         pause()
         onOutputDeviceDisconnected?()
+    }
+
+    private func isPersonalAudioOutput(
+        _ output: AVAudioSessionPortDescription
+    ) -> Bool {
+        switch output.portType {
+        case .headphones,
+             .headsetMic,
+             .bluetoothA2DP,
+             .bluetoothHFP,
+             .bluetoothLE,
+             .usbAudio:
+            return true
+        default:
+            return false
+        }
     }
 }
