@@ -6,8 +6,8 @@ struct AppleMusicRetainedInterludePresentation: Identifiable, Equatable {
     let frame: CGRect
 }
 
-/// Keeps the instrumental dots at their pre-handoff viewport position while
-/// the lyric stack promotes and scrolls the following line underneath them.
+/// Fallback for an interrupted/forced handoff: keeps the instrumental dots at
+/// their viewport position while the lyric stack moves underneath them.
 struct AppleMusicRetainedInterludeOverlay: View {
     private let motionProfile = AppleMusicInterludeMotionProfile.iOS26_6
 

@@ -14,13 +14,15 @@ nonisolated enum AppleMusicRetainedViewportPlanner {
     }
 
     static func retainedLyrics<ID: Hashable>(
+        isNonAdjacentTransition: Bool,
         initialVisibleIDs: [ID],
         framesByID: [ID: CGRect],
         movementDistance: CGFloat,
         destinationOffsetsByID: [ID: CGFloat],
         viewportHeight: CGFloat
     ) -> [RetainedLyric<ID>] {
-        guard movementDistance.isFinite,
+        guard isNonAdjacentTransition,
+              movementDistance.isFinite,
               movementDistance != 0,
               viewportHeight.isFinite,
               viewportHeight > 0 else {

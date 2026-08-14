@@ -2196,6 +2196,10 @@ struct AppleMusicLyricsView: View {
         )
         let retainedLyrics =
             AppleMusicRetainedViewportPlanner.retainedLyrics(
+                isNonAdjacentTransition: isNonAdjacentFocusTransition(
+                    from: movementFocusLyricID,
+                    to: highlightedLyricID
+                ),
                 initialVisibleIDs: initialVisibleIDs,
                 framesByID: lyricGeometryCache.frames,
                 movementDistance: movementDistance,
@@ -2418,9 +2422,9 @@ struct AppleMusicLyricsView: View {
         )
     }
 
-    /// Music gives the instrumental row its own end transition. Preserve a
-    /// fixed copy first, then move the resident stack with the line-change
-    /// spring so the dots can finish outside the scrolling content.
+    /// The time-driven handoff normally starts only after the dots are gone.
+    /// Preserve a fixed copy only for an interrupted/forced handoff that lands
+    /// inside the cue-out window, then move the resident stack underneath it.
     private func moveFocusFromInterlude(
         to id: LyricLine.ID,
         viewportWidth: CGFloat,
@@ -2945,6 +2949,18 @@ struct AppleMusicLyricsView: View {
             return false
         }
         return abs(nextIndex - currentIndex) == 1
+    }
+
+    private func isNonAdjacentFocusTransition(
+        from currentID: LyricLine.ID?,
+        to nextID: LyricLine.ID
+    ) -> Bool {
+        guard let currentID,
+              let currentIndex = lyricIndexByID[currentID],
+              let nextIndex = lyricIndexByID[nextID] else {
+            return false
+        }
+        return abs(nextIndex - currentIndex) > 1
     }
 
     private func isReverseFocusTransition(

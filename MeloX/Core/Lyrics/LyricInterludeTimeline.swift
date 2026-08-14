@@ -32,7 +32,7 @@ struct LyricInterlude: Identifiable, Hashable {
         precedingLyricID == nil
     }
 
-    /// Music promotes the following lyric while the dots finish their exit.
+    /// The dots begin their visual exit before the following lyric starts.
     var cueOutTime: TimeInterval {
         max(
             startTime,
@@ -47,13 +47,16 @@ struct LyricInterlude: Identifiable, Hashable {
 }
 
 struct LyricInterludePlaybackPosition: Equatable {
-    /// Dots are visible in this resident 40-point row.
+    /// The resident 40-point row owns the indicator lifecycle. Its resolved
+    /// dot presentation can already be visually empty near the lyric
+    /// boundary.
     let visibleInterludeID: LyricInterlude.ID?
 
-    /// The slot owns focus only until cue-out; afterwards the next lyric does.
+    /// The slot owns focus until the cue-out animation is visually complete.
     let focusedInterludeID: LyricInterlude.ID?
 
-    /// The lyric promoted at cue-out, before its authored start timestamp.
+    /// The lyric promoted after the dots have disappeared, but before its
+    /// authored start timestamp.
     let promotedLyricID: LyricLine.ID?
 
     let nextTransitionTime: TimeInterval?
@@ -151,23 +154,31 @@ enum LyricInterludeTimeline {
         }
 
         for interlude in interludes {
+            let motionTiming =
+                AppleMusicInterludeMotionProfile.iOS26_6.timing(
+                    for: interlude
+                )
             if playbackTime < interlude.startTime {
                 return inactivePosition(
                     nextTransitionTime: interlude.startTime
                 )
             }
 
-            if playbackTime < interlude.cueOutTime {
+            if playbackTime < motionTiming.visualEndTime {
                 return LyricInterludePlaybackPosition(
                     visibleInterludeID: interlude.id,
                     focusedInterludeID: interlude.id,
                     promotedLyricID: nil,
-                    nextTransitionTime: interlude.cueOutTime
+                    nextTransitionTime: motionTiming.visualEndTime
                 )
             }
 
             if playbackTime < interlude.countdownEndTime {
                 return LyricInterludePlaybackPosition(
+                    // Keep the resident slot identifiable until the authored
+                    // lyric boundary so the view can recognize this as an
+                    // interlude handoff. Its dot presentation is already
+                    // visually empty after `visualEndTime`.
                     visibleInterludeID: interlude.id,
                     focusedInterludeID: nil,
                     promotedLyricID: interlude.followingLyricID,
