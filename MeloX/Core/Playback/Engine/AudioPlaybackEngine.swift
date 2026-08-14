@@ -992,36 +992,102 @@ final class AudioPlaybackEngine {
             return
         }
 
+        let previousRoute = notification.userInfo?[
+            AVAudioSessionRouteChangePreviousRouteKey
+        ] as? AVAudioSession.Route
+
         switch reason {
-        case .oldDeviceUnavailable, .newDeviceAvailable, .routeConfigurationChange:
-            isRouteChanging = true
-            cancelPlaybackRecovery()
-            if wantsPlayback {
-                try? activateAudioSession()
-                routeChangeGeneration += 1
-                routeChangeTask?.cancel()
-                let generation = routeChangeGeneration
-                routeChangeTask = Task { @MainActor [weak self] in
-                    guard let self else { return }
-                    do {
-                        try await Task.sleep(for: .milliseconds(250))
-                    } catch {
-                        return
-                    }
-                    guard generation == self.routeChangeGeneration,
-                          self.wantsPlayback else { return }
-                    self.routeChangeTask = nil
-                    self.isRouteChanging = false
-                    self.schedulePlaybackRecovery(
-                        for: self.activeDeck.player.currentItem
-                    )
-                }
-            } else {
-                isRouteChanging = false
-                onOutputDeviceDisconnected?()
+        case .oldDeviceUnavailable:
+            guard let previousRoute,
+                  shouldPauseAfterOutputRemoval(
+                      previousRoute: previousRoute,
+                      currentRoute: AVAudioSession.sharedInstance().currentRoute
+                  ) else {
+                handleRecoverableRouteChange()
+                return
             }
+            pauseForHeadphoneDisconnect()
+
+        case .newDeviceAvailable, .routeConfigurationChange:
+            handleRecoverableRouteChange()
+
         default:
             break
         }
+    }
+
+    private func handleRecoverableRouteChange() {
+        isRouteChanging = true
+        cancelPlaybackRecovery()
+        if wantsPlayback {
+            try? activateAudioSession()
+            routeChangeGeneration += 1
+            routeChangeTask?.cancel()
+            let generation = routeChangeGeneration
+            routeChangeTask = Task { @MainActor [weak self] in
+                guard let self else { return }
+                do {
+                    try await Task.sleep(for: .milliseconds(250))
+                } catch {
+                    return
+                }
+                guard generation == self.routeChangeGeneration,
+                      self.wantsPlayback else { return }
+                self.routeChangeTask = nil
+                self.isRouteChanging = false
+                self.schedulePlaybackRecovery(
+                    for: self.activeDeck.player.currentItem
+                )
+            }
+        } else {
+            isRouteChanging = false
+        }
+    }
+
+    private func shouldPauseAfterOutputRemoval(
+        previousRoute: AVAudioSession.Route,
+        currentRoute: AVAudioSession.Route
+    ) -> Bool {
+        guard wantsPlayback else { return false }
+        let removedPersonalAudioOutput =
+            previousRoute.outputs.contains(where: isPersonalAudioOutput)
+        let stillHasPersonalAudioOutput =
+            currentRoute.outputs.contains(where: isPersonalAudioOutput)
+        return removedPersonalAudioOutput && !stillHasPersonalAudioOutput
+    }
+
+    private func isPersonalAudioOutput(
+        _ output: AVAudioSession.PortDescription
+    ) -> Bool {
+        switch output.portType {
+        case .headphones,
+             .headsetMic,
+             .bluetoothA2DP,
+             .bluetoothHFP,
+             .bluetoothLE,
+             .usbAudio:
+            return true
+        default:
+            return false
+        }
+    }
+
+    private func pauseForHeadphoneDisconnect() {
+        routeChangeGeneration += 1
+        routeChangeTask?.cancel()
+        routeChangeTask = nil
+        isRouteChanging = false
+        cancelPlaybackRecovery()
+        pendingSeekRetryTask?.cancel()
+        pendingSeekRetryTask = nil
+        wantsPlayback = false
+        autoMixController.pauseAll()
+        for player in observedPlayers {
+            player.pause()
+            player.rate = 0
+            player.cancelPendingPrerolls()
+        }
+        updateStateFromPlayer()
+        onOutputDeviceDisconnected?()
     }
 }
