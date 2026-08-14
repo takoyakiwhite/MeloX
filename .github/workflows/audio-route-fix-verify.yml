@@ -1,0 +1,99 @@
+name: Verify audio route recovery fix
+
+on:
+  push:
+    branches:
+      - agent/fix-headphone-route-pause
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-verify:
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: agent/fix-headphone-route-pause
+
+      - name: Apply interruption recovery state fix
+        shell: python3 {0}
+        run: |
+          from pathlib import Path
+
+          path = Path("MeloX/Core/Playback/Engine/AudioPlaybackEngine.swift")
+          text = path.read_text(encoding="utf-8")
+
+          old = """    private var isAudioInterrupted = false\n    private var isRouteChanging = false\n"""
+          new = """    private var isAudioInterrupted = false\n    private var shouldResumeAfterInterruption = false\n    private var isPreservingInterruptionIntent = false\n    private var isRouteChanging = false\n"""
+          if old not in text:
+              raise SystemExit("state insertion anchor not found")
+          text = text.replace(old, new, 1)
+
+          old = """    func pause() {\n        wantsPlayback = false\n        cancelPlaybackRecovery()\n        autoMixController.pauseAll()\n        updateStateFromPlayer()\n    }\n"""
+          new = """    func pause() {\n        if !isPreservingInterruptionIntent {\n            shouldResumeAfterInterruption = false\n        }\n        wantsPlayback = false\n        cancelPlaybackRecovery()\n        autoMixController.pauseAll()\n        updateStateFromPlayer()\n    }\n"""
+          if old not in text:
+              raise SystemExit("pause anchor not found")
+          text = text.replace(old, new, 1)
+
+          old = """        switch type {\n        case .began:\n            isAudioInterrupted = true\n            cancelPlaybackRecovery()\n            onInterruptionBegan?()\n        case .ended:\n            let rawOptions = notification.userInfo?[\n                AVAudioSessionInterruptionOptionKey\n            ] as? UInt ?? 0\n            let shouldResume =\n                AVAudioSession.InterruptionOptions(\n                    rawValue: rawOptions\n                ).contains(.shouldResume)\n            onInterruptionEnded?(shouldResume)\n        @unknown default:\n            break\n        }\n"""
+          new = """        switch type {\n        case .began:\n            if !isAudioInterrupted {\n                shouldResumeAfterInterruption = wantsPlayback\n            }\n            isAudioInterrupted = true\n            cancelPlaybackRecovery()\n            isPreservingInterruptionIntent = true\n            onInterruptionBegan?()\n            isPreservingInterruptionIntent = false\n\n        case .ended:\n            isAudioInterrupted = false\n            let itemCanResume = activeDeck.player.currentItem?.status == .readyToPlay\n                && !currentItemNeedsReload\n            let shouldResume =\n                shouldResumeAfterInterruption\n                && itemCanResume\n                && !isRouteChanging\n            shouldResumeAfterInterruption = false\n            onInterruptionEnded?(shouldResume)\n\n            if shouldResume,\n               activeDeck.player.timeControlStatus != .playing {\n                schedulePlaybackRecovery(\n                    for: activeDeck.player.currentItem\n                )\n            }\n\n        @unknown default:\n            isAudioInterrupted = false\n            shouldResumeAfterInterruption = false\n        }\n"""
+          if old not in text:
+              raise SystemExit("interruption block anchor not found")
+          text = text.replace(old, new, 1)
+
+          old = """        wantsPlayback = false\n        autoMixController.pauseAll()\n        for player in observedPlayers {\n"""
+          new = """        shouldResumeAfterInterruption = false\n        wantsPlayback = false\n        autoMixController.pauseAll()\n        for player in observedPlayers {\n"""
+          if old not in text:
+              raise SystemExit("route pause anchor not found")
+          text = text.replace(old, new, 1)
+
+          path.write_text(text, encoding="utf-8")
+          print("Updated", path)
+
+      - name: Static syntax audit
+        shell: bash
+        run: |
+          set -euo pipefail
+          xcrun swiftc -parse MeloX/Core/Playback/Engine/AudioPlaybackEngine.swift
+
+      - name: Targeted state-machine audit
+        shell: python3 {0}
+        run: |
+          from pathlib import Path
+          p = Path("MeloX/Core/Playback/Engine/AudioPlaybackEngine.swift")
+          s = p.read_text(encoding="utf-8")
+          required = [
+              "private var shouldResumeAfterInterruption = false",
+              "private var isPreservingInterruptionIntent = false",
+              "if !isPreservingInterruptionIntent {",
+              "shouldResumeAfterInterruption = wantsPlayback",
+              "isAudioInterrupted = false",
+              "onInterruptionEnded?(shouldResume)",
+              "shouldResumeAfterInterruption = false",
+              "shouldPauseAfterOutputRemoval(",
+              "pauseForHeadphoneDisconnect()",
+          ]
+          missing = [x for x in required if x not in s]
+          if missing:
+              raise SystemExit("Missing expected logic: " + repr(missing))
+          print("Targeted state-machine checks passed")
+
+      - name: Build iOS artifact
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash build_ios_unsigned.sh
+
+      - name: Commit verified fix
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MeloX/Core/Playback/Engine/AudioPlaybackEngine.swift
+          git diff --cached --quiet && { echo "No source changes to commit"; exit 0; }
+          git commit -m "fix: restore playback after audio interruptions"
+          git push origin HEAD:agent/fix-headphone-route-pause
