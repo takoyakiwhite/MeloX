@@ -1,0 +1,38 @@
+name: Temporary route fix
+
+on:
+  push:
+    branches:
+      - upstream/fix-headphone-only
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: upstream/fix-headphone-only
+          fetch-depth: 0
+      - name: Apply route fix
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('MeloX/Core/Playback/Engine/AudioPlaybackEngine.swift')
+          s = p.read_text()
+          old = '''    private func handleRouteChange(\n        _ notification: Notification\n    ) {\n        guard let rawReason = notification.userInfo?[\n            AVAudioSessionRouteChangeReasonKey\n        ] as? UInt,\n              AVAudioSession.RouteChangeReason(\n                rawValue: rawReason\n              ) == .oldDeviceUnavailable else {\n            return\n        }\n        pause()\n        onOutputDeviceDisconnected?()\n    }'''
+          new = '''    private func handleRouteChange(\n        _ notification: Notification\n    ) {\n        guard let rawReason = notification.userInfo?[\n            AVAudioSessionRouteChangeReasonKey\n        ] as? UInt,\n              AVAudioSession.RouteChangeReason(\n                rawValue: rawReason\n              ) == .oldDeviceUnavailable,\n              let previousRoute = notification.userInfo?[\n                  AVAudioSessionRouteChangePreviousRouteKey\n              ] as? AVAudioSessionRouteDescription else {\n            return\n        }\n\n        let currentRoute = AVAudioSession.sharedInstance().currentRoute\n        let removedPersonalAudioOutput = previousRoute.outputs.contains {\n            isPersonalAudioOutput($0)\n        }\n        let stillHasPersonalAudioOutput = currentRoute.outputs.contains {\n            isPersonalAudioOutput($0)\n        }\n\n        guard removedPersonalAudioOutput,\n              !stillHasPersonalAudioOutput else {\n            return\n        }\n\n        pause()\n        onOutputDeviceDisconnected?()\n    }\n\n    private func isPersonalAudioOutput(\n        _ output: AVAudioSessionPortDescription\n    ) -> Bool {\n        switch output.portType {\n        case .headphones,\n             .headsetMic,\n             .bluetoothA2DP,\n             .bluetoothHFP,\n             .bluetoothLE,\n             .usbAudio:\n            return true\n        default:\n            return false\n        }\n    }'''
+          if old not in s:
+              raise SystemExit('expected route handler not found')
+          p.write_text(s.replace(old, new))
+          PY
+      - name: Commit source fix
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add MeloX/Core/Playback/Engine/AudioPlaybackEngine.swift
+          git commit -m "fix: pause when personal audio output is disconnected" \
+            -m "Co-authored-by: ChatGPT <noreply@openai.com>"
+          git push origin HEAD:upstream/fix-headphone-only
