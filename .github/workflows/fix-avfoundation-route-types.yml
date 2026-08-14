@@ -1,0 +1,57 @@
+name: Fix AVAudioSession route types
+
+on:
+  push:
+    branches:
+      - agent/fix-headphone-route-pause
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: agent/fix-headphone-route-pause
+          fetch-depth: 0
+      - name: Apply type fix and self-remove
+        shell: python3 {0}
+        run: |
+          from pathlib import Path
+          import subprocess
+
+          path = Path('MeloX/Core/Playback/Engine/AudioPlaybackEngine.swift')
+          text = path.read_text(encoding='utf-8')
+          replacements = {
+              'as? AVAudioSession.Route': 'as? AVAudioSessionRouteDescription',
+              'previousRoute: AVAudioSession.Route,': 'previousRoute: AVAudioSessionRouteDescription,',
+              'currentRoute: AVAudioSession.Route': 'currentRoute: AVAudioSessionRouteDescription',
+              '_ output: AVAudioSession.PortDescription': '_ output: AVAudioSessionPortDescription',
+          }
+          counts = {old: text.count(old) for old in replacements}
+          expected = {
+              'as? AVAudioSession.Route': 1,
+              'previousRoute: AVAudioSession.Route,': 1,
+              'currentRoute: AVAudioSession.Route': 1,
+              '_ output: AVAudioSession.PortDescription': 1,
+          }
+          if counts != expected:
+              raise SystemExit(f'unexpected replacement counts: {counts}')
+          for old, new in replacements.items():
+              text = text.replace(old, new)
+          if 'AVAudioSession.Route' in text or 'AVAudioSession.PortDescription' in text:
+              raise SystemExit('legacy nested AVAudioSession route types remain')
+          path.write_text(text, encoding='utf-8')
+
+          subprocess.run(['git', 'config', 'user.name', 'ChatGPT'], check=True)
+          subprocess.run(['git', 'config', 'user.email', 'noreply@openai.com'], check=True)
+          subprocess.run(['git', 'rm', '.github/workflows/fix-avfoundation-route-types.yml'], check=True)
+          subprocess.run(['git', 'add', str(path)], check=True)
+          subprocess.run([
+              'git', 'commit', '-m', 'fix: correct AVAudioSession route types',
+              '-m', 'Co-authored-by: ChatGPT <noreply@openai.com>'
+          ], check=True)
+          subprocess.run(['git', 'push', 'origin', 'HEAD:agent/fix-headphone-route-pause'], check=True)
