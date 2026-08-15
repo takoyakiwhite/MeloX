@@ -5,7 +5,12 @@ import Foundation
 /// bridge reads that value without copying the rest of the fork's PlayerStore changes.
 extension PlayerStore {
     var currentPlaybackSourceHost: String? {
-        Mirror(reflecting: self).children
+        // currentPlaybackSource is intentionally not an observed property in the
+        // upstream PlayerStore. Touch an observed value here so SwiftUI re-evaluates
+        // this computed property whenever a newly resolved source updates its quality.
+        _ = effectivePlaybackQuality
+
+        return Mirror(reflecting: self).children
             .first(where: { $0.label == "currentPlaybackSource" })
             .flatMap { child in
                 (child.value as? PlaybackSource)?.url.host?.lowercased()
