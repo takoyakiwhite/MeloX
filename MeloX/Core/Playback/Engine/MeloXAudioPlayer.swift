@@ -63,6 +63,10 @@ final class MeloXAudioPlayer: AVPlayer {
         preciseState.reset()
     }
 
+    nonisolated func preciseStateReset() {
+        preciseState.reset()
+    }
+
     nonisolated func preparePreciseIfNeeded(for item: AVPlayerItem) {
         guard let asset = item.asset as? AVURLAsset,
               asset.url.pathExtension.lowercased() == "flac" else {
@@ -220,12 +224,11 @@ final class MeloXAudioPlayer: AVPlayer {
     nonisolated private func activatePreparedItem(
         _ prepared: PreparedAudioPlaybackItem
     ) {
+        guard currentItem !== prepared.item else { return }
         let currentRate = max(rate, 0)
-        if currentItem !== prepared.item {
-            if currentRate > 0 { pause() }
-            replaceCurrentItem(with: prepared.item)
-            if currentRate > 0 { playImmediately(atRate: currentRate) }
-        }
+        if currentRate > 0 { pause() }
+        replaceCurrentItem(with: prepared.item)
+        if currentRate > 0 { playImmediately(atRate: currentRate) }
     }
 
     @MainActor
