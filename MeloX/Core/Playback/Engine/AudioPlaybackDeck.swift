@@ -16,7 +16,7 @@ final class AudioPlaybackDeck {
     private var seekableTimeRangesObserver: NSKeyValueObservation?
 
     init() {
-        player = AVPlayer()
+        player = MeloXAudioPlayer()
         player.automaticallyWaitsToMinimizeStalling = true
         player.networkResourcePriority = .high
         player.preventsDisplaySleepDuringVideoPlayback = false
