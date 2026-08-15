@@ -302,7 +302,8 @@ final class MeloXAudioPlayer: AVPlayer {
 
         guard let currentItem,
               let currentAsset = currentItem.asset as? AVURLAsset,
-              currentAsset.url == url else {
+              currentAsset.url == url,
+              currentItem !== prepared.item else {
             return
         }
 
