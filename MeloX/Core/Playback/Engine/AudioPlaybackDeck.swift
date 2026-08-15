@@ -14,33 +14,83 @@ final class AudioPlaybackDeck {
 
     private var itemStatusObserver: NSKeyValueObservation?
     private var seekableTimeRangesObserver: NSKeyValueObservation?
+    private var currentItemObserver: NSKeyValueObservation?
 
     init() {
         player = MeloXAudioPlayer()
         player.automaticallyWaitsToMinimizeStalling = true
         player.networkResourcePriority = .high
         player.preventsDisplaySleepDuringVideoPlayback = false
+
+        currentItemObserver = player.observe(
+            \.currentItem,
+            options: [.new]
+        ) { [weak self] _, change in
+            guard let self,
+                  let item = change.newValue as? AVPlayerItem else {
+                return
+            }
+            Task { @MainActor [self, item] in
+                guard self.player.currentItem === item else { return }
+                guard let precisePlayer = self.player as? MeloXAudioPlayer,
+                      let timeline = precisePlayer.preciseTimelineForCurrentItem() else {
+                    return
+                }
+                self.installObservers(
+                    for: item,
+                    timeline: timeline,
+                    preserveEqualizerState: true
+                )
+            }
+        }
+    }
+
+    deinit {
+        currentItemObserver?.invalidate()
     }
 
     func replaceCurrentItem(
         with playbackItem: PreparedAudioPlaybackItem,
         identifier: Int?
     ) {
-        let item = playbackItem.item
         autoMixEqualizerState.reset()
+        installObservers(
+            for: playbackItem.item,
+            timeline: playbackItem.timeline,
+            identifier: identifier,
+            preserveEqualizerState: false
+        )
+        player.replaceCurrentItem(with: playbackItem.item)
+        (player as? MeloXAudioPlayer)?.preparePreciseIfNeeded(
+            for: playbackItem.item
+        )
+    }
+
+    private func installObservers(
+        for item: AVPlayerItem,
+        timeline: AudioPlaybackMediaTimeline,
+        identifier: Int? = nil,
+        preserveEqualizerState: Bool
+    ) {
+        if !preserveEqualizerState {
+            autoMixEqualizerState.reset()
+        }
         itemStatusObserver?.invalidate()
         seekableTimeRangesObserver?.invalidate()
-        itemIdentifier = identifier
-        mediaTimeline = playbackItem.timeline
+        itemStatusObserver = nil
+        seekableTimeRangesObserver = nil
+        if let identifier {
+            itemIdentifier = identifier
+        }
+        mediaTimeline = timeline
+
         itemStatusObserver = item.observe(
             \.status,
             options: [.initial, .new]
         ) { [weak self, weak item] _, _ in
             guard let self, let item else { return }
             Task { @MainActor [self, item] in
-                guard self.player.currentItem === item else {
-                    return
-                }
+                guard self.player.currentItem === item else { return }
                 self.onItemStatusChanged?(item)
             }
         }
@@ -50,13 +100,10 @@ final class AudioPlaybackDeck {
         ) { [weak self, weak item] _, _ in
             guard let self, let item else { return }
             Task { @MainActor [self, item] in
-                guard self.player.currentItem === item else {
-                    return
-                }
+                guard self.player.currentItem === item else { return }
                 self.onSeekableTimeRangesChanged?(item)
             }
         }
-        player.replaceCurrentItem(with: item)
     }
 
     var currentPlaybackTime: TimeInterval? {
@@ -83,6 +130,7 @@ final class AudioPlaybackDeck {
 
     func clear() {
         autoMixEqualizerState.reset()
+        (player as? MeloXAudioPlayer)?.preciseStateReset()
         itemStatusObserver?.invalidate()
         itemStatusObserver = nil
         seekableTimeRangesObserver?.invalidate()
