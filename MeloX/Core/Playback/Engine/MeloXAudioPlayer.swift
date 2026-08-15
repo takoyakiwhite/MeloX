@@ -1,10 +1,12 @@
 import AVFoundation
 
-/// Gives FLAC decoder/output paths a short settle window after seek. The
-/// requested media position is never changed; the existing playback engine
-/// samples AVPlayer.currentTime after this callback and re-anchors its clock.
+/// Adds a FLAC-specific seek validation layer without changing AVURLAsset
+/// loading options or adding a fixed post-seek delay. AVPlayer's exact seek
+/// completion is accepted only when the reported media time is close to the
+/// requested media time. If it is not, the existing playback engine retry
+/// path is allowed to issue another seek.
 final class MeloXAudioPlayer: AVPlayer {
-    private static let flacSeekSettleDelay: TimeInterval = 0.08
+    private static let flacSeekAcceptanceTolerance: TimeInterval = 0.025
 
     nonisolated override init() {
         super.init()
@@ -39,20 +41,22 @@ final class MeloXAudioPlayer: AVPlayer {
             toleranceBefore: toleranceBefore,
             toleranceAfter: toleranceAfter
         ) { [weak self] finished in
-            guard finished else {
+            guard finished, let self else {
                 completionHandler(false)
                 return
             }
 
-            DispatchQueue.main.asyncAfter(
-                deadline: .now() + Self.flacSeekSettleDelay
-            ) {
-                guard self?.currentItem != nil else {
-                    completionHandler(false)
-                    return
-                }
-                completionHandler(true)
+            let current = self.currentTime().seconds
+            let target = time.seconds
+            guard current.isFinite,
+                  target.isFinite,
+                  abs(current - target)
+                    <= Self.flacSeekAcceptanceTolerance else {
+                completionHandler(false)
+                return
             }
+
+            completionHandler(true)
         }
     }
 
