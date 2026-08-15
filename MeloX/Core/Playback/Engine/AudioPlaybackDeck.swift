@@ -57,9 +57,13 @@ final class AudioPlaybackDeck {
             }
         }
         player.replaceCurrentItem(with: item)
+        (player as? MeloXAudioPlayer)?.preparePreciseTimingIfNeeded(
+            for: item
+        )
     }
 
     var currentPlaybackTime: TimeInterval? {
+        refreshPreciseTimelineIfAvailable()
         guard player.currentItem != nil else { return nil }
         return mediaTimeline.playbackPosition(
             forMediaTime: player.currentTime()
@@ -67,7 +71,12 @@ final class AudioPlaybackDeck {
     }
 
     var playbackDuration: TimeInterval? {
+        refreshPreciseTimelineIfAvailable()
         guard let item = player.currentItem else { return nil }
+        if let precise = preciseTimingSnapshot,
+           let duration = precise.duration {
+            return duration
+        }
         return mediaTimeline.playbackDuration(
             forMediaDuration: item.duration
         )
@@ -76,13 +85,15 @@ final class AudioPlaybackDeck {
     func mediaTime(
         forPlaybackPosition position: TimeInterval
     ) -> CMTime {
-        mediaTimeline.mediaTime(
+        refreshPreciseTimelineIfAvailable()
+        return mediaTimeline.mediaTime(
             forPlaybackPosition: position
         )
     }
 
     func clear() {
         autoMixEqualizerState.reset()
+        (player as? MeloXAudioPlayer)?.preciseStateReset()
         itemStatusObserver?.invalidate()
         itemStatusObserver = nil
         seekableTimeRangesObserver?.invalidate()
@@ -92,5 +103,19 @@ final class AudioPlaybackDeck {
         player.pause()
         player.replaceCurrentItem(with: nil)
         player.rate = 0
+    }
+
+    private var preciseTimingSnapshot:
+        MeloXAudioPlayer.PreciseTimingSnapshot? {
+        guard let item = player.currentItem,
+              let precisePlayer = player as? MeloXAudioPlayer else {
+            return nil
+        }
+        return precisePlayer.preciseTimingSnapshot(for: item)
+    }
+
+    private func refreshPreciseTimelineIfAvailable() {
+        guard let precise = preciseTimingSnapshot else { return }
+        mediaTimeline = precise.timeline
     }
 }
