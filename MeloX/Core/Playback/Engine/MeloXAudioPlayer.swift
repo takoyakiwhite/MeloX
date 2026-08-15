@@ -2,6 +2,16 @@
 import Foundation
 
 final class MeloXAudioPlayer: AVPlayer {
+    private final class PreparedPayload: @unchecked Sendable {
+        let item: AVPlayerItem
+        let timeline: AudioPlaybackMediaTimeline
+
+        init(item: AVPlayerItem, timeline: AudioPlaybackMediaTimeline) {
+            self.item = item
+            self.timeline = timeline
+        }
+    }
+
     private final class PreciseState: @unchecked Sendable {
         final class Configuration: @unchecked Sendable {
             let audioMix: AVAudioMix?
@@ -27,7 +37,7 @@ final class MeloXAudioPlayer: AVPlayer {
         var seekGeneration = 0
         var url: URL?
         var configuration: Configuration?
-        var preparationTask: Task<PreparedAudioPlaybackItem?, Never>?
+        var preparationTask: Task<PreparedPayload?, Never>?
         var prepared: PreparedAudioPlaybackItem?
 
         func reset() {
@@ -45,7 +55,6 @@ final class MeloXAudioPlayer: AVPlayer {
 
     private let preciseState = PreciseState()
     private static let correctionTolerance: TimeInterval = 0.025
-    private static let correctionTimeout: Duration = .milliseconds(300)
 
     nonisolated override init() {
         super.init()
@@ -95,7 +104,7 @@ final class MeloXAudioPlayer: AVPlayer {
         preciseState.prepared = nil
         preciseState.lock.unlock()
 
-        let task = Task<PreparedAudioPlaybackItem?, Never> { @MainActor [weak self] in
+        let task = Task<PreparedPayload?, Never> { @MainActor [weak self] in
             guard let self else { return nil }
             self.preciseState.lock.lock()
             let configuration = self.preciseState.configuration
@@ -132,7 +141,7 @@ final class MeloXAudioPlayer: AVPlayer {
                 self.preciseState.prepared = prepared
                 self.preciseState.preparationTask = nil
                 self.preciseState.lock.unlock()
-                return prepared
+                return PreparedPayload(item: preciseItem, timeline: prepared.timeline)
             } catch {
                 self.preciseState.lock.lock()
                 if self.preciseState.generation == generation {
@@ -205,14 +214,11 @@ final class MeloXAudioPlayer: AVPlayer {
             completionHandler: completionHandler
         )
 
-        guard preparationTask != nil else { return }
+        guard let preparationTask else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            do {
-                try await Task.sleep(for: Self.correctionTimeout)
-            } catch {
-                return
-            }
+            _ = await preparationTask.value
+            guard !Task.isCancelled else { return }
             self.tryPreciseCorrection(
                 url: url,
                 time: time,
@@ -225,10 +231,8 @@ final class MeloXAudioPlayer: AVPlayer {
         _ prepared: PreparedAudioPlaybackItem
     ) {
         guard currentItem !== prepared.item else { return }
-        let currentRate = max(rate, 0)
-        if currentRate > 0 { pause() }
+        if rate > 0 { pause() }
         replaceCurrentItem(with: prepared.item)
-        if currentRate > 0 { playImmediately(atRate: currentRate) }
     }
 
     @MainActor
@@ -255,11 +259,20 @@ final class MeloXAudioPlayer: AVPlayer {
             return
         }
 
+        let wasPlaying = rate > 0
+        let previousRate = max(rate, 0)
         activatePreparedItem(prepared)
         super.seek(
             to: time,
             toleranceBefore: .zero,
             toleranceAfter: .zero
-        ) { _ in }
+        ) { [weak self] finished in
+            guard let self else { return }
+            guard finished, wasPlaying else { return }
+            Task { @MainActor in
+                guard self.preciseState.seekGeneration == seekGeneration else { return }
+                self.playImmediately(atRate: previousRate > 0 ? previousRate : 1)
+            }
+        }
     }
 }
