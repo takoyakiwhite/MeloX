@@ -204,6 +204,11 @@ final class MeloXAudioPlayer: AVPlayer {
         }
     }
 
+    nonisolated override func play() {
+        super.play()
+        schedulePreciseHandoffIfNeeded()
+    }
+
     nonisolated override func seek(
         to time: CMTime,
         toleranceBefore: CMTime,
@@ -233,13 +238,19 @@ final class MeloXAudioPlayer: AVPlayer {
     }
 
     /// Automatically calibrates FLAC timing after precise preparation. It is
-    /// also called after a seek, but the first seek never waits for precise
-    /// timing. If the shadow player cannot align safely, the main player keeps
-    /// playing normally and no handoff occurs.
+    /// also called after a seek and when normal playback starts, but the first
+    /// seek never waits for precise timing.
     nonisolated func schedulePreciseHandoffIfNeeded() {
         guard let item = currentItem,
               let asset = item.asset as? AVURLAsset,
               asset.url.pathExtension.lowercased() == "flac" else {
+            return
+        }
+
+        preciseState.lock.lock()
+        let prepared = preciseState.prepared
+        preciseState.lock.unlock()
+        if let prepared, prepared.item === item {
             return
         }
 
