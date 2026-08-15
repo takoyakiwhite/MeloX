@@ -157,7 +157,16 @@ private struct NowPlayingQualityMenu: View {
     }
 
     private var displayedQualityTitle: String {
-        player.effectivePlaybackQuality?.title ?? "音质"
+        switch player.currentPlaybackSourceHost {
+        case "kw-er.kuwo.cn", "kw-lv.kuwo.cn":
+            return "酷我"
+        case "bd-er.kuwo.cn", "bd-lv.kuwo.cn":
+            return "波点"
+        case "fsandroid.tx.kugou.com":
+            return "酷狗"
+        default:
+            return player.effectivePlaybackQuality?.title ?? "音质"
+    }
     }
 
     private var qualityBinding: Binding<MusicQuality> {
@@ -232,7 +241,12 @@ struct NowPlayingTransportControls: View {
                     reducesMotion: accessibilityReduceMotion
                 )
             )
-            .accessibilityLabel(player.isPlaying ? "暂停" : "播放")
+            .disabled(player.isLoading)
+            .accessibilityLabel(
+                player.isLoading
+                    ? "正在加载"
+                    : (player.isPlaying ? "暂停" : "播放")
+            )
 
             Spacer()
 
