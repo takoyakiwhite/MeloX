@@ -169,7 +169,6 @@ final class MeloXAudioPlayer: AVPlayer {
         let url = asset.url
         preciseState.lock.lock()
         if preciseState.currentURL == url,
-           preciseState.preparedItem === item,
            preciseState.preparationTask != nil {
             preciseState.lock.unlock()
             return
