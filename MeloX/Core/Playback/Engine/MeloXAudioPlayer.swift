@@ -24,20 +24,28 @@ final class MeloXAudioPlayer: AVPlayer {
         }
     }
 
+    private final class PreparedPayload: @unchecked Sendable {
+        let item: AVPlayerItem
+
+        init(item: AVPlayerItem) {
+            self.item = item
+        }
+    }
+
     private final class PreciseState: @unchecked Sendable {
         let lock = NSLock()
         var generation = 0
         var url: URL?
         var configuration: Configuration?
-        var preparationTask: Task<AVPlayerItem?, Never>?
-        var preparedItem: AVPlayerItem?
+        var preparationTask: Task<PreparedPayload?, Never>?
+        var prepared: PreparedPayload?
 
         func reset() {
             lock.lock()
             generation &+= 1
             preparationTask?.cancel()
             preparationTask = nil
-            preparedItem = nil
+            prepared = nil
             configuration = nil
             url = nil
             lock.unlock()
@@ -100,7 +108,7 @@ final class MeloXAudioPlayer: AVPlayer {
         preciseState.lock.lock()
         if preciseState.url == url,
            preciseState.preparationTask != nil ||
-            preciseState.preparedItem != nil {
+            preciseState.prepared != nil {
             preciseState.lock.unlock()
             return
         }
@@ -110,11 +118,11 @@ final class MeloXAudioPlayer: AVPlayer {
         preciseState.configuration = configuration
         preciseState.preparationTask?.cancel()
         preciseState.preparationTask = nil
-        preciseState.preparedItem = nil
+        preciseState.prepared = nil
         preciseState.lock.unlock()
 
         let task = Task.detached(priority: .utility) {
-            () -> AVPlayerItem? in
+            () -> PreparedPayload? in
             let preciseAsset = AVURLAsset(
                 url: url,
                 options: [AVURLAssetPreferPreciseDurationAndTimingKey: true]
@@ -139,7 +147,7 @@ final class MeloXAudioPlayer: AVPlayer {
                 preciseItem.audioTimePitchAlgorithm =
                     configuration.pitchAlgorithm
                 preciseItem.audioMix = configuration.audioMix
-                return preciseItem
+                return PreparedPayload(item: preciseItem)
             } catch {
                 return nil
             }
@@ -164,7 +172,7 @@ final class MeloXAudioPlayer: AVPlayer {
                 return
             }
             self.preciseState.preparationTask = nil
-            self.preciseState.preparedItem = result
+            self.preciseState.prepared = result
             self.preciseState.lock.unlock()
         }
     }
@@ -217,12 +225,13 @@ final class MeloXAudioPlayer: AVPlayer {
 
         handoffTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            guard let prepared = await self.waitForPreparedItem(
+            guard let payload = await self.waitForPreparedPayload(
                 url: url,
                 timeout: Self.handoffPreparationTimeout
             ) else {
                 return
             }
+            let prepared = payload.item
             guard self.currentItem === item,
                   self.timeControlStatus == .playing || self.rate > 0,
                   self.currentTime().isNumeric else {
@@ -266,9 +275,6 @@ final class MeloXAudioPlayer: AVPlayer {
                         return
                     }
 
-                    // The shadow stream is already decoding at the target
-                    // position. Switch the item only after both timelines are
-                    // aligned, then immediately resume the same rate.
                     self.pause()
                     self.replaceCurrentItem(with: prepared)
                     self.shadowPlayer.pause()
@@ -281,13 +287,13 @@ final class MeloXAudioPlayer: AVPlayer {
         }
     }
 
-    private nonisolated func waitForPreparedItem(
+    private nonisolated func waitForPreparedPayload(
         url: URL,
         timeout: Duration
-    ) async -> AVPlayerItem? {
+    ) async -> PreparedPayload? {
         preciseState.lock.lock()
         let existing = preciseState.url == url
-            ? preciseState.preparedItem
+            ? preciseState.prepared
             : nil
         let task = preciseState.url == url
             ? preciseState.preparationTask
@@ -299,7 +305,7 @@ final class MeloXAudioPlayer: AVPlayer {
         }
         guard let task else { return nil }
 
-        return await withTaskGroup(of: AVPlayerItem?.self) { group in
+        return await withTaskGroup(of: PreparedPayload?.self) { group in
             group.addTask {
                 await task.value
             }
