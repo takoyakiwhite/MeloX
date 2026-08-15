@@ -27,20 +27,19 @@ final class AudioPlaybackDeck {
             options: [.new]
         ) { [weak self] _, change in
             guard let self,
-                  let item = change.newValue as? AVPlayerItem else {
+                  let item = change.newValue as? AVPlayerItem,
+                  let precisePlayer = self.player as? MeloXAudioPlayer else {
                 return
             }
-            Task { @MainActor [self, item] in
-                guard self.player.currentItem === item else { return }
-                guard let precisePlayer = self.player as? MeloXAudioPlayer,
+            Task { @MainActor [self, item, precisePlayer] in
+                guard self.player.currentItem === item,
                       let timeline = precisePlayer.preciseTimelineForCurrentItem() else {
                     return
                 }
-                self.installObservers(
-                    for: item,
-                    timeline: timeline,
-                    preserveEqualizerState: true
-                )
+                // A precise item is already prepared before activation. Only
+                // update the timeline here; do not re-enter the item-status
+                // state machine while a seek is in progress.
+                self.mediaTimeline = timeline
             }
         }
     }
