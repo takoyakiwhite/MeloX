@@ -15,7 +15,7 @@ final class MeloXAudioPlayer: AVPlayer {
         to time: CMTime,
         toleranceBefore: CMTime,
         toleranceAfter: CMTime,
-        completionHandler: @escaping (Bool) -> Void
+        completionHandler: @escaping @Sendable (Bool) -> Void
     ) {
         guard isCurrentItemFLAC else {
             super.seek(
@@ -37,10 +37,12 @@ final class MeloXAudioPlayer: AVPlayer {
                 return
             }
 
-            DispatchQueue.main.asyncAfter(
-                deadline: .now() + Self.flacSeekSettleDelay
-            ) {
-                guard self?.currentItem != nil else {
+            Task { @MainActor in
+                try? await Task.sleep(
+                    for: .milliseconds(80)
+                )
+                guard !Task.isCancelled,
+                      self?.currentItem != nil else {
                     completionHandler(false)
                     return
                 }
