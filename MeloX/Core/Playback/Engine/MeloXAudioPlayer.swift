@@ -4,19 +4,33 @@ import Foundation
 /// AVPlayer compatibility layer for Xcode 26.5 and FLAC precise-timing
 /// background handoff.
 ///
-/// Normal FLAC seeks always complete immediately on the current item. A second
-/// muted player prepares the same URL with precise timing in the background.
-/// Once that player is ready, it seeks to the current real playback position,
-/// starts muted at the same rate, and only then hands the prepared item back to
-/// the main player. This avoids making the first seek wait for precise timing.
+/// Normal FLAC seeks complete immediately on the current item. A second muted
+/// player prepares the same URL with precise timing in the background. Once it
+/// is ready, it seeks to the current real playback position, starts muted at
+/// the same rate, verifies alignment, and only then hands the prepared item
+/// back to the main player.
 final class MeloXAudioPlayer: AVPlayer {
+    private final class Configuration: @unchecked Sendable {
+        let audioMix: AVAudioMix?
+        let bufferDuration: TimeInterval
+        let spatialization: AVAudioSpatializationFormats
+        let pitchAlgorithm: AVAudioTimePitchAlgorithm
+
+        init(item: AVPlayerItem) {
+            audioMix = item.audioMix
+            bufferDuration = item.preferredForwardBufferDuration
+            spatialization = item.allowedAudioSpatializationFormats
+            pitchAlgorithm = item.audioTimePitchAlgorithm
+        }
+    }
+
     private final class PreciseState: @unchecked Sendable {
         let lock = NSLock()
         var generation = 0
         var url: URL?
+        var configuration: Configuration?
         var preparationTask: Task<AVPlayerItem?, Never>?
         var preparedItem: AVPlayerItem?
-        var preparedDuration: CMTime = .invalid
 
         func reset() {
             lock.lock()
@@ -24,7 +38,7 @@ final class MeloXAudioPlayer: AVPlayer {
             preparationTask?.cancel()
             preparationTask = nil
             preparedItem = nil
-            preparedDuration = .invalid
+            configuration = nil
             url = nil
             lock.unlock()
         }
@@ -33,8 +47,10 @@ final class MeloXAudioPlayer: AVPlayer {
     private let preciseState = PreciseState()
     private let shadowPlayer = AVPlayer()
     private var handoffTask: Task<Void, Never>?
+
     private static let handoffTolerance: TimeInterval = 0.020
     private static let handoffPreparationTimeout: Duration = .seconds(3)
+    private static let shadowSettleDelay: Duration = .milliseconds(30)
 
     nonisolated override init() {
         super.init()
@@ -79,6 +95,8 @@ final class MeloXAudioPlayer: AVPlayer {
         }
 
         let url = asset.url
+        let configuration = Configuration(item: item)
+
         preciseState.lock.lock()
         if preciseState.url == url,
            preciseState.preparationTask != nil ||
@@ -89,10 +107,10 @@ final class MeloXAudioPlayer: AVPlayer {
         preciseState.generation &+= 1
         let generation = preciseState.generation
         preciseState.url = url
+        preciseState.configuration = configuration
         preciseState.preparationTask?.cancel()
         preciseState.preparationTask = nil
         preciseState.preparedItem = nil
-        preciseState.preparedDuration = .invalid
         preciseState.lock.unlock()
 
         let task = Task.detached(priority: .utility) {
@@ -114,6 +132,13 @@ final class MeloXAudioPlayer: AVPlayer {
                     preciseItem.forwardPlaybackEndTime =
                         CMTimeAdd(range.start, range.duration)
                 }
+                preciseItem.preferredForwardBufferDuration =
+                    configuration.bufferDuration
+                preciseItem.allowedAudioSpatializationFormats =
+                    configuration.spatialization
+                preciseItem.audioTimePitchAlgorithm =
+                    configuration.pitchAlgorithm
+                preciseItem.audioMix = configuration.audioMix
                 return preciseItem
             } catch {
                 return nil
@@ -150,18 +175,31 @@ final class MeloXAudioPlayer: AVPlayer {
         toleranceAfter: CMTime,
         completionHandler: @escaping @Sendable (Bool) -> Void
     ) {
+        guard let asset = currentItem?.asset as? AVURLAsset,
+              asset.url.pathExtension.lowercased() == "flac" else {
+            super.seek(
+                to: time,
+                toleranceBefore: toleranceBefore,
+                toleranceAfter: toleranceAfter,
+                completionHandler: completionHandler
+            )
+            return
+        }
+
         super.seek(
             to: time,
             toleranceBefore: toleranceBefore,
-            toleranceAfter: toleranceAfter,
-            completionHandler: completionHandler
-        )
+            toleranceAfter: toleranceAfter
+        ) { [weak self] finished in
+            completionHandler(finished)
+            guard finished else { return }
+            self?.schedulePreciseHandoffIfNeeded()
+        }
     }
 
-    /// Called automatically after a FLAC seek has completed. The caller does
-    /// not need to await it. When precise timing is ready, the current main
-    /// player is synchronized to a muted shadow player and the prepared item is
-    /// handed off at the same position/rate.
+    /// Automatically attempts a seamless handoff after a normal FLAC seek.
+    /// No caller waits for precise timing. The main player keeps playing while
+    /// a muted shadow player prepares and aligns the precise item.
     nonisolated func schedulePreciseHandoffIfNeeded() {
         guard let item = currentItem,
               let asset = item.asset as? AVURLAsset,
@@ -170,30 +208,32 @@ final class MeloXAudioPlayer: AVPlayer {
         }
 
         handoffTask?.cancel()
-        let wasPlaying = timeControlStatus == .playing || rate > 0
-        guard wasPlaying else { return }
+        guard timeControlStatus == .playing || rate > 0 else { return }
+
         let url = asset.url
         let targetRate = max(rate, 1)
+        let wasMuted = isMuted
+        let currentVolume = volume
 
         handoffTask = Task { @MainActor [weak self] in
             guard let self else { return }
-            let prepared = await self.waitForPreparedItem(
+            guard let prepared = await self.waitForPreparedItem(
                 url: url,
                 timeout: Self.handoffPreparationTimeout
-            )
-            guard let prepared,
-                  self.currentItem === item,
+            ) else {
+                return
+            }
+            guard self.currentItem === item,
+                  self.timeControlStatus == .playing || self.rate > 0,
                   self.currentTime().isNumeric else {
                 return
             }
 
             let target = self.currentTime()
+            self.shadowPlayer.pause()
             self.shadowPlayer.replaceCurrentItem(with: prepared)
             self.shadowPlayer.volume = 0
             self.shadowPlayer.muted = true
-            self.shadowPlayer.rate = 0
-
-            prepared.cancelPendingSeeks()
             self.shadowPlayer.seek(
                 to: target,
                 toleranceBefore: .zero,
@@ -206,30 +246,35 @@ final class MeloXAudioPlayer: AVPlayer {
                           prepared === self.shadowPlayer.currentItem else {
                         return
                     }
+
                     self.shadowPlayer.playImmediately(atRate: targetRate)
-                    let shadowTime = self.shadowPlayer.currentTime()
-                    let mainTime = self.currentTime()
-                    guard shadowTime.isNumeric,
-                          mainTime.isNumeric,
-                          abs(shadowTime.seconds - mainTime.seconds)
-                            <= Self.handoffTolerance else {
+                    try? await Task.sleep(for: Self.shadowSettleDelay)
+
+                    guard self.currentItem === item,
+                          prepared === self.shadowPlayer.currentItem else {
                         return
                     }
 
-                    self.handoffTask?.cancel()
-                    let preservedVolume = self.volume
-                    let preservedMuted = self.isMuted
-                    self.shadowPlayer.volume = preservedMuted
-                        ? 0
-                        : preservedVolume
-                    self.shadowPlayer.muted = preservedMuted
+                    let mainTime = self.currentTime().seconds
+                    let shadowTime = self.shadowPlayer.currentTime().seconds
+                    guard mainTime.isFinite,
+                          shadowTime.isFinite,
+                          abs(mainTime - shadowTime)
+                            <= Self.handoffTolerance else {
+                        self.shadowPlayer.pause()
+                        self.shadowPlayer.replaceCurrentItem(with: nil)
+                        return
+                    }
 
+                    // The shadow stream is already decoding at the target
+                    // position. Switch the item only after both timelines are
+                    // aligned, then immediately resume the same rate.
                     self.pause()
                     self.replaceCurrentItem(with: prepared)
                     self.shadowPlayer.pause()
                     self.shadowPlayer.replaceCurrentItem(with: nil)
-                    self.volume = preservedVolume
-                    self.isMuted = preservedMuted
+                    self.volume = currentVolume
+                    self.isMuted = wasMuted
                     self.playImmediately(atRate: targetRate)
                 }
             }
@@ -240,9 +285,8 @@ final class MeloXAudioPlayer: AVPlayer {
         url: URL,
         timeout: Duration
     ) async -> AVPlayerItem? {
-        let existing: AVPlayerItem?
         preciseState.lock.lock()
-        existing = preciseState.url == url
+        let existing = preciseState.url == url
             ? preciseState.preparedItem
             : nil
         let task = preciseState.url == url
@@ -253,9 +297,7 @@ final class MeloXAudioPlayer: AVPlayer {
         if let existing {
             return existing
         }
-        guard let task else {
-            return nil
-        }
+        guard let task else { return nil }
 
         return await withTaskGroup(of: AVPlayerItem?.self) { group in
             group.addTask {
