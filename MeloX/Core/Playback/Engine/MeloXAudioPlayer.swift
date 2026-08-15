@@ -4,11 +4,11 @@ import Foundation
 /// AVPlayer compatibility layer for Xcode 26.5 and FLAC precise-timing
 /// background handoff.
 ///
-/// Normal FLAC seeks complete immediately on the current item. A second muted
-/// player prepares the same URL with precise timing in the background. Once it
-/// is ready, it seeks to the current real playback position, starts muted at
-/// the same rate, verifies alignment, and only then hands the prepared item
-/// back to the main player.
+/// Normal FLAC playback and seeks use the fast, non-precise asset. A muted
+/// shadow player prepares the same URL with precise timing in the background.
+/// Once precise timing is ready, the shadow player is aligned to the current
+/// playback position and a handoff is attempted automatically, even when the
+/// user has never sought.
 final class MeloXAudioPlayer: AVPlayer {
     private final class Configuration: @unchecked Sendable {
         let audioMix: AVAudioMix?
@@ -26,9 +26,11 @@ final class MeloXAudioPlayer: AVPlayer {
 
     private final class PreparedPayload: @unchecked Sendable {
         let item: AVPlayerItem
+        let timeline: AudioPlaybackMediaTimeline
 
-        init(item: AVPlayerItem) {
+        init(item: AVPlayerItem, timeline: AudioPlaybackMediaTimeline) {
             self.item = item
+            self.timeline = timeline
         }
     }
 
@@ -93,6 +95,18 @@ final class MeloXAudioPlayer: AVPlayer {
         shadowPlayer.replaceCurrentItem(with: nil)
     }
 
+    nonisolated func preciseTimeline(
+        for item: AVPlayerItem
+    ) -> AudioPlaybackMediaTimeline? {
+        preciseState.lock.lock()
+        defer { preciseState.lock.unlock() }
+        guard let prepared = preciseState.prepared,
+              prepared.item === item else {
+            return nil
+        }
+        return prepared.timeline
+    }
+
     nonisolated func preparePreciseIfNeeded(
         for item: AVPlayerItem
     ) {
@@ -106,19 +120,29 @@ final class MeloXAudioPlayer: AVPlayer {
         let configuration = Configuration(item: item)
 
         preciseState.lock.lock()
-        if preciseState.url == url,
-           preciseState.preparationTask != nil ||
-            preciseState.prepared != nil {
+        if preciseState.url == url {
+            let alreadyPrepared = preciseState.prepared != nil
+            let alreadyPreparing = preciseState.preparationTask != nil
             preciseState.lock.unlock()
-            return
+            if alreadyPrepared || alreadyPreparing {
+                if alreadyPrepared {
+                    schedulePreciseHandoffIfNeeded()
+                }
+                return
+            }
+        } else {
+            preciseState.generation &+= 1
+            preciseState.url = url
+            preciseState.configuration = configuration
+            preciseState.preparationTask?.cancel()
+            preciseState.preparationTask = nil
+            preciseState.prepared = nil
+            preciseState.lock.unlock()
         }
-        preciseState.generation &+= 1
+
+        preciseState.lock.lock()
         let generation = preciseState.generation
-        preciseState.url = url
         preciseState.configuration = configuration
-        preciseState.preparationTask?.cancel()
-        preciseState.preparationTask = nil
-        preciseState.prepared = nil
         preciseState.lock.unlock()
 
         let task = Task.detached(priority: .utility) {
@@ -134,12 +158,8 @@ final class MeloXAudioPlayer: AVPlayer {
                 ).first else {
                     return nil
                 }
+                let timeRange = try? await track.load(.timeRange)
                 let preciseItem = AVPlayerItem(asset: preciseAsset)
-                if let range = try? await track.load(.timeRange),
-                   range.duration.isNumeric {
-                    preciseItem.forwardPlaybackEndTime =
-                        CMTimeAdd(range.start, range.duration)
-                }
                 preciseItem.preferredForwardBufferDuration =
                     configuration.bufferDuration
                 preciseItem.allowedAudioSpatializationFormats =
@@ -147,7 +167,12 @@ final class MeloXAudioPlayer: AVPlayer {
                 preciseItem.audioTimePitchAlgorithm =
                     configuration.pitchAlgorithm
                 preciseItem.audioMix = configuration.audioMix
-                return PreparedPayload(item: preciseItem)
+                return PreparedPayload(
+                    item: preciseItem,
+                    timeline: AudioPlaybackMediaTimeline(
+                        audioTrackTimeRange: timeRange
+                    )
+                )
             } catch {
                 return nil
             }
@@ -174,6 +199,8 @@ final class MeloXAudioPlayer: AVPlayer {
             self.preciseState.preparationTask = nil
             self.preciseState.prepared = result
             self.preciseState.lock.unlock()
+            guard result != nil else { return }
+            self.schedulePreciseHandoffIfNeeded()
         }
     }
 
@@ -205,9 +232,10 @@ final class MeloXAudioPlayer: AVPlayer {
         }
     }
 
-    /// Automatically attempts a seamless handoff after a normal FLAC seek.
-    /// No caller waits for precise timing. The main player keeps playing while
-    /// a muted shadow player prepares and aligns the precise item.
+    /// Automatically calibrates FLAC timing after precise preparation. It is
+    /// also called after a seek, but the first seek never waits for precise
+    /// timing. If the shadow player cannot align safely, the main player keeps
+    /// playing normally and no handoff occurs.
     nonisolated func schedulePreciseHandoffIfNeeded() {
         guard let item = currentItem,
               let asset = item.asset as? AVURLAsset,
@@ -231,6 +259,7 @@ final class MeloXAudioPlayer: AVPlayer {
             ) else {
                 return
             }
+
             let prepared = payload.item
             guard self.currentItem === item,
                   self.timeControlStatus == .playing || self.rate > 0,
@@ -239,12 +268,15 @@ final class MeloXAudioPlayer: AVPlayer {
             }
 
             let target = self.currentTime()
+            let targetPlaybackPosition = max(target.seconds, 0)
             self.shadowPlayer.pause()
             self.shadowPlayer.replaceCurrentItem(with: prepared)
             self.shadowPlayer.volume = 0
             self.shadowPlayer.muted = true
             self.shadowPlayer.seek(
-                to: target,
+                to: payload.timeline.mediaTime(
+                    forPlaybackPosition: targetPlaybackPosition
+                ),
                 toleranceBefore: .zero,
                 toleranceAfter: .zero
             ) { [weak self] finished in
@@ -265,11 +297,17 @@ final class MeloXAudioPlayer: AVPlayer {
                     }
 
                     let mainTime = self.currentTime().seconds
-                    let shadowTime = self.shadowPlayer.currentTime().seconds
+                    let shadowPlaybackTime =
+                        payload.timeline.playbackPosition(
+                            forMediaTime: self.shadowPlayer.currentTime()
+                        ) ?? .nan
+
                     guard mainTime.isFinite,
-                          shadowTime.isFinite,
-                          abs(mainTime - shadowTime)
-                            <= Self.handoffTolerance else {
+                          shadowPlaybackTime.isFinite,
+                          abs(mainTime - target.seconds) <=
+                            Self.handoffTolerance,
+                          abs(shadowPlaybackTime - targetPlaybackPosition) <=
+                            Self.handoffTolerance else {
                         self.shadowPlayer.pause()
                         self.shadowPlayer.replaceCurrentItem(with: nil)
                         return
