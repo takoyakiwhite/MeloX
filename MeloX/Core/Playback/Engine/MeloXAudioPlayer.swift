@@ -6,11 +6,19 @@ import AVFoundation
 final class MeloXAudioPlayer: AVPlayer {
     private static let flacSeekSettleDelay: TimeInterval = 0.08
 
-    override init() {
+    nonisolated override init() {
         super.init()
     }
 
-    override func seek(
+    nonisolated override init(url URL: URL) {
+        super.init(url: URL)
+    }
+
+    nonisolated override init(playerItem item: AVPlayerItem?) {
+        super.init(playerItem: item)
+    }
+
+    nonisolated override func seek(
         to time: CMTime,
         toleranceBefore: CMTime,
         toleranceAfter: CMTime,
@@ -48,7 +56,7 @@ final class MeloXAudioPlayer: AVPlayer {
         }
     }
 
-    private var isCurrentItemFLAC: Bool {
+    private nonisolated var isCurrentItemFLAC: Bool {
         guard let asset = currentItem?.asset as? AVURLAsset else {
             return false
         }
