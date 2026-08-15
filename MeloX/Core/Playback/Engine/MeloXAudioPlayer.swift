@@ -1,4 +1,4 @@
-import AVFoundation
+@preconcurrency import AVFoundation
 
 /// Keeps fast FLAC startup while preparing a precise-timing asset in the
 /// background. The precise item is activated only when a FLAC seek occurs.
