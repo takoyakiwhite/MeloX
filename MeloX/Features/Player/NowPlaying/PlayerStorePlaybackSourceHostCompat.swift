@@ -6,11 +6,12 @@ import Foundation
 extension PlayerStore {
     var currentPlaybackSourceHost: String? {
         // `currentPlaybackSource` itself is intentionally not an observed property
-        // in the upstream PlayerStore. Reading an observed playback value here makes
-        // SwiftUI re-evaluate this computed property while the current track plays,
-        // so a newly resolved source host (e.g. 波点/酷我/酷狗) is reflected without
-        // leaving and reopening Now Playing.
-        _ = progress
+        // in the upstream PlayerStore. Observe the loading lifecycle instead:
+        // source resolution starts/stops when a song is loaded, a quality is changed,
+        // or a fallback source is resolved. This refreshes the label when the actual
+        // source can change without tying the view to the continuously changing
+        // playback progress.
+        _ = isLoading
         _ = effectivePlaybackQuality
 
         return Mirror(reflecting: self).children
