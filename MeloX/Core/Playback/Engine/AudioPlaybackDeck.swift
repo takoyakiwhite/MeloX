@@ -57,6 +57,9 @@ final class AudioPlaybackDeck {
             }
         }
         player.replaceCurrentItem(with: item)
+        (player as? MeloXAudioPlayer)?.preparePreciseIfNeeded(
+            for: item
+        )
     }
 
     var currentPlaybackTime: TimeInterval? {
@@ -83,6 +86,7 @@ final class AudioPlaybackDeck {
 
     func clear() {
         autoMixEqualizerState.reset()
+        (player as? MeloXAudioPlayer)?.preciseStateReset()
         itemStatusObserver?.invalidate()
         itemStatusObserver = nil
         seekableTimeRangesObserver?.invalidate()
