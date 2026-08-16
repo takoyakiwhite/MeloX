@@ -20,6 +20,7 @@ final class AudioPlaybackDeck {
         player.automaticallyWaitsToMinimizeStalling = true
         player.networkResourcePriority = .high
         player.preventsDisplaySleepDuringVideoPlayback = false
+        player.audiovisualBackgroundPlaybackPolicy = .continuesIfPossible
     }
 
     func replaceCurrentItem(
