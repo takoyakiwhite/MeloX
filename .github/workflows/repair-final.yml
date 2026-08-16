@@ -1,0 +1,42 @@
+name: Final Playback Recovery Validator
+on:
+  push:
+    branches:
+      - upstream-quality-route-clean-final
+permissions:
+  contents: write
+jobs:
+  validate:
+    runs-on: macos-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          ref: upstream-quality-route-clean-final
+      - name: Apply playback recovery patch
+        run: python3 Tools/_repair_playback_recovery.py
+      - name: Build iOS unsigned artifact
+        env:
+          RELEASE_NOTES_CURRENT_REF: ${{ github.sha }}
+          RELEASE_NOTES_PREVIOUS_REF: ''
+        run: bash ./build_ios_unsigned.sh
+      - name: Verify artifact
+        run: test -s build/MeloX-iOS-unsigned.ipa
+      - name: Upload verified artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: MeloX-iOS-playback-recovery
+          path: build/MeloX-iOS-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 7
+      - name: Commit final code and clean temporary files
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add MeloX/Core/Playback/Session/PlayerStore.swift
+          git rm -f Tools/_repair_playback_recovery.py .github/workflows/repair-final.yml .github/workflows/repair-playback-recovery.yml .github/workflows/repair2.yml .github/workflows/repair3.yml .github/workflows/_ci-smoke.yml || true
+          git commit -m 'fix: recover long-running background playback safely'
+          git push origin HEAD:upstream-quality-route-clean-final
