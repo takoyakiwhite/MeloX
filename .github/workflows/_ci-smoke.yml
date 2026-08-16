@@ -1,0 +1,10 @@
+name: CI Smoke Test
+on:
+  push:
+    branches:
+      - upstream-quality-route-clean-final
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo CI_OK
