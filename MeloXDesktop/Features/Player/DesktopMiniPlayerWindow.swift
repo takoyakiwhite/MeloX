@@ -592,6 +592,20 @@ struct DesktopMiniPlayerWindow: View {
 
     @ViewBuilder
     private var miniPlayerMenuItems: some View {
+        Picker(
+            "歌词来源",
+            selection: Binding(
+                get: { model.settings.lyricsSourcePreference },
+                set: { model.settings.lyricsSourcePreference = $0 }
+            )
+        ) {
+            ForEach(LyricSourcePreference.allCases) { preference in
+                Text(preference.title).tag(preference)
+            }
+        }
+
+        Divider()
+
         DesktopPlaybackQualityMenu(model: model)
 
         Button(

@@ -27,6 +27,12 @@ actor QQMusicLyricMatchStore {
         persist()
     }
 
+    func remove(for neteaseSongID: Int) {
+        loadIfNeeded()
+        matches?[String(neteaseSongID)] = nil
+        persist()
+    }
+
     private func loadIfNeeded() {
         guard matches == nil else { return }
         guard let data = try? Data(contentsOf: fileURL),

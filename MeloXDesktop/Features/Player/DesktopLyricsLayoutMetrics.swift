@@ -7,9 +7,14 @@ enum DesktopLyricsLayoutMetrics {
 
     static func lineSpacing(
         setting: Double,
-        compact: Bool
+        compact: Bool,
+        usesAppleMusicMotion: Bool
     ) -> CGFloat {
         let spacing = CGFloat(setting)
+        // Music keeps its recovered 39-point paragraph interval in the
+        // 258-point inspector. Only MeloX's legacy editable spacing is
+        // compressed for compact surfaces.
+        if usesAppleMusicMotion { return spacing }
         guard compact else { return spacing }
         return max(spacing * compactLineSpacingScale, 22)
     }
@@ -22,7 +27,9 @@ enum DesktopLyricsLayoutMetrics {
         viewportWidth: CGFloat,
         compact: Bool
     ) -> CGFloat {
-        let horizontalInset: CGFloat = compact ? 48 : 0
+        // LyricsX installs a 20-point interface inset on both horizontal
+        // edges in both compact and full player presentations.
+        let horizontalInset: CGFloat = 40
         let availableWidth = max(viewportWidth - horizontalInset, 1)
         let quantizedWidth = (
             availableWidth / textLayoutWidthQuantum
@@ -36,7 +43,14 @@ enum DesktopLyricsLayoutMetrics {
         viewportHeight: CGFloat,
         focusPosition: CGFloat
     ) -> CGFloat {
-        let anchorY = max(viewportHeight, 0) * focusPosition
+        quantizedVisualFocusAnchorY(
+            max(viewportHeight, 0) * focusPosition
+        )
+    }
+
+    static func quantizedVisualFocusAnchorY(
+        _ anchorY: CGFloat
+    ) -> CGFloat {
         return (
             anchorY / visualFocusAnchorQuantum
         ).rounded() * visualFocusAnchorQuantum

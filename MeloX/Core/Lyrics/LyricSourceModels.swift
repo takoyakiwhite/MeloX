@@ -14,6 +14,33 @@ enum LyricSource: String, Hashable, Sendable {
     }
 }
 
+enum LyricSourcePreference: String, CaseIterable, Identifiable, Hashable, Sendable {
+    case automatic
+    case amll
+    case netease
+    case qqMusic
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .automatic: "自动优选"
+        case .amll: "AMLL TTML"
+        case .netease: "网易云音乐"
+        case .qqMusic: "QQ 音乐"
+        }
+    }
+
+    var source: LyricSource? {
+        switch self {
+        case .automatic: nil
+        case .amll: .amll
+        case .netease: .netease
+        case .qqMusic: .qqMusic
+        }
+    }
+}
+
 struct ResolvedLyrics: Hashable, Sendable {
     let source: LyricSource
     let quality: LyricQuality

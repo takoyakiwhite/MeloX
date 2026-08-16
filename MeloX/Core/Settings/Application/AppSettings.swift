@@ -82,6 +82,7 @@ final class AppSettings {
     static let defaultLyricsTranslationFontScale = 0.65
     static let defaultLyricsTranslationOpacity = 0.9
     static let defaultLyricsLiftMode: LyricsLiftMode = .character
+    static let defaultLyricsSourcePreference: LyricSourcePreference = .automatic
     static let defaultLyricsLongSyllableDetectionMode:
         LyricsLongSyllableDetectionMode = .character
     static let defaultLyricsGlowLongSyllablesOnly = true
@@ -173,6 +174,7 @@ final class AppSettings {
         static let lyricsDuetLayoutEnabled = "lyricsDuetLayoutEnabled"
         static let lyricsAMLLSourceEnabled = "lyricsAMLLSourceEnabled"
         static let lyricsQQMusicSourceEnabled = "lyricsQQMusicSourceEnabled"
+        static let lyricsSourcePreference = "lyricsSourcePreference"
         static let lyricsLiftMode = "lyricsLiftMode"
         static let lyricsHighlightGradientWidth =
             "lyricsHighlightGradientWidth"
@@ -846,6 +848,15 @@ final class AppSettings {
         }
     }
 
+    var lyricsSourcePreference: LyricSourcePreference {
+        didSet {
+            defaults.set(
+                lyricsSourcePreference.rawValue,
+                forKey: Key.lyricsSourcePreference
+            )
+        }
+    }
+
     var lyricsLiftMode: LyricsLiftMode {
         didSet {
             defaults.set(
@@ -1484,6 +1495,11 @@ final class AppSettings {
         lyricsQQMusicSourceEnabled = defaults.object(
             forKey: Key.lyricsQQMusicSourceEnabled
         ) as? Bool ?? true
+        lyricsSourcePreference = LyricSourcePreference(
+            rawValue: defaults.string(
+                forKey: Key.lyricsSourcePreference
+            ) ?? ""
+        ) ?? Self.defaultLyricsSourcePreference
         lyricsLiftMode = LyricsLiftMode(
             rawValue: defaults.string(forKey: Key.lyricsLiftMode) ?? ""
         ) ?? Self.defaultLyricsLiftMode
@@ -1958,6 +1974,7 @@ final class AppSettings {
         lyricsDuetLayoutEnabled = true
         lyricsAMLLSourceEnabled = true
         lyricsQQMusicSourceEnabled = true
+        lyricsSourcePreference = Self.defaultLyricsSourcePreference
         lyricsLiftMode = Self.defaultLyricsLiftMode
         lyricsHighlightGradientWidth =
             Self.defaultLyricsHighlightGradientWidth

@@ -77,6 +77,23 @@ struct PlaybackQueue {
         return remaining + Array(order.prefix(position))
     }
 
+    /// Music's queue history contains the played order through the current
+    /// item. In shuffle mode that is the prefix of the persisted shuffle
+    /// order, not the numerically preceding source indices.
+    func historyIndices(includesCurrent: Bool = true) -> [Int] {
+        guard currentSong != nil else { return [] }
+        if isShuffled {
+            let end = includesCurrent
+                ? min(shuffledPosition + 1, shuffledOrder.count)
+                : min(shuffledPosition, shuffledOrder.count)
+            return Array(shuffledOrder.prefix(end))
+        }
+        let end = includesCurrent
+            ? min(currentIndex + 1, songs.count)
+            : min(currentIndex, songs.count)
+        return Array(songs.indices.prefix(end))
+    }
+
     mutating func restore(
         songs: [Song],
         currentIndex: Int,
@@ -204,6 +221,40 @@ struct PlaybackQueue {
         currentIndex = 0
         shuffledOrder = isShuffled ? [0] : []
         shuffledPosition = 0
+    }
+
+    /// Removes only Music's "Continue Playing" suffix. Played items and the
+    /// current item stay mounted in history, matching the two independent
+    /// clear actions exposed by the queue inspector.
+    mutating func clearUpcoming() {
+        guard currentSong != nil else { return }
+        let removedIndices = Set(upcomingIndices(wraps: false))
+        guard !removedIndices.isEmpty else { return }
+        retainSongs(excluding: removedIndices)
+    }
+
+    mutating func clearHistory() {
+        let removedIndices = Set(historyIndices(includesCurrent: false))
+        guard !removedIndices.isEmpty else { return }
+
+        retainSongs(excluding: removedIndices)
+    }
+
+    private mutating func retainSongs(excluding removedIndices: Set<Int>) {
+        var remappedIndex: [Int: Int] = [:]
+        var retainedSongs: [Song] = []
+        retainedSongs.reserveCapacity(songs.count - removedIndices.count)
+        for (oldIndex, song) in songs.enumerated()
+            where !removedIndices.contains(oldIndex) {
+            remappedIndex[oldIndex] = retainedSongs.count
+            retainedSongs.append(song)
+        }
+
+        songs = retainedSongs
+        currentIndex = remappedIndex[currentIndex] ?? 0
+        guard isShuffled else { return }
+        shuffledOrder = shuffledOrder.compactMap { remappedIndex[$0] }
+        alignShufflePosition()
     }
 
     @discardableResult

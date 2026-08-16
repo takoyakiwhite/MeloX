@@ -88,6 +88,9 @@ struct DesktopRootView: View {
         .task(id: model.player.currentSong?.id) {
             await model.synchronizeLyrics()
         }
+        .onChange(of: model.settings.lyricsSourcePreference) { _, _ in
+            Task { await model.synchronizeLyrics() }
+        }
         .sheet(item: $ui.sheet) { sheet in
             DesktopSheetView(sheet: sheet)
                 .environment(model)

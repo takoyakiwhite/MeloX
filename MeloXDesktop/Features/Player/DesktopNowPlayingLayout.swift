@@ -5,8 +5,9 @@ struct DesktopNowPlayingLayout {
 
     private static let expandedReferenceHeight: CGFloat = 768
     private static let expandedReferenceWidth: CGFloat = 1_200
-    private static let minimumViewportWidth: CGFloat = 980
-    private static let minimumViewportHeight: CGFloat = 540
+    /// AX 实测：1239 × 600 时歌词容器 `y=88`，chrome 高 48，因此歌词面板
+    /// 在 chrome 之下还有 40pt 顶部留白。
+    static let lyricsTopPadding: CGFloat = 40
 
     private var compactHeightCompression: CGFloat {
         min(max(600 - viewport.height, 0), 50)
@@ -27,28 +28,48 @@ struct DesktopNowPlayingLayout {
         )
     }
 
-    /// Lyrics are a full-height visual surface, so they scale from the
-    /// player's minimum supported viewport rather than from the artwork's
-    /// already-expanded reference size.
-    var lyricsScale: CGFloat {
-        min(
-            max(viewport.height / Self.minimumViewportHeight, 1),
-            max(viewport.width / Self.minimumViewportWidth, 1)
-        )
-    }
-
-    private var widthGrowth: CGFloat {
-        max(viewport.width - 988, 0)
-    }
-
+    /// LyricsX does not continuously scale its viewport. `LyricsSpecs` uses
+    /// five discrete font breakpoints chosen from the real view width, so the
+    /// SwiftUI lyrics surface must keep `visualScale == 1`.
     var chromeHeight: CGFloat { 48 }
 
     var contentHeight: CGFloat {
         max(viewport.height - chromeHeight, 0)
     }
 
+    /// MusicPlayerController.LyricsViewController constrains its named
+    /// `activeBaseline` anchor to
+    /// `primaryArtworkCenterY - hostedContentMinY`, and LyricsX positions the
+    /// selected line center on that anchor. In window coordinates this means:
+    /// focused lyric center == primary artwork center Y.
+    var hostedContentMinY: CGFloat {
+        chromeHeight + Self.lyricsTopPadding
+    }
+
+    var primaryArtworkCenterY: CGFloat {
+        chromeHeight + artworkTopInset + artworkSize * 0.5
+    }
+
+    var lyricsFocusAnchorOffset: CGFloat {
+        max(primaryArtworkCenterY - hostedContentMinY, 0)
+    }
+
+    var lyricsViewportHeight: CGFloat {
+        max(viewport.height - hostedContentMinY, 0)
+    }
+
+    /// Converted to the `focusLift` representation used by
+    /// DesktopLyricsScrollView: the distance from the geometric viewport
+    /// center up to Music's active-baseline focus anchor.
+    var lyricsFocusLift: CGFloat {
+        max(
+            lyricsViewportHeight * 0.5 - lyricsFocusAnchorOffset,
+            0
+        )
+    }
+
     var leading: CGFloat {
-        min(88 + widthGrowth * 0.15, 168)
+        max(viewport.width * 0.25 - playerWidth * 0.5, 0)
     }
 
     var trailing: CGFloat {
@@ -56,7 +77,14 @@ struct DesktopNowPlayingLayout {
     }
 
     var panelSpacing: CGFloat {
-        min(max(104 + widthGrowth * 0.15, 92), 182)
+        max(viewport.width * 0.5 - leading - playerWidth, 0)
+    }
+
+    /// In Music's macOS 26 display mode the alternate page starts on the
+    /// exact horizontal midpoint. The player column is centered in the first
+    /// half, rather than positioned from a growing heuristic inset.
+    var panelLeading: CGFloat {
+        viewport.width * 0.5
     }
 
     var playerWidth: CGFloat {
@@ -76,6 +104,6 @@ struct DesktopNowPlayingLayout {
     }
 
     var metadataTopInset: CGFloat {
-        (74 + heightProgress * 6) * elementScale
+        (70 + heightProgress * 10) * elementScale
     }
 }

@@ -15,6 +15,26 @@ struct LyricTimingTextAttribute: TextAttribute, Hashable, Sendable {
     let isWhitespace: Bool
 }
 
+struct LyricFocusOpacityEndpoints: Equatable, Sendable {
+    let deselected: Double
+    let selected: Double
+    let selectedUpcoming: Double
+
+    func relativeUpcomingOpacity(at progress: Double) -> Double {
+        let progress = Self.unit(progress)
+        let outer = deselected + (selected - deselected) * progress
+        let upcoming = deselected
+            + (selectedUpcoming - deselected) * progress
+        guard outer > 0 else { return 0 }
+        return Self.unit(upcoming / outer)
+    }
+
+    private static func unit(_ value: Double) -> Double {
+        guard value.isFinite else { return 0 }
+        return min(max(value, 0), 1)
+    }
+}
+
 /// Renders timed lyric runs in the coordinates supplied by SwiftUI.
 /// Each glyph keeps its unplayed style while the played style is revealed
 /// horizontally across it. Long tones use a staggered per-character emphasis
@@ -30,12 +50,15 @@ struct LyricGlowTextRenderer: TextRenderer {
             LyricsLongSyllableDetectionMode
         let longSyllableDurationThreshold: TimeInterval
         let unplayedOpacity: Double
+        let focusOpacityEndpoints: LyricFocusOpacityEndpoints?
         let maximumUnplayedBlurRadius: CGFloat
         let playedRise: CGFloat
         let maximumLongSyllableScale: CGFloat
         let longSyllableExpansionPadding: CGFloat
         let highlightGradientWidth: CGFloat
+        let lineProgressionGradientFeather: CGFloat?
         let highlightGradientReduction: CGFloat
+        let lineFinishProgressAnimationDuration: TimeInterval?
         let liftMode: LyricsLiftMode
 
         fileprivate var drawsGlow: Bool {
@@ -122,28 +145,177 @@ struct LyricGlowTextRenderer: TextRenderer {
                 )
             }
 
-            for run in line {
-                let horizontalOffset =
-                    run[LyricRubyPlacementTextAttribute.self]?
-                        .horizontalOffset ?? 0
-                var runContext = lineContext
-                if horizontalOffset != 0 {
-                    runContext.translateBy(
-                        x: horizontalOffset,
-                        y: 0
-                    )
-                }
-                if effectsStrength > 0 {
-                    draw(
-                        run,
-                        effectsStrength: effectsStrength,
-                        in: &runContext
-                    )
-                } else {
-                    runContext.draw(run)
-                }
+            if effectsStrength > 0,
+               style.lineProgressionGradientFeather != nil {
+                drawAppleMusicLine(
+                    line,
+                    effectsStrength: effectsStrength,
+                    in: &lineContext
+                )
+            } else {
+                drawRuns(
+                    in: line,
+                    effectsStrength: effectsStrength,
+                    context: &lineContext
+                )
             }
         }
+    }
+
+    private func drawRuns(
+        in line: Text.Layout.Line,
+        effectsStrength: Double,
+        context: inout GraphicsContext
+    ) {
+        for run in line {
+            var runContext = context
+            applyRubyOffset(for: run, to: &runContext)
+            if effectsStrength > 0 {
+                draw(
+                    run,
+                    effectsStrength: effectsStrength,
+                    in: &runContext
+                )
+            } else {
+                runContext.draw(run)
+            }
+        }
+    }
+
+    /// LyricsX owns one progression gradient per visual line. Syllable and
+    /// glyph layers may still lift or expand independently, but they all share
+    /// this single reveal front. Drawing a separate feather for every glyph is
+    /// visibly different, especially for CJK lyrics with one run per glyph.
+    private func drawAppleMusicLine(
+        _ line: Text.Layout.Line,
+        effectsStrength: Double,
+        in context: inout GraphicsContext
+    ) {
+        let revealMask = appleMusicLineRevealMask(for: line)
+        for run in line {
+            guard let timing = run[LyricTimingTextAttribute.self] else {
+                var runContext = context
+                applyRubyOffset(for: run, to: &runContext)
+                runContext.draw(run)
+                continue
+            }
+
+            let state = visualState(for: timing)
+            let bounds = run.typographicBounds.rect
+            var runContext = context
+            applyRubyOffset(for: run, to: &runContext)
+            applyLift(
+                to: &runContext,
+                progress: state.liftProgress,
+                effectsStrength: effectsStrength
+            )
+            let expansionScale = 1
+                + (state.expansionScale - 1)
+                    * CGFloat(effectsStrength)
+            let rawExpansionOffset = expansionOffset(
+                layoutDirection: run.layoutDirection,
+                bounds: bounds,
+                emphasis: state.emphasis
+            )
+            let expansionOffset = CGSize(
+                width: rawExpansionOffset.width * CGFloat(effectsStrength),
+                height: rawExpansionOffset.height * CGFloat(effectsStrength)
+            )
+            if expansionScale != 1 || expansionOffset != .zero {
+                applyExpansion(
+                    to: &runContext,
+                    scale: expansionScale,
+                    anchor: CGPoint(x: bounds.midX, y: bounds.midY),
+                    offset: expansionOffset
+                )
+            }
+
+            drawUnplayed(
+                run,
+                blurRadius:
+                    state.unplayedBlurRadius * CGFloat(effectsStrength),
+                effectsStrength: effectsStrength,
+                in: &runContext
+            )
+            guard let revealMask else { continue }
+            drawPlayed(
+                run,
+                revealMask: revealMask,
+                glowStrength: state.glowStrength * effectsStrength,
+                in: &runContext
+            )
+        }
+    }
+
+    private func applyRubyOffset(
+        for run: Text.Layout.Run,
+        to context: inout GraphicsContext
+    ) {
+        let horizontalOffset =
+            run[LyricRubyPlacementTextAttribute.self]?
+                .horizontalOffset ?? 0
+        guard horizontalOffset != 0 else { return }
+        context.translateBy(x: horizontalOffset, y: 0)
+    }
+
+    private func appleMusicLineRevealMask(
+        for line: Text.Layout.Line
+    ) -> RevealMask? {
+        let timedRuns = line.compactMap { run -> (
+            Text.Layout.Run,
+            LyricTimingTextAttribute
+        )? in
+            guard let timing = run[LyricTimingTextAttribute.self],
+                  !timing.isWhitespace else { return nil }
+            return (run, timing)
+        }
+        guard let first = timedRuns.first,
+              playbackTime >= first.1.startTime else { return nil }
+
+        let direction = first.0.layoutDirection
+        var frontX = direction == .rightToLeft
+            ? first.0.typographicBounds.rect.maxX
+            : first.0.typographicBounds.rect.minX
+
+        for (run, timing) in timedRuns {
+            let bounds = run.typographicBounds.rect
+            guard bounds.width.isFinite, bounds.width > 0 else { continue }
+            if playbackTime < timing.startTime {
+                break
+            }
+            if playbackTime >= timing.endTime {
+                frontX = direction == .rightToLeft
+                    ? bounds.minX
+                    : bounds.maxX
+                continue
+            }
+
+            let duration = timing.endTime - timing.startTime
+            let progress = duration > 0
+                ? unitProgress(
+                    (playbackTime - timing.startTime) / duration
+                )
+                : 1
+            frontX = direction == .rightToLeft
+                ? bounds.maxX - bounds.width * CGFloat(progress)
+                : bounds.minX + bounds.width * CGFloat(progress)
+            break
+        }
+
+        let featherWidth = max(
+            style.lineProgressionGradientFeather
+                ?? Metrics.minimumRevealFeatherWidth,
+            Metrics.minimumRevealFeatherWidth
+        )
+        return RevealMask(
+            frontX: frontX,
+            featherWidth: featherWidth,
+            gradient: highlightGradient(
+                reduction: 0,
+                layoutDirection: direction
+            ),
+            layoutDirection: direction
+        )
     }
 
     private func revealMask(
@@ -165,7 +337,9 @@ struct LyricGlowTextRenderer: TextRenderer {
             playbackTime: playbackTime,
             timing: timing,
             detectionMode: style.longSyllableDetectionMode,
-            durationThreshold: style.longSyllableDurationThreshold
+            durationThreshold: style.longSyllableDurationThreshold,
+            lineFinishProgressAnimationDuration:
+                style.lineFinishProgressAnimationDuration
         )
         let gradientWidth = style.highlightGradientWidth.isFinite
             ? max(style.highlightGradientWidth, 0.1)
@@ -173,10 +347,20 @@ struct LyricGlowTextRenderer: TextRenderer {
         let gradientReduction = style.highlightGradientReduction.isFinite
             ? min(max(style.highlightGradientReduction, 0), 1)
             : Metrics.defaultHighlightGradientReduction
-        let featherWidth = max(
-            bounds.width * gradientWidth,
-            Metrics.minimumRevealFeatherWidth
-        )
+        let featherWidth: CGFloat
+        if let fixedFeather = style.lineProgressionGradientFeather,
+           fixedFeather.isFinite,
+           fixedFeather > 0 {
+            featherWidth = max(
+                fixedFeather,
+                Metrics.minimumRevealFeatherWidth
+            )
+        } else {
+            featherWidth = max(
+                bounds.width * gradientWidth,
+                Metrics.minimumRevealFeatherWidth
+            )
+        }
         let direction = run.layoutDirection
         let frontX: CGFloat
         if direction == .rightToLeft {
@@ -361,13 +545,18 @@ struct LyricGlowTextRenderer: TextRenderer {
         in context: inout GraphicsContext
     ) {
         var unplayedContext = context
-        let unplayedOpacity = min(
-            max(style.unplayedOpacity, 0),
-            1
-        )
-        unplayedContext.opacity =
-            1
-            - (1 - unplayedOpacity) * effectsStrength
+        if let endpoints = style.focusOpacityEndpoints {
+            unplayedContext.opacity = endpoints.relativeUpcomingOpacity(
+                at: effectsStrength
+            )
+        } else {
+            let unplayedOpacity = min(
+                max(style.unplayedOpacity, 0),
+                1
+            )
+            unplayedContext.opacity =
+                1 - (1 - unplayedOpacity) * effectsStrength
+        }
         if blurRadius > 0 {
             unplayedContext.addFilter(.blur(radius: blurRadius))
         }

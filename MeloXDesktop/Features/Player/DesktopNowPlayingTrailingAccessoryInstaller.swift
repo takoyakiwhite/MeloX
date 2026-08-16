@@ -49,22 +49,13 @@ struct DesktopNowPlayingTrailingAccessoryInstaller: NSViewRepresentable {
     final class Coordinator {
         private weak var installedWindow: NSWindow?
         private var isPresented = false
-        private let accessoryController: NSTitlebarAccessoryViewController
-        private let hostingView:
-            NSHostingView<DesktopNowPlayingTrailingAccessoryContent>
+        private var model: DesktopAppModel?
+        private var accessoryController: NSTitlebarAccessoryViewController?
+        private var hostingView:
+            NSHostingView<DesktopNowPlayingTrailingAccessoryContent>?
 
         init(model: DesktopAppModel) {
-            hostingView = NSHostingView(
-                rootView: DesktopNowPlayingTrailingAccessoryContent(
-                    model: model
-                )
-            )
-            hostingView.sizingOptions = [.intrinsicContentSize]
-
-            accessoryController = NSTitlebarAccessoryViewController()
-            accessoryController.layoutAttribute = .right
-            accessoryController.view = hostingView
-            resizeHostingViewToFitContent()
+            self.model = model
         }
 
         func update(
@@ -72,10 +63,14 @@ struct DesktopNowPlayingTrailingAccessoryInstaller: NSViewRepresentable {
             model: DesktopAppModel
         ) {
             self.isPresented = isPresented
-            hostingView.rootView = DesktopNowPlayingTrailingAccessoryContent(
+            self.model = model
+            hostingView?.rootView = DesktopNowPlayingTrailingAccessoryContent(
+                isPresented: isPresented,
                 model: model
             )
-            resizeHostingViewToFitContent()
+            if let hostingView {
+                resizeHostingViewToFitContent(hostingView)
+            }
             reconcileInstallation()
         }
 
@@ -91,23 +86,66 @@ struct DesktopNowPlayingTrailingAccessoryInstaller: NSViewRepresentable {
         }
 
         func detach() {
-            accessoryController.removeFromParent()
+            accessoryController?.removeFromParent()
+            accessoryController = nil
+            hostingView = nil
             installedWindow = nil
         }
 
+        /// Creates a brand new titlebar accessory on every presentation.
+        /// Reusing an `NSTitlebarAccessoryViewController` after
+        /// `removeFromParent()` makes AppKit re-layout it with a stale
+        /// full-height frame on subsequent opens; a fresh controller always
+        /// gets the same first-open vertical placement.
         private func reconcileInstallation() {
-            guard let window = installedWindow else { return }
+            guard let window = installedWindow,
+                  let model else { return }
 
-            let isInstalled = window.titlebarAccessoryViewControllers
-                .contains { $0 === accessoryController }
+            let currentController = accessoryController
+            let isInstalled = currentController.map {
+                window.titlebarAccessoryViewControllers.contains($0)
+            } ?? false
+
             if isPresented, !isInstalled {
-                window.addTitlebarAccessoryViewController(accessoryController)
+                currentController?.removeFromParent()
+
+                let hostingView = makeHostingView(
+                    isPresented: true,
+                    model: model
+                )
+                let controller = NSTitlebarAccessoryViewController()
+                controller.layoutAttribute = .right
+                controller.view = hostingView
+                window.addTitlebarAccessoryViewController(controller)
+                self.hostingView = hostingView
+                accessoryController = controller
             } else if !isPresented, isInstalled {
-                accessoryController.removeFromParent()
+                currentController?.removeFromParent()
+                accessoryController = nil
+                hostingView = nil
             }
         }
 
-        private func resizeHostingViewToFitContent() {
+        private func makeHostingView(
+            isPresented: Bool,
+            model: DesktopAppModel
+        ) -> NSHostingView<DesktopNowPlayingTrailingAccessoryContent> {
+            let hostingView = NSHostingView(
+                rootView: DesktopNowPlayingTrailingAccessoryContent(
+                    isPresented: isPresented,
+                    model: model
+                )
+            )
+            hostingView.sizingOptions = [.intrinsicContentSize]
+            resizeHostingViewToFitContent(hostingView)
+            return hostingView
+        }
+
+        private func resizeHostingViewToFitContent(
+            _ hostingView: NSHostingView<
+                DesktopNowPlayingTrailingAccessoryContent
+            >
+        ) {
             hostingView.invalidateIntrinsicContentSize()
             hostingView.layoutSubtreeIfNeeded()
             let fittingSize = hostingView.fittingSize
@@ -132,12 +170,16 @@ final class DesktopNowPlayingTrailingAccessoryProbe: NSView {
 }
 
 private struct DesktopNowPlayingTrailingAccessoryContent: View {
+    let isPresented: Bool
     let model: DesktopAppModel
 
     var body: some View {
         DesktopNowPlayingVolumeControl()
             .fixedSize(horizontal: true, vertical: true)
             .padding(.trailing, 10)
+            .opacity(isPresented ? 1 : 0)
+            .allowsHitTesting(isPresented)
+            .accessibilityHidden(!isPresented)
             .environment(model)
             .transaction { transaction in
                 transaction.animation = nil

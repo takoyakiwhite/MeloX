@@ -6,10 +6,11 @@ struct DesktopFloatingLyricsWindow: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @Environment(\.accessibilityVoiceOverEnabled) private var voiceOverEnabled
     @State private var isHovered = false
+    @State private var playbackProgress: TimeInterval = 0
 
     private var position: LyricPlaybackPosition {
         LyricPlaybackTimeline.position(
-            at: model.player.estimatedProgress(),
+            at: playbackProgress,
             in: model.lyrics.lyrics
         )
     }
@@ -106,6 +107,16 @@ struct DesktopFloatingLyricsWindow: View {
         .frame(minWidth: 300, minHeight: 72)
         .contentShape(.rect)
         .onHover { isHovered = $0 }
+        // `estimatedProgress()` only reads the playback timeline clock, so
+        // SwiftUI observation never sees `PlayerStore.progress` mutate when
+        // this window is the only observer. Mirror the published sample into
+        // a local state so the current line advances with the engine clock.
+        .onChange(of: model.player.progress, initial: true) { _, _ in
+            playbackProgress = model.player.estimatedProgress()
+        }
+        .onChange(of: model.player.currentSong?.id, initial: true) { _, _ in
+            playbackProgress = model.player.estimatedProgress()
+        }
         .animation(
             reduceMotion ? nil : .easeOut(duration: 0.16),
             value: showsChrome

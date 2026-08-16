@@ -4,7 +4,9 @@ import SwiftUI
 enum DesktopMainWindowMetrics {
     static let minimumContentWidth: CGFloat = 980
     static let minimumContentHeight: CGFloat = 540
-    static let playerSidePanelWidth: CGFloat = 360
+    /// Music 1.6.6 grows the ordinary window by exactly 258 points before
+    /// mounting the lyrics/up-next inspector.
+    static let playerSidePanelWidth: CGFloat = 258
     static let presentationDuration: TimeInterval = 0.28
     static let presentationAnimation: Animation = .easeInOut(
         duration: presentationDuration

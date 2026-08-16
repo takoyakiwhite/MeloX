@@ -1,12 +1,23 @@
 import SwiftUI
 
+@MainActor
 enum DesktopLyricsAnimations {
     static func focusEffectAnimation(
+        settings: AppSettings,
         highlightedID: LyricLine.ID?,
         lyrics: [LyricLine],
         reduceMotion: Bool
     ) -> Animation? {
         guard !reduceMotion else { return nil }
+        if let profile = settings.appleMusicLyricsMotionProfile {
+            return .timingCurve(
+                profile.focusBlurTransitionControlPoint1X,
+                profile.focusBlurTransitionControlPoint1Y,
+                profile.focusBlurTransitionControlPoint2X,
+                profile.focusBlurTransitionControlPoint2Y,
+                duration: profile.focusBlurTransitionDuration
+            )
+        }
         let movementDuration =
             LyricPlaybackTimeline.focusAnimationDuration(
                 for: highlightedID,
@@ -50,6 +61,16 @@ enum DesktopLyricsAnimations {
         isFocused: Bool
     ) -> Animation? {
         guard !reduceMotion else { return nil }
+
+        if let spring = settings.appleMusicLyricsMotionProfile?
+            .lineChangeSpring {
+            return .interpolatingSpring(
+                mass: spring.mass,
+                stiffness: spring.stiffness,
+                damping: spring.damping,
+                initialVelocity: 0
+            )
+        }
 
         let duration = focusScaleDuration(
             settings: settings,

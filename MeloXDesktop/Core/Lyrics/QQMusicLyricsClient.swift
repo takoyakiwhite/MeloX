@@ -14,9 +14,11 @@ nonisolated struct QQMusicLyricsClient: Sendable {
 
     func lyrics(for song: LyricsSongMetadata) async throws -> QQLyricPayload {
         let match: QQMusicTrackMatch
-        if let stored = await matchStore.match(for: song.id) {
+        if let stored = await matchStore.match(for: song.id),
+           QQMusicLyricMatcher.isPlausible(stored, for: song) {
             match = stored
         } else {
+            await matchStore.remove(for: song.id)
             guard let searched = try await bestMatch(for: song) else {
                 throw LyricSourceError.noLyrics
             }
@@ -58,38 +60,12 @@ nonisolated struct QQMusicLyricsClient: Sendable {
     private func bestMatch(
         for song: LyricsSongMetadata
     ) async throws -> QQMusicTrackMatch? {
-        guard song.durationSeconds > 0 else { return nil }
-        let cleanedTitle = song.title
-            .replacingOccurrences(
-                of: #"[\(（][^\)）]*[\)）]"#,
-                with: "",
-                options: .regularExpression
-            )
-            .replacingOccurrences(
-                of: #"\s+"#,
-                with: " ",
-                options: .regularExpression
-            )
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-
-        var queries: [String] = []
-        if cleanedTitle != song.title, !cleanedTitle.isEmpty {
-            queries.append(cleanedTitle)
-        }
-        queries.append(song.title)
-        if !song.artist.isEmpty {
-            if cleanedTitle != song.title, !cleanedTitle.isEmpty {
-                queries.append("\(cleanedTitle) \(song.artist)")
-            }
-            queries.append("\(song.title) \(song.artist)")
-        }
-
-        var visited: Set<String> = []
-        for query in queries where visited.insert(query).inserted {
+        for query in QQMusicLyricMatcher.searchQueries(for: song) {
             let candidates = try await search(query: query)
-            if let match = candidates.prefix(5).first(where: {
-                abs($0.durationSeconds - song.durationSeconds) <= 5
-            }) {
+            if let match = QQMusicLyricMatcher.bestCandidate(
+                in: candidates,
+                for: song
+            ) {
                 return match
             }
         }

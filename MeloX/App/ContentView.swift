@@ -142,13 +142,10 @@ struct ContentView: View {
                 await startHeartModeOnLaunchIfNeeded()
             }
             .task(id: player.currentSong?.id) {
-                let song = player.currentSong
-                let lyricSong = song?.isPodcastProgram == true
-                    ? nil
-                    : song
-                await lyrics.load(for: lyricSong)
-                guard !Task.isCancelled else { return }
-                player.setNowPlayingLyrics(lyrics.lyrics, for: lyricSong?.id)
+                await synchronizeLyrics()
+            }
+            .onChange(of: settings.lyricsSourcePreference) { _, _ in
+                Task { await synchronizeLyrics() }
             }
             .task {
                 await floatingLyrics.monitor()
@@ -289,6 +286,14 @@ struct ContentView: View {
                 openMusicRoute(.song(song))
             }
             .appLaunchExperience()
+    }
+
+    private func synchronizeLyrics() async {
+        let song = player.currentSong
+        let lyricSong = song?.isPodcastProgram == true ? nil : song
+        await lyrics.load(for: lyricSong)
+        guard !Task.isCancelled else { return }
+        player.setNowPlayingLyrics(lyrics.lyrics, for: lyricSong?.id)
     }
 
     private func startHeartModeOnLaunchIfNeeded() async {

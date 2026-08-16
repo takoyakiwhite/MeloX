@@ -158,7 +158,7 @@ struct DesktopSidebarAccountFooter: View {
                     .frame(width: 30, height: 30)
                 }
 
-                Text(model.library.profile?.nickname ?? "洛汐聚合体")
+                Text(model.library.profile?.nickname ?? "未登录")
                     .font(.system(size: 13.5, weight: .semibold))
                     .lineLimit(1)
 

@@ -64,6 +64,19 @@ struct NowPlayingSongActions: View {
     }
     private var songMenu: some View {
         Menu {
+            Picker(
+                "歌词来源",
+                selection: Binding(
+                    get: { settings.lyricsSourcePreference },
+                    set: { settings.lyricsSourcePreference = $0 }
+                )
+            ) {
+                ForEach(LyricSourcePreference.allCases) { preference in
+                    Text(preference.title).tag(preference)
+                }
+            }
+
+            Divider()
             Button {
                 presentedSheet = .sleepTimer
             } label: {

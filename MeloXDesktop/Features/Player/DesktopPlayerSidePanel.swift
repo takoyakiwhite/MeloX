@@ -1,9 +1,8 @@
 import SwiftUI
 
-/// A trailing overlay that mounts its real page after the window finishes
-/// expanding, then removes it after the closing animation. In particular, the
-/// geometry-heavy lyrics view must not measure while the panel is offscreen or
-/// while AppKit is applying the new window frame.
+/// A trailing overlay that keeps the outgoing page mounted through dismissal.
+/// The incoming page is mounted at presentation start so Music's inspector
+/// content and glass surface travel into view as one unit.
 struct DesktopPlayerSidePanel: View {
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var renderingSelection: DesktopInspector?
@@ -92,25 +91,6 @@ struct DesktopPlayerSidePanel: View {
             return
         }
 
-        if renderingSelection != nil {
-            commitRenderingSelection(selection)
-            return
-        }
-
-        if reduceMotion {
-            await Task.yield()
-        } else {
-            do {
-                try await Task.sleep(
-                    for: .seconds(
-                        DesktopMainWindowMetrics.presentationDuration
-                    )
-                )
-            } catch {
-                return
-            }
-        }
-        guard !Task.isCancelled else { return }
         commitRenderingSelection(selection)
     }
 

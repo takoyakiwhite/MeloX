@@ -3,7 +3,6 @@ import Foundation
 struct LyricInterlude: Identifiable, Hashable {
     let startTime: TimeInterval
     let countdownEndTime: TimeInterval
-    let followingLyricTime: TimeInterval
     let precedingLyricID: LyricLine.ID?
     let followingLyricID: LyricLine.ID
     let displayBeforeLyricID: LyricLine.ID
@@ -15,30 +14,54 @@ struct LyricInterlude: Identifiable, Hashable {
     var isPrelude: Bool {
         precedingLyricID == nil
     }
+
+    var cueOutTime: TimeInterval {
+        max(
+            startTime,
+            countdownEndTime
+                - AppleMusicInstrumentalBreakMotionProfile.macOS26_6
+                    .cueOutLeadTime
+        )
+    }
+
+    var gapDuration: TimeInterval {
+        max(countdownEndTime - startTime, 0)
+    }
 }
 
 struct LyricInterludePlaybackPosition: Equatable {
-    let activeInterludeID: LyricInterlude.ID?
+    /// The resident 40-point row owns the indicator lifecycle. Its dots can
+    /// already be visually empty before the following lyric's timestamp.
+    let visibleInterludeID: LyricInterlude.ID?
+
+    /// The indicator owns focus only until its cue-out presentation is done.
+    let focusedInterludeID: LyricInterlude.ID?
+
+    /// The following lyric is promoted after the dots disappear, while the
+    /// fixed interlude slot remains until the authored lyric timestamp.
+    let promotedLyricID: LyricLine.ID?
+
     let nextTransitionTime: TimeInterval?
 }
 
 enum LyricInterludeTimeline {
-    /// Apple Music leaves a short visual handoff before the following lyric.
-    static let lyricHandoffDuration: TimeInterval = 0.25
+    /// The recovered sequence needs one second before dot fill begins and
+    /// the last 1.8 seconds for its cue-out phase.
+    static let minimumAnimatedGapDuration: TimeInterval =
+        AppleMusicInstrumentalBreakMotionProfile.macOS26_6
+            .fillLeadInDuration
+        + AppleMusicInstrumentalBreakMotionProfile.macOS26_6
+            .cueOutLeadTime
 
-    /// Short pauses should remain ordinary lyric spacing instead of looking
-    /// like a loading state.
-    static let minimumCountdownDuration: TimeInterval = 4
-
-    private static let focusHandoffGraceDuration: TimeInterval = 0.5
-
+    /// Desktop only enables the source-timed YRC path. LRC gaps do not carry
+    /// enough end-time evidence to synthesize this Music behavior faithfully.
     static func interludes(in lyrics: [LyricLine]) -> [LyricInterlude] {
         guard let firstLyric = lyrics.first else { return [] }
 
         var result: [LyricInterlude] = []
-        // NetEase YRC can prepend untimed credit rows at t=0. Treat the
-        // first precisely timed lyric as the musical entrance so those rows
-        // cannot suppress an otherwise valid intro countdown.
+        // NetEase YRC can prepend untimed credit rows at t=0. The first row
+        // with usable timing is the musical entrance, and the resident slot
+        // belongs directly before that row rather than before the credits.
         let firstMusicalLyric = lyrics.first {
             preciseEndTime(for: $0) != nil
         } ?? firstLyric
@@ -46,7 +69,7 @@ enum LyricInterludeTimeline {
             startTime: 0,
             precedingLyricID: nil,
             followingLyric: firstMusicalLyric,
-            displayBeforeLyricID: firstLyric.id
+            displayBeforeLyricID: firstMusicalLyric.id
         ) {
             result.append(prelude)
         }
@@ -76,33 +99,50 @@ enum LyricInterludeTimeline {
         in interludes: [LyricInterlude]
     ) -> LyricInterludePlaybackPosition {
         guard playbackTime.isFinite else {
-            return LyricInterludePlaybackPosition(
-                activeInterludeID: nil,
-                nextTransitionTime: nil
-            )
+            return inactivePosition(nextTransitionTime: nil)
         }
 
         for interlude in interludes {
+            let motionTiming =
+                AppleMusicInstrumentalBreakMotionProfile.macOS26_6.timing(
+                    for: interlude
+                )
             if playbackTime < interlude.startTime {
-                return LyricInterludePlaybackPosition(
-                    activeInterludeID: nil,
+                return inactivePosition(
                     nextTransitionTime: interlude.startTime
                 )
             }
 
-            let focusEndTime = interlude.followingLyricTime
-                + focusHandoffGraceDuration
-            if playbackTime < focusEndTime {
+            if playbackTime < motionTiming.visualEndTime {
                 return LyricInterludePlaybackPosition(
-                    activeInterludeID: interlude.id,
-                    nextTransitionTime: focusEndTime
+                    visibleInterludeID: interlude.id,
+                    focusedInterludeID: interlude.id,
+                    promotedLyricID: nil,
+                    nextTransitionTime: motionTiming.visualEndTime
+                )
+            }
+
+            if playbackTime < interlude.countdownEndTime {
+                return LyricInterludePlaybackPosition(
+                    visibleInterludeID: interlude.id,
+                    focusedInterludeID: nil,
+                    promotedLyricID: interlude.followingLyricID,
+                    nextTransitionTime: interlude.countdownEndTime
                 )
             }
         }
 
-        return LyricInterludePlaybackPosition(
-            activeInterludeID: nil,
-            nextTransitionTime: nil
+        return inactivePosition(nextTransitionTime: nil)
+    }
+
+    private static func inactivePosition(
+        nextTransitionTime: TimeInterval?
+    ) -> LyricInterludePlaybackPosition {
+        LyricInterludePlaybackPosition(
+            visibleInterludeID: nil,
+            focusedInterludeID: nil,
+            promotedLyricID: nil,
+            nextTransitionTime: nextTransitionTime
         )
     }
 
@@ -117,19 +157,15 @@ enum LyricInterludeTimeline {
             return nil
         }
 
-        let countdownEndTime = max(
-            startTime,
-            followingLyric.time - lyricHandoffDuration
-        )
+        let countdownEndTime = max(startTime, followingLyric.time)
         guard countdownEndTime - startTime
-                >= minimumCountdownDuration else {
+                >= minimumAnimatedGapDuration else {
             return nil
         }
 
         return LyricInterlude(
             startTime: startTime,
             countdownEndTime: countdownEndTime,
-            followingLyricTime: followingLyric.time,
             precedingLyricID: precedingLyricID,
             followingLyricID: followingLyric.id,
             displayBeforeLyricID: displayBeforeLyricID

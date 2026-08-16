@@ -47,13 +47,14 @@ struct DesktopPlaybackControls: View {
     }
 
     private var compactControls: some View {
-        HStack(spacing: 10) {
-            shuffleButton.frame(width: 16)
-            previousButton.frame(width: 18)
-            playButton.frame(width: 24)
-            nextButton.frame(width: 18)
-            repeatButton.frame(width: 16)
+        HStack(spacing: 0) {
+            shuffleButton.frame(width: 28, height: 28)
+            previousButton.frame(width: 28, height: 28)
+            playButton.frame(width: 36, height: 36)
+            nextButton.frame(width: 28, height: 28)
+            repeatButton.frame(width: 28, height: 28)
         }
+        .frame(width: 148, height: 36)
     }
 
     private var shuffleButton: some View {
@@ -63,7 +64,7 @@ struct DesktopPlaybackControls: View {
             Image(systemName: "shuffle")
                 .font(
                     .system(
-                        size: (prominent ? 16 : 12) * controlScale,
+                        size: (prominent ? 16 : 11) * controlScale,
                         weight: .semibold
                     )
                 )
@@ -83,7 +84,7 @@ struct DesktopPlaybackControls: View {
             Image(systemName: "backward.fill")
                 .font(
                     .system(
-                        size: (prominent ? 24 : 15) * controlScale,
+                        size: (prominent ? 24 : 13) * controlScale,
                         weight: .semibold
                     )
                 )
@@ -98,7 +99,7 @@ struct DesktopPlaybackControls: View {
             Image(systemName: model.player.isPlaying ? "pause.fill" : "play.fill")
                 .font(
                     .system(
-                        size: (prominent ? 30 : 20) * controlScale,
+                        size: (prominent ? 30 : 19) * controlScale,
                         weight: .semibold
                     )
                 )
@@ -120,7 +121,7 @@ struct DesktopPlaybackControls: View {
             Image(systemName: "forward.fill")
                 .font(
                     .system(
-                        size: (prominent ? 24 : 15) * controlScale,
+                        size: (prominent ? 24 : 13) * controlScale,
                         weight: .semibold
                     )
                 )
@@ -136,7 +137,7 @@ struct DesktopPlaybackControls: View {
             Image(systemName: model.player.repeatMode.systemImage)
                 .font(
                     .system(
-                        size: (prominent ? 16 : 12) * controlScale,
+                        size: (prominent ? 16 : 11) * controlScale,
                         weight: .semibold
                     )
                 )
@@ -191,7 +192,7 @@ struct DesktopVolumeControl: View {
     @Environment(DesktopAppModel.self) private var model
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     var tint: Color = .primary
-    @State private var isExpanded = false
+    @Binding var isExpanded: Bool
     @State private var volumeAnimationTrigger = 0
     @State private var isVolumeTrackHovered = false
 
@@ -233,7 +234,7 @@ struct DesktopVolumeControl: View {
     }
 
     private var controlContent: some View {
-        HStack(spacing: 10) {
+        HStack(spacing: isExpanded ? 14 : 0) {
             if isExpanded {
                 volumeTrack
                     .transition(.move(edge: .trailing).combined(with: .opacity))
@@ -251,13 +252,14 @@ struct DesktopVolumeControl: View {
                         options: reduceMotion ? .nonRepeating : .default,
                         value: volumeAnimationTrigger
                     )
-                    .frame(width: 20, height: 20)
+                    .frame(width: 18, height: 18)
             }
             .buttonStyle(.plain)
             .help(isExpanded ? "静音或恢复音量" : "显示音量")
         }
-        .padding(.horizontal, isExpanded ? 14 : 8)
-        .frame(height: 32)
+        .padding(.leading, isExpanded ? 10 : 9)
+        .padding(.trailing, 9)
+        .frame(height: 36)
         .contentShape(.capsule)
     }
 
@@ -284,7 +286,7 @@ struct DesktopVolumeControl: View {
         )
         .tint(tint)
         .controlSize(.small)
-        .frame(width: 106, height: 18)
+        .frame(width: 64, height: 18)
         .accessibilityLabel("音量")
         .help("音量")
     }

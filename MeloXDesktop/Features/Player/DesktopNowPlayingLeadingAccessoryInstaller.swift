@@ -63,7 +63,7 @@ struct DesktopNowPlayingLeadingAccessoryInstaller: NSViewRepresentable {
                     openMiniPlayer: {}
                 )
             )
-            hostingView.frame = NSRect(x: 0, y: 0, width: 72, height: 36)
+            hostingView.frame = NSRect(x: 0, y: 0, width: 74, height: 36)
 
             accessoryController = NSTitlebarAccessoryViewController()
             accessoryController.layoutAttribute = .left
@@ -125,7 +125,7 @@ private struct DesktopNowPlayingLeadingAccessoryContent: View {
             close: close,
             openMiniPlayer: openMiniPlayer
         )
-        .frame(width: 72, height: 36)
+        .frame(width: 74, height: 36)
         .opacity(isPresented ? 1 : 0)
         .allowsHitTesting(isPresented)
         .accessibilityHidden(!isPresented)

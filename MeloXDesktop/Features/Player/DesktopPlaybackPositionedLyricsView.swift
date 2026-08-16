@@ -12,6 +12,10 @@ struct DesktopPlaybackPositionedLyricsView: View {
     var isPresented = true
     var keepsPlaybackFocusSynchronized = false
     var visualScale: CGFloat = 1
+    /// Compensates an outer top inset so the focused line stays in Music's
+    /// upper-half pretty-mode focus band instead of drifting down with the
+    /// padded SwiftUI viewport.
+    var focusLift: CGFloat = 0
 
     private var effectiveVisualScale: CGFloat {
         max(visualScale, 1)
@@ -42,7 +46,9 @@ struct DesktopPlaybackPositionedLyricsView: View {
             isActive: isActive,
             isPresented: isPresented,
             keepsPlaybackFocusSynchronized:
-                keepsPlaybackFocusSynchronized
+                keepsPlaybackFocusSynchronized,
+            visualScale: effectiveVisualScale,
+            focusLift: focusLift / effectiveVisualScale
         )
     }
 }

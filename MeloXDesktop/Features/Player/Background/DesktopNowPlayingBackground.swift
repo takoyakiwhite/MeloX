@@ -76,6 +76,18 @@ struct DesktopNowPlayingBackdrop: View {
         in size: CGSize
     ) -> some View {
         switch settings.playerBackgroundStyle {
+        case .appleMusicBackdrop:
+            DesktopAppleMusicBackdropView(
+                artworkURL: artworkURL,
+                motionIntensity:
+                    settings.playerBackgroundMotionIntensity,
+                renderQuality:
+                    settings.playerBackgroundRenderQuality,
+                isActive: isActive,
+                isPlaying: player.isPlaying
+            )
+            .frame(width: size.width, height: size.height)
+
         case .flowingLight:
             DesktopNowPlayingFlowingLightBackground(
                 player: player,
@@ -131,6 +143,8 @@ struct DesktopNowPlayingBackdrop: View {
 
     private var backgroundVeilOpacity: Double {
         switch settings.playerBackgroundStyle {
+        case .appleMusicBackdrop:
+            0
         case .flowingLight:
             0.02
         case .blurredArtwork:
@@ -140,6 +154,8 @@ struct DesktopNowPlayingBackdrop: View {
 
     private var legibilityGradientColors: [Color] {
         switch settings.playerBackgroundStyle {
+        case .appleMusicBackdrop:
+            [.clear, .clear]
         case .flowingLight:
             [
                 .black.opacity(0.015),

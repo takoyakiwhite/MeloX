@@ -632,8 +632,9 @@ final class PlayerStore {
 
     func clearUpcomingQueue() {
         cancelAutoMixPreparation()
-        playbackQueue.keepCurrentSongOnly()
+        playbackQueue.clearUpcoming()
         persistSnapshot()
+        prepareAutoMixIfNeeded()
     }
 
     var upcomingQueueEntries: [(queueIndex: Int, song: Song)] {
@@ -641,6 +642,18 @@ final class PlayerStore {
             guard queue.indices.contains(index) else { return nil }
             return (index, queue[index])
         }
+    }
+
+    var historyQueueEntries: [(queueIndex: Int, song: Song)] {
+        playbackQueue.historyIndices().compactMap { index in
+            guard queue.indices.contains(index) else { return nil }
+            return (index, queue[index])
+        }
+    }
+
+    func clearPlaybackHistory() {
+        playbackQueue.clearHistory()
+        persistSnapshot()
     }
 
     func removeFromPlaybackQueue(at index: Int) {

@@ -3,6 +3,7 @@ import SwiftUI
 struct LyricAnnotationLayout: Layout {
     var expansion: CGFloat
     let spacing: CGFloat
+    var constrainedWidth: CGFloat? = nil
 
     var animatableData: CGFloat {
         get { expansion }
@@ -18,18 +19,22 @@ struct LyricAnnotationLayout: Layout {
             return .zero
         }
 
-        let primarySize = primaryLyric.sizeThatFits(proposal)
+        let childProposal = constrainedProposal(from: proposal)
+        let primarySize = primaryLyric.sizeThatFits(childProposal)
         guard subviews.count > 1 else {
-            return primarySize
+            return CGSize(
+                width: childProposal.width ?? primarySize.width,
+                height: primarySize.height
+            )
         }
 
         // Measure the collapsed annotation as well so an animated expansion
         // has a stable destination size on its first frame.
         let annotationSize = subviews[1].sizeThatFits(
-            annotationProposal(from: proposal)
+            childProposal
         )
         return CGSize(
-            width: proposal.width
+            width: childProposal.width
                 ?? max(primarySize.width, annotationSize.width),
             height: primarySize.height
                 + clampedExpansion * (spacing + annotationSize.height)
@@ -70,11 +75,11 @@ struct LyricAnnotationLayout: Layout {
         min(max(expansion, 0), 1)
     }
 
-    private func annotationProposal(
+    private func constrainedProposal(
         from proposal: ProposedViewSize
     ) -> ProposedViewSize {
         ProposedViewSize(
-            width: proposal.width,
+            width: proposal.width ?? constrainedWidth,
             height: nil
         )
     }

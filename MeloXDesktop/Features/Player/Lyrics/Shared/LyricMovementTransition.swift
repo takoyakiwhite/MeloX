@@ -1,11 +1,16 @@
 import SwiftUI
 
+enum LyricMovementSpringModel: Equatable, Sendable {
+    case durationBounce(usesBounce: Bool, bounce: Double)
+    case physical(LyricPhysicalSpringParameters)
+}
+
 struct LyricMovementAnimationConfiguration: Equatable {
     let delay: TimeInterval
     let duration: TimeInterval
-    let usesBounce: Bool
-    let bounce: Double
+    let springModel: LyricMovementSpringModel
     let initialVelocity: Double
+    let presentationDuration: TimeInterval
 
     init(
         delay: TimeInterval,
@@ -14,17 +19,81 @@ struct LyricMovementAnimationConfiguration: Equatable {
         bounce: Double,
         initialVelocity: Double = 0
     ) {
-        self.delay = delay
-        self.duration = duration
-        self.usesBounce = usesBounce
-        self.bounce = bounce
-        self.initialVelocity = initialVelocity
+        self.init(
+            delay: delay,
+            duration: duration,
+            springModel: .durationBounce(
+                usesBounce: usesBounce,
+                bounce: bounce.isFinite ? bounce : 0
+            ),
+            initialVelocity: initialVelocity
+        )
     }
 
-    var spring: Spring {
-        usesBounce
-            ? Spring(duration: duration, bounce: bounce)
-            : .snappy(duration: duration)
+    init(
+        delay: TimeInterval,
+        duration: TimeInterval,
+        physicalSpring: LyricPhysicalSpringParameters,
+        initialVelocity: Double = 0
+    ) {
+        self.init(
+            delay: delay,
+            duration: duration,
+            springModel: .physical(physicalSpring),
+            initialVelocity: initialVelocity
+        )
+    }
+
+    private init(
+        delay: TimeInterval,
+        duration: TimeInterval,
+        springModel: LyricMovementSpringModel,
+        initialVelocity: Double
+    ) {
+        let resolvedDuration = duration.isFinite ? max(duration, 0) : 0
+        let resolvedVelocity = initialVelocity.isFinite
+            ? initialVelocity
+            : 0
+        self.delay = delay.isFinite ? max(delay, 0) : 0
+        self.duration = resolvedDuration
+        self.springModel = springModel
+        self.initialVelocity = resolvedVelocity
+
+        switch springModel {
+        case .durationBounce:
+            presentationDuration = resolvedDuration
+        case let .physical(parameters):
+            let spring = Spring(
+                mass: parameters.mass,
+                stiffness: parameters.stiffness,
+                damping: parameters.damping,
+                allowOverDamping: true
+            )
+            let settlingDuration = spring.settlingDuration(
+                target: 1,
+                initialVelocity: resolvedVelocity,
+                epsilon: 0.001
+            )
+            presentationDuration = settlingDuration.isFinite
+                ? max(settlingDuration, 0)
+                : resolvedDuration
+        }
+    }
+
+    var resolvedSpring: Spring {
+        switch springModel {
+        case let .durationBounce(usesBounce, bounce):
+            return usesBounce
+                ? Spring(duration: duration, bounce: bounce)
+                : .snappy(duration: duration)
+        case let .physical(parameters):
+            return Spring(
+                mass: parameters.mass,
+                stiffness: parameters.stiffness,
+                damping: parameters.damping,
+                allowOverDamping: true
+            )
+        }
     }
 }
 
@@ -97,7 +166,9 @@ enum LyricMovementPhase: Equatable {
                 velocity: 0
             )
         }
-        guard elapsed < configuration.delay + configuration.duration else {
+        guard elapsed
+                < configuration.delay
+                    + configuration.presentationDuration else {
             return LyricMovementPresentation(
                 offset: destinationOffset,
                 velocity: 0
@@ -105,7 +176,7 @@ enum LyricMovementPhase: Equatable {
         }
 
         let animationElapsed = max(elapsed - configuration.delay, 0)
-        let spring = configuration.spring
+        let spring = configuration.resolvedSpring
         let progress = spring.value(
             target: 1,
             initialVelocity: configuration.initialVelocity,
@@ -181,7 +252,7 @@ struct LyricMovementTransition: Equatable {
             max(
                 duration,
                 max(configuration.delay, 0)
-                    + max(configuration.duration, 0)
+                    + max(configuration.presentationDuration, 0)
             )
         }
     }
@@ -239,36 +310,5 @@ struct LyricMovementTransition: Equatable {
             configuration: configuration,
             startedAt: startedAt
         )
-    }
-}
-
-struct LifecycleAwareLyricMovement<Content: View>: View {
-    @Environment(\.lyricsRenderingIsActive)
-    private var lyricsRenderingIsActive
-
-    let phase: LyricMovementPhase
-    @ViewBuilder let content: (CGFloat) -> Content
-
-    init(
-        phase: LyricMovementPhase,
-        @ViewBuilder content: @escaping (CGFloat) -> Content
-    ) {
-        self.phase = phase
-        self.content = content
-    }
-
-    @ViewBuilder
-    var body: some View {
-        if phase.isAnimated {
-            TimelineView(
-                .animation(paused: !lyricsRenderingIsActive)
-            ) { context in
-                content(
-                    phase.presentation(at: context.date).offset
-                )
-            }
-        } else {
-            content(phase.targetOffset)
-        }
     }
 }

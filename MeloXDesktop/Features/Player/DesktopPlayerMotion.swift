@@ -8,17 +8,17 @@ enum DesktopPlayerMotion {
         bounce: 0.12
     )
     static let artworkRest = Animation.smooth(duration: 0.18)
+    // Previous-commit progress bar timing, restored per user request.
     static let progressExpand = Animation.smooth(duration: 0.13)
     static let progressCollapse = Animation.smooth(duration: 0.17)
     static let progressPress = Animation.spring(
         duration: 0.20,
         bounce: 0.12
     )
-    static let volumeExpand = Animation.spring(
-        duration: 0.26,
-        bounce: 0.04
-    )
-    static let volumeCollapse = Animation.smooth(duration: 0.18)
+    // Music 1.6.6 uses one 0.25-second NSViewAnimation for both width
+    // directions of the bottom-player volume area.
+    static let volumeExpand = Animation.easeInOut(duration: 0.25)
+    static let volumeCollapse = Animation.easeInOut(duration: 0.25)
     static let nowPlayingPresentation = Animation.spring(
         duration: 0.30,
         bounce: 0.02

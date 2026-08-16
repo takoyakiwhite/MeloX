@@ -109,6 +109,14 @@ struct DesktopLyricsContentSettingsView: View {
                 }
 
                 Section("歌词来源") {
+                    Picker(
+                        "默认歌词来源",
+                        selection: $settings.lyricsSourcePreference
+                    ) {
+                        ForEach(LyricSourcePreference.allCases) { preference in
+                            Text(preference.title).tag(preference)
+                        }
+                    }
                     Toggle(
                         "AMLL TTML 歌词",
                         isOn: $settings.lyricsAMLLSourceEnabled
@@ -117,7 +125,7 @@ struct DesktopLyricsContentSettingsView: View {
                         "QQ 音乐歌词补全",
                         isOn: $settings.lyricsQQMusicSourceEnabled
                     )
-                    Text("开启后会直接访问对应歌词服务。优先级为 AMLL TTML、网易云 YRC、QQ QRC、网易云 LRC、QQ LRC。")
+                    Text("自动优选会先加载并显示网易云歌词，等待 AMLL 与 QQ 音乐返回后再按 AMLL TTML、网易云 YRC、QQ QRC、网易云 LRC、QQ LRC 的顺序统一优选。手动选择某个来源后，将仅使用该来源；也可以随时在播放器菜单中切换。")
                         .foregroundStyle(.secondary)
                 }
 

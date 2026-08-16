@@ -7,7 +7,9 @@ final class AppSettings {
     static let defaultPlayerVolumeControlMode: PlayerVolumeControlMode = .system
     static let defaultSpatialAudioMode: SpatialAudioMode = .automatic
     static let defaultPlayerBackgroundStyle: PlayerBackgroundStyle =
-        .flowingLight
+        .appleMusicBackdrop
+    static let defaultPlayerBackgroundRenderQuality:
+        PlayerBackgroundRenderQuality = .automatic
     static let defaultPlayerBackgroundMotionIntensity = 1.0
     static let playerBackgroundMotionIntensityRange = 0.4...1.4
     static let defaultPlayerBackgroundBeatEffectsEnabled = false
@@ -92,6 +94,7 @@ final class AppSettings {
     static let defaultLyricsTranslationFontScale = 0.65
     static let defaultLyricsTranslationOpacity = 0.9
     static let defaultLyricsLiftMode: LyricsLiftMode = .character
+    static let defaultLyricsSourcePreference: LyricSourcePreference = .automatic
     static let defaultLyricsLongSyllableDetectionMode:
         LyricsLongSyllableDetectionMode = .character
     static let defaultLyricsGlowLongSyllablesOnly = true
@@ -151,6 +154,8 @@ final class AppSettings {
         static let area = "musicArea"
         static let showPlayCount = "showPlayCount"
         static let playerBackgroundStyle = "playerBackgroundStyle"
+        static let playerBackgroundRenderQuality =
+            "playerBackgroundRenderQuality"
         static let playerBackgroundMotionIntensity =
             "playerBackgroundMotionIntensity"
         static let playerBackgroundBeatEffectsEnabled =
@@ -183,6 +188,7 @@ final class AppSettings {
         static let lyricsDuetLayoutEnabled = "lyricsDuetLayoutEnabled"
         static let lyricsAMLLSourceEnabled = "lyricsAMLLSourceEnabled"
         static let lyricsQQMusicSourceEnabled = "lyricsQQMusicSourceEnabled"
+        static let lyricsSourcePreference = "lyricsSourcePreference"
         static let lyricsLiftMode = "lyricsLiftMode"
         static let lyricsHighlightGradientWidth =
             "lyricsHighlightGradientWidth"
@@ -682,6 +688,16 @@ final class AppSettings {
         }
     }
 
+    var playerBackgroundRenderQuality:
+        PlayerBackgroundRenderQuality {
+        didSet {
+            defaults.set(
+                playerBackgroundRenderQuality.rawValue,
+                forKey: Key.playerBackgroundRenderQuality
+            )
+        }
+    }
+
     var playerBackgroundMotionIntensity: Double {
         didSet {
             defaults.set(
@@ -852,6 +868,15 @@ final class AppSettings {
             defaults.set(
                 lyricsQQMusicSourceEnabled,
                 forKey: Key.lyricsQQMusicSourceEnabled
+            )
+        }
+    }
+
+    var lyricsSourcePreference: LyricSourcePreference {
+        didSet {
+            defaults.set(
+                lyricsSourcePreference.rawValue,
+                forKey: Key.lyricsSourcePreference
             )
         }
     }
@@ -1176,7 +1201,7 @@ final class AppSettings {
         didSet {
             defaults.set(rememberNowPlayingPage, forKey: Key.rememberNowPlayingPage)
             if !rememberNowPlayingPage {
-                rememberedNowPlayingPage = "artwork"
+                rememberedNowPlayingPage = "lyrics"
             }
         }
     }
@@ -1240,6 +1265,7 @@ final class AppSettings {
 
     let skylineLyrics: SkylineLyricsPreferences
     let textPV: TextPVPreferences
+    let appleMusicLyrics: AppleMusicLyricsPreferences
     let equalizer: AudioEqualizerPreferences
     let autoMix: AutoMixPreferences
     let floatingLyrics: FloatingLyricsPreferences
@@ -1254,6 +1280,7 @@ final class AppSettings {
         self.defaults = defaults
         skylineLyrics = SkylineLyricsPreferences(defaults: defaults)
         textPV = TextPVPreferences(defaults: defaults)
+        appleMusicLyrics = AppleMusicLyricsPreferences(defaults: defaults)
         equalizer = AudioEqualizerPreferences(defaults: defaults)
         autoMix = AutoMixPreferences(defaults: defaults)
         floatingLyrics = FloatingLyricsPreferences(defaults: defaults)
@@ -1380,6 +1407,11 @@ final class AppSettings {
                 forKey: Key.playerBackgroundStyle
             ) ?? ""
         ) ?? Self.defaultPlayerBackgroundStyle
+        playerBackgroundRenderQuality = PlayerBackgroundRenderQuality(
+            rawValue: defaults.string(
+                forKey: Key.playerBackgroundRenderQuality
+            ) ?? ""
+        ) ?? Self.defaultPlayerBackgroundRenderQuality
         let storedPlayerBackgroundMotionIntensity = defaults.object(
             forKey: Key.playerBackgroundMotionIntensity
         ) as? Double ?? Self.defaultPlayerBackgroundMotionIntensity
@@ -1530,6 +1562,11 @@ final class AppSettings {
         lyricsQQMusicSourceEnabled = defaults.object(
             forKey: Key.lyricsQQMusicSourceEnabled
         ) as? Bool ?? true
+        lyricsSourcePreference = LyricSourcePreference(
+            rawValue: defaults.string(
+                forKey: Key.lyricsSourcePreference
+            ) ?? ""
+        ) ?? Self.defaultLyricsSourcePreference
         lyricsLiftMode = LyricsLiftMode(
             rawValue: defaults.string(forKey: Key.lyricsLiftMode) ?? ""
         ) ?? Self.defaultLyricsLiftMode
@@ -1791,7 +1828,7 @@ final class AppSettings {
                 : .disabled
         }
         rememberNowPlayingPage = defaults.object(forKey: Key.rememberNowPlayingPage) as? Bool ?? false
-        rememberedNowPlayingPage = defaults.string(forKey: Key.rememberedNowPlayingPage) ?? "artwork"
+        rememberedNowPlayingPage = defaults.string(forKey: Key.rememberedNowPlayingPage) ?? "lyrics"
         previousRestartsCurrentSong = defaults.object(forKey: Key.previousRestartsCurrentSong) as? Bool ?? true
         startsHeartModeOnLaunch = defaults.object(
             forKey: Key.startsHeartModeOnLaunch
@@ -1987,6 +2024,8 @@ final class AppSettings {
         autoMix.reset()
         playerBackgroundStyle =
             Self.defaultPlayerBackgroundStyle
+        playerBackgroundRenderQuality =
+            Self.defaultPlayerBackgroundRenderQuality
         playerBackgroundMotionIntensity =
             Self.defaultPlayerBackgroundMotionIntensity
         playerBackgroundBeatEffectsEnabled =
@@ -2020,6 +2059,7 @@ final class AppSettings {
         lyricsDuetLayoutEnabled = true
         lyricsAMLLSourceEnabled = true
         lyricsQQMusicSourceEnabled = true
+        lyricsSourcePreference = Self.defaultLyricsSourcePreference
         lyricsLiftMode = Self.defaultLyricsLiftMode
         lyricsHighlightGradientWidth =
             Self.defaultLyricsHighlightGradientWidth
@@ -2072,11 +2112,12 @@ final class AppSettings {
         lyricsAdvanceTimeAppliesToWordByWord = false
         lyricsRefreshRate = .defaultValue
         textPV.reset()
+        appleMusicLyrics.reset()
         floatingLyrics.reset()
         lyricsNotifications.reset()
         playerScreenAwakeMode = .lyrics
         rememberNowPlayingPage = false
-        rememberedNowPlayingPage = "artwork"
+        rememberedNowPlayingPage = "lyrics"
         previousRestartsCurrentSong = true
         startsHeartModeOnLaunch = Self.defaultStartsHeartModeOnLaunch
         skylineLyrics.reset()

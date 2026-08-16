@@ -14,6 +14,7 @@ final class DesktopLyricsGeometryCache {
     }
 
     private(set) var frameByID: [LyricLine.ID: CGRect] = [:]
+    private(set) var interludeFrameByID: [LyricInterlude.ID: CGRect] = [:]
     private(set) var layoutHeightByID: [LyricLine.ID: CGFloat] = [:]
     private(set) var annotationHeightByID: [LyricLine.ID: CGFloat] = [:]
     private(set) var viewportSize: CGSize = .zero
@@ -88,16 +89,41 @@ final class DesktopLyricsGeometryCache {
         return true
     }
 
+    func recordInterludeFrame(
+        _ frame: CGRect,
+        for id: LyricInterlude.ID
+    ) {
+        guard frame.minY.isFinite,
+              frame.maxY.isFinite,
+              frame.height.isFinite,
+              frame.height > 0 else {
+            interludeFrameByID.removeValue(forKey: id)
+            return
+        }
+        let previousFrame = interludeFrameByID[id]
+        guard previousFrame == nil
+                || !Self.isApproximatelyEqual(previousFrame ?? .zero, frame)
+        else {
+            return
+        }
+        interludeFrameByID[id] = frame
+    }
+
     func removeMeasurements(for id: LyricLine.ID) {
         frameByID.removeValue(forKey: id)
         layoutHeightByID.removeValue(forKey: id)
         annotationHeightByID.removeValue(forKey: id)
     }
 
+    func removeInterludeMeasurements(for id: LyricInterlude.ID) {
+        interludeFrameByID.removeValue(forKey: id)
+    }
+
     func removeAllMeasurements() {
         cancelPendingLayoutSynchronization()
         cancelPendingViewportSettlement()
         frameByID.removeAll(keepingCapacity: true)
+        interludeFrameByID.removeAll(keepingCapacity: true)
         layoutHeightByID.removeAll(keepingCapacity: true)
         annotationHeightByID.removeAll(keepingCapacity: true)
     }
