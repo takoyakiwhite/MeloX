@@ -1,0 +1,38 @@
+name: Temporary Upstream Sync
+
+on:
+  push:
+    branches:
+      - sync-upstream-20260821
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout sync branch
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: sync-upstream-20260821
+          persist-credentials: true
+
+      - name: Merge upstream main
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git remote add upstream https://github.com/youshen2/MeloX.git
+          git fetch upstream main
+          git merge --no-edit -X ours upstream/main
+
+      - name: Remove temporary workflow and push merge to target
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm -f .github/workflows/_temporary_sync_upstream.yml
+          git commit --amend --no-edit
+          git push origin HEAD:upstream-quality-route-clean-final
