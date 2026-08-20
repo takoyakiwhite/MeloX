@@ -36,20 +36,20 @@ struct BeatNetDebugSheet: View {
                         )
                     }
                 } header: {
-                    Text("实时信号")
+                    Text("ui.beatnet.debug.section.realtime")
                 } footer: {
                     Text(
-                        "面板约每秒读取 12.5 次只读快照，关闭 Sheet 后立即停止；不会改变播放进度或背景状态。"
+                        "ui.beatnet.debug.realtime.footer"
                     )
                 }
             }
-            .navigationTitle("BeatNet 调试")
+            .navigationTitle("ui.beatnet.debug.title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(
                     placement: .confirmationAction
                 ) {
-                    Button("完成") {
+                    Button("ui.common.done") {
                         dismiss()
                     }
                 }
@@ -66,13 +66,13 @@ struct BeatNetDebugSheet: View {
     private var analysisSection: some View {
         Section {
             LabeledContent(
-                "歌曲",
+                L10n.string("ui.common.song"),
                 value:
                     player.currentSong?.name
-                    ?? "没有正在播放的歌曲"
+                    ?? L10n.string("ui.player.no_current_song")
             )
 
-            LabeledContent("状态") {
+            LabeledContent("ui.common.status") {
                 analysisStatus
             }
 
@@ -81,9 +81,9 @@ struct BeatNetDebugSheet: View {
                 let confidence
             ) = player.beatAnalysisStatus {
                 LabeledContent(
-                    "结果",
+                    L10n.string("ui.common.result"),
                     value:
-                        "\(Int(bpm.rounded())) BPM · \(Int((confidence * 100).rounded()))%"
+                        "\(L10n.integer(Int(bpm.rounded()))) BPM · \(L10n.percent(confidence))"
                 )
             }
 
@@ -100,17 +100,17 @@ struct BeatNetDebugSheet: View {
                     retryGeneration += 1
                 } label: {
                     Label(
-                        "重新分析全曲",
+                        "ui.beatnet.debug.reanalyze",
                         systemImage: "arrow.clockwise"
                     )
                 }
                 .disabled(player.currentSong == nil)
             }
         } header: {
-            Text("分析")
+            Text("ui.beatnet.debug.section.analysis")
         } footer: {
             Text(
-                "正常播放会在“重拍暗角”开启时自动分析；调试面板只读取同一份结果。手动重试用于诊断失败。"
+                "ui.beatnet.debug.analysis.footer"
             )
         }
     }
@@ -118,42 +118,42 @@ struct BeatNetDebugSheet: View {
     private var modelSection: some View {
         Section {
             LabeledContent(
-                "模型",
-                value: "BeatNetBDA"
+                L10n.string("ui.beatnet.debug.model"),
+                value: L10n.string("ui.beatnet.debug.model_value")
             )
-            LabeledContent("输入") {
+            LabeledContent("ui.beatnet.debug.input") {
                 Text("1 × 1600 × 272 · Float32")
                     .monospacedDigit()
             }
-            LabeledContent("输出") {
+            LabeledContent("ui.beatnet.debug.output") {
                 Text("1 × 1600 × 2 · Float16")
                     .monospacedDigit()
             }
             LabeledContent(
-                "输出通道",
-                value: "beat / downbeat"
+                L10n.string("ui.beatnet.debug.output_channels"),
+                value: L10n.string("ui.beatnet.debug.output_channels_value")
             )
             LabeledContent(
-                "计算单元",
-                value: "CPU-only"
+                L10n.string("ui.beatnet.debug.compute_units"),
+                value: L10n.string("ui.beatnet.debug.cpu_only")
             )
             LabeledContent(
-                "音频",
-                value: "22.05 kHz · 单声道"
+                L10n.string("ui.beatnet.debug.audio"),
+                value: L10n.string("ui.beatnet.debug.audio_value")
             )
             LabeledContent(
-                "单次推理",
-                value: "32 s · 50 fps"
+                L10n.string("ui.beatnet.debug.inference"),
+                value: L10n.string("ui.beatnet.debug.inference_value")
             )
             LabeledContent(
-                "覆盖范围",
-                value: "全曲（自动合并）"
+                L10n.string("ui.beatnet.debug.coverage"),
+                value: L10n.string("ui.beatnet.debug.coverage_value")
             )
         } header: {
-            Text("Core ML 结构")
+            Text("ui.beatnet.debug.section.core_ml")
         } footer: {
             Text(
-                "模型固定接收 32 秒输入，后台会使用 CPU-only 连续分段推理并合并成一条全曲时间轴。Onset 决定触发时刻，Beat 或 Downbeat 任一通道负责确认；Downbeat 只额外加深暗角。"
+                "ui.beatnet.debug.core_ml.footer"
             )
         }
     }
@@ -162,24 +162,24 @@ struct BeatNetDebugSheet: View {
     private var analysisStatus: some View {
         switch player.beatAnalysisStatus {
         case .idle:
-            Text("等待分析")
+            Text("ui.beatnet.debug.status.waiting")
                 .foregroundStyle(.secondary)
         case .analyzing:
             HStack(spacing: 7) {
                 ProgressView()
                     .controlSize(.small)
-                Text("正在分析全曲")
+                Text("ui.beatnet.debug.status.analyzing")
             }
             .foregroundStyle(.secondary)
         case .ready:
             Label(
-                "已就绪",
+                "ui.beatnet.debug.status.ready",
                 systemImage: "checkmark.circle.fill"
             )
             .foregroundStyle(.green)
         case .failed:
             Label(
-                "分析失败",
+                "ui.beatnet.debug.status.failed",
                 systemImage: "exclamationmark.triangle.fill"
             )
             .foregroundStyle(.orange)
@@ -190,29 +190,29 @@ struct BeatNetDebugSheet: View {
         BeatNetDebugOutputGate {
         guard settings.playerBackgroundStyle
             == .flowingLight else {
-            return .blocked("背景样式不是流动光影")
+            return .blocked(L10n.string("ui.beatnet.debug.blocked.background_style"))
         }
         guard settings
             .playerBackgroundBeatEffectsEnabled else {
-            return .blocked("“重拍暗角”已关闭")
+            return .blocked(L10n.string("ui.beatnet.debug.blocked.beat_effect_off"))
         }
         guard player.currentBeatTimeline != nil else {
-            return .blocked("尚无可用的 BeatNet 时间轴")
+            return .blocked(L10n.string("ui.beatnet.debug.blocked.no_timeline"))
         }
         guard player.isPlaying else {
-            return .blocked("播放已暂停")
+            return .blocked(L10n.string("ui.beatnet.debug.blocked.paused"))
         }
         guard !accessibilityReduceMotion else {
-            return .blocked("系统已开启“减少动态效果”")
+            return .blocked(L10n.string("ui.beatnet.debug.blocked.reduce_motion"))
         }
         guard !accessibilityDimFlashingLights else {
-            return .blocked("系统已开启“调暗闪烁光线”")
+            return .blocked(L10n.string("ui.beatnet.debug.blocked.dim_flashing_lights"))
         }
         guard !isLuminanceReduced else {
-            return .blocked("屏幕亮度状态限制了动画")
+            return .blocked(L10n.string("ui.beatnet.debug.blocked.luminance"))
         }
         guard scenePhase == .active else {
-            return .blocked("应用当前不在前台")
+            return .blocked(L10n.string("ui.beatnet.debug.blocked.background"))
         }
         return .active
     }
@@ -237,7 +237,7 @@ private struct BeatNetRealtimeDebugPanel: View {
             alignment: .leading,
             spacing: 13
         ) {
-            LabeledContent("播放器输出") {
+            LabeledContent("ui.beatnet.debug.player_output") {
                 Label(
                     outputGate.title,
                     systemImage: outputGate.systemImage
@@ -262,45 +262,60 @@ private struct BeatNetRealtimeDebugPanel: View {
                 Divider()
 
                 LabeledContent(
-                    "输入特征",
-                    value:
-                        "max \(featureText(snapshot.featureStatistics.maximum)) · mean \(featureText(snapshot.featureStatistics.mean))"
+                    L10n.string("ui.beatnet.debug.input_features"),
+                    value: L10n.format(
+                        "ui.beatnet.debug.input_features_value",
+                        featureText(snapshot.featureStatistics.maximum),
+                        featureText(snapshot.featureStatistics.mean)
+                    )
                 )
                 LabeledContent(
-                    "输入有限值",
+                    L10n.string("ui.beatnet.debug.input_finite_values"),
                     value:
-                        "\(snapshot.featureStatistics.finiteValueCount.formatted()) / \(snapshot.featureStatistics.valueCount.formatted())"
+                        "\(snapshot.featureStatistics.finiteValueCount.formatted(.number.locale(L10n.locale))) / \(snapshot.featureStatistics.valueCount.formatted(.number.locale(L10n.locale)))"
                 )
                 LabeledContent(
-                    "输入非零值",
+                    L10n.string("ui.beatnet.debug.input_nonzero_values"),
                     value:
-                        "\(snapshot.featureStatistics.nonzeroValueCount.formatted()) / \(snapshot.featureStatistics.valueCount.formatted())"
+                        "\(snapshot.featureStatistics.nonzeroValueCount.formatted(.number.locale(L10n.locale))) / \(snapshot.featureStatistics.valueCount.formatted(.number.locale(L10n.locale)))"
                 )
                 LabeledContent(
-                    "推理路径",
-                    value: "CPU-only"
+                    L10n.string("ui.beatnet.debug.inference_path"),
+                    value: L10n.string("ui.beatnet.debug.cpu_only")
                 )
                 LabeledContent(
-                    "CPU 全零片段",
+                    L10n.string("ui.beatnet.debug.cpu_zero_segments"),
                     value:
-                        "\(snapshot.finalAllZeroSegmentCount)/\(snapshot.analyzedSegmentCount)"
+                        "\(snapshot.finalAllZeroSegmentCount.formatted(.number.locale(L10n.locale)))/\(snapshot.analyzedSegmentCount.formatted(.number.locale(L10n.locale)))"
                 )
 
                 Divider()
 
                 LabeledContent(
-                    "全曲原始峰值",
-                    value:
-                        "Beat \(activationText(snapshot.maximumBeatActivation, fractionLength: 5)) · Downbeat \(activationText(snapshot.maximumDownbeatActivation, fractionLength: 5))"
+                    L10n.string("ui.beatnet.debug.full_track_raw_peak"),
+                    value: L10n.format(
+                        "ui.beatnet.debug.full_track_raw_peak_value",
+                        activationText(
+                            snapshot.maximumBeatActivation,
+                            fractionLength: 5
+                        ),
+                        activationText(
+                            snapshot.maximumDownbeatActivation,
+                            fractionLength: 5
+                        )
+                    )
                 )
                 LabeledContent(
-                    "原始非零帧",
-                    value:
-                        "Beat \(snapshot.nonzeroBeatFrameCount) · Downbeat \(snapshot.nonzeroDownbeatFrameCount)"
+                    L10n.string("ui.beatnet.debug.raw_nonzero_frames"),
+                    value: L10n.format(
+                        "ui.beatnet.debug.raw_nonzero_frames_value",
+                        snapshot.nonzeroBeatFrameCount,
+                        snapshot.nonzeroDownbeatFrameCount
+                    )
                 )
 
                 activationMeter(
-                    "Beat 原始峰值（\(modelPeakHoldMilliseconds) ms）",
+                    L10n.format("ui.beatnet.debug.beat_raw_peak", modelPeakHoldMilliseconds),
                     value:
                         snapshot
                             .recentBeatActivation,
@@ -308,7 +323,7 @@ private struct BeatNetRealtimeDebugPanel: View {
                     fractionLength: 5
                 )
                 activationMeter(
-                    "Downbeat 原始峰值（\(modelPeakHoldMilliseconds) ms）",
+                    L10n.format("ui.beatnet.debug.downbeat_raw_peak", modelPeakHoldMilliseconds),
                     value:
                         snapshot
                             .recentDownbeatActivation,
@@ -316,7 +331,7 @@ private struct BeatNetRealtimeDebugPanel: View {
                     fractionLength: 5
                 )
                 activationMeter(
-                    "Beat 当前值（联合门）",
+                    L10n.string("ui.beatnet.debug.beat_current_joint_gate"),
                     value:
                         snapshot
                             .currentBeatActivation,
@@ -324,7 +339,7 @@ private struct BeatNetRealtimeDebugPanel: View {
                     fractionLength: 5
                 )
                 activationMeter(
-                    "Downbeat 当前值（联合门）",
+                    L10n.string("ui.beatnet.debug.downbeat_current_joint_gate"),
                     value:
                         snapshot
                             .currentDownbeatActivation,
@@ -332,36 +347,44 @@ private struct BeatNetRealtimeDebugPanel: View {
                     fractionLength: 5
                 )
                 activationMeter(
-                    "Onset 激活（联合门）",
+                    L10n.string("ui.beatnet.debug.onset_joint_gate"),
                     value:
                         snapshot
                             .normalizedOnsetActivation,
                     tint: .pink
                 )
                 LabeledContent(
-                    "暗角触发条件",
+                    L10n.string("ui.beatnet.debug.vignette_condition"),
                     value:
-                        "Beat/Downbeat ≥ \(thresholdText(PlaybackBeatTimeline.modelVignetteTriggerThreshold)) 且 Onset ≥ \(thresholdText(PlaybackBeatTimeline.onsetVignetteTriggerThreshold))"
+                        L10n.format(
+                            "ui.beatnet.debug.vignette_condition_value",
+                            thresholdText(PlaybackBeatTimeline.modelVignetteTriggerThreshold),
+                            thresholdText(PlaybackBeatTimeline.onsetVignetteTriggerThreshold)
+                        )
                 )
                 LabeledContent(
-                    "匹配与防抖",
+                    L10n.string("ui.beatnet.debug.matching_debounce"),
                     value:
-                        "±\(modelToleranceMilliseconds) ms · \(minimumRetriggerMilliseconds) ms"
+                        L10n.format(
+                            "ui.beatnet.debug.matching_debounce_value",
+                            modelToleranceMilliseconds,
+                            minimumRetriggerMilliseconds
+                        )
                 )
                 LabeledContent(
-                    "Downbeat 加深阈值",
+                    L10n.string("ui.beatnet.debug.downbeat_accent_threshold"),
                     value:
                         thresholdText(
                             PlaybackBeatTimeline
                                 .downbeatVignetteAccentThreshold
                         )
                 )
-                LabeledContent("最近联合门") {
+                LabeledContent("ui.beatnet.debug.recent_joint_gate") {
                     Label(
                         snapshot
                             .jointVignetteGateIsActive
-                            ? "已满足"
-                            : "未满足",
+                            ? L10n.string("ui.beatnet.debug.satisfied")
+                            : L10n.string("ui.beatnet.debug.not_satisfied"),
                         systemImage:
                             snapshot
                                 .jointVignetteGateIsActive
@@ -379,30 +402,30 @@ private struct BeatNetRealtimeDebugPanel: View {
                 Divider()
 
                 activationMeter(
-                    "最近触发强度（\(modelPeakHoldMilliseconds) ms）",
+                    L10n.format("ui.beatnet.debug.recent_trigger_strength", modelPeakHoldMilliseconds),
                     value:
                         snapshot
                             .recentVignetteTriggerActivation,
                     tint: .pink
                 )
                 activationMeter(
-                    "应用的暗角包络",
+                    L10n.string("ui.beatnet.debug.applied_vignette_envelope"),
                     value:
                         snapshot
                             .appliedVignettePulse,
                     tint: .pink
                 )
                 activationMeter(
-                    "最终暗角输入（1:1）",
+                    L10n.string("ui.beatnet.debug.final_vignette_input"),
                     value: snapshot.vignettePulse,
                     tint: .purple
                 )
             } else {
                 ContentUnavailableView(
-                    "暂无实时数据",
+                    "ui.beatnet.debug.no_realtime_data",
                     systemImage: "waveform.slash",
                     description:
-                        Text("等待 BeatNet 完成分析。")
+                        Text("ui.beatnet.debug.no_realtime_data.message")
                 )
                 .frame(maxWidth: .infinity)
             }
@@ -415,54 +438,53 @@ private struct BeatNetRealtimeDebugPanel: View {
         for snapshot: PlaybackBeatDebugSnapshot
     ) -> some View {
         LabeledContent(
-            "播放位置",
+            L10n.string("ui.beatnet.debug.playback_position"),
             value: timeText(snapshot.playbackTime)
         )
         LabeledContent(
-            "分析范围",
+            L10n.string("ui.beatnet.debug.analysis_range"),
             value:
                 "\(timeText(snapshot.regionStart))–\(timeText(snapshot.regionEnd))"
         )
-        LabeledContent("当前帧") {
+        LabeledContent("ui.beatnet.debug.current_frame") {
             if let frameIndex =
                 snapshot.frameIndex {
                 Text(
-                    "\(frameIndex + 1) / \(snapshot.frameCount)"
+                    "\(L10n.integer(frameIndex + 1)) / \(L10n.integer(snapshot.frameCount))"
                 )
                 .monospacedDigit()
             } else {
-                Text("超出歌曲范围")
+                Text("ui.beatnet.debug.out_of_range")
                     .foregroundStyle(.orange)
             }
         }
         LabeledContent(
-            "解码事件",
-            value:
-                "\(snapshot.decodedBeatCount) beat · \(snapshot.decodedDownbeatCount) downbeat"
+            L10n.string("ui.beatnet.debug.decoded_events"),
+            value: L10n.format(
+                "ui.beatnet.debug.decoded_events_value",
+                snapshot.decodedBeatCount,
+                snapshot.decodedDownbeatCount
+            )
         )
-        LabeledContent("节拍位置") {
+        LabeledContent("ui.beatnet.debug.beat_position") {
             if let beatOrdinal =
                 snapshot.beatOrdinal,
                let beatInBar =
                 snapshot.beatInBar {
                 Text(
-                    "第 \(beatOrdinal) 拍 · \(beatInBar)/4"
+                    L10n.format("ui.beatnet.debug.beat_position_value", beatOrdinal, beatInBar)
                 )
                 .monospacedDigit()
             } else {
-                Text("尚未到首拍")
+                Text("ui.beatnet.debug.before_first_beat")
                     .foregroundStyle(.secondary)
             }
         }
-        LabeledContent("距上一拍") {
+        LabeledContent("ui.beatnet.debug.since_previous_beat") {
             if let seconds =
                 snapshot.secondsSinceBeat {
                 Text(
-                    seconds.formatted(
-                        .number.precision(
-                            .fractionLength(3)
-                        )
-                    ) + " s"
+                    L10n.format("ui.common.seconds_three_decimals", seconds)
                 )
                 .monospacedDigit()
             } else {
@@ -491,10 +513,9 @@ private struct BeatNetRealtimeDebugPanel: View {
                 Text(
                     clampedValue.formatted(
                         .number.precision(
-                            .fractionLength(
-                                fractionLength
-                            )
+                            .fractionLength(fractionLength)
                         )
+                        .locale(L10n.locale)
                     )
                 )
                 .monospacedDigit()
@@ -518,6 +539,7 @@ private struct BeatNetRealtimeDebugPanel: View {
                     fractionLength
                 )
             )
+            .locale(L10n.locale)
         )
     }
 
@@ -528,6 +550,7 @@ private struct BeatNetRealtimeDebugPanel: View {
             .number.precision(
                 .fractionLength(5)
             )
+            .locale(L10n.locale)
         )
     }
 
@@ -538,6 +561,7 @@ private struct BeatNetRealtimeDebugPanel: View {
             .number.precision(
                 .fractionLength(3)
             )
+            .locale(L10n.locale)
         )
     }
 
@@ -599,9 +623,9 @@ private enum BeatNetDebugOutputGate:
     var title: String {
         switch self {
         case .active:
-            "正在输出"
+            L10n.string("ui.beatnet.debug.output_active")
         case .blocked:
-            "已阻止"
+            L10n.string("ui.beatnet.debug.output_blocked")
         }
     }
 

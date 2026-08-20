@@ -24,7 +24,7 @@ struct HomeView: View {
             sectionContent(for: activeSection)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .navigationTitle("首页")
+        .navigationTitle("ui.navigation.home")
         .navigationBarTitleDisplayMode(.large)
         .onChange(of: availableSections) { _, sections in
             guard !sections.contains(section) else { return }
@@ -35,7 +35,7 @@ struct HomeView: View {
     @ViewBuilder
     private var sectionPicker: some View {
         if availableSections.count <= 4 {
-            Picker("首页板块", selection: $section) {
+            Picker("ui.home.section_picker", selection: $section) {
                 ForEach(availableSections) { section in
                     Text(section.settingsTitle)
                         .tag(section)
@@ -46,7 +46,7 @@ struct HomeView: View {
             .padding(.vertical, 8)
             .background(.background)
         } else {
-            Picker("首页板块", selection: $section) {
+            Picker("ui.home.section_picker", selection: $section) {
                 ForEach(availableSections) { section in
                     Label(
                         section.settingsTitle,

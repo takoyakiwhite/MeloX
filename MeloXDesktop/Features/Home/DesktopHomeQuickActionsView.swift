@@ -12,34 +12,34 @@ enum DesktopHomeQuickAction: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .dailySongs: "每日推荐"
-        case .hotSongs: "热歌榜"
-        case .heartMode: "心动模式"
-        case .privateRadar: "私人雷达"
-        case .privateRoaming: "私人漫游"
-        case .similarSongs: "相似歌曲"
+        case .dailySongs: L10n.string("ui.home.action.daily_songs")
+        case .hotSongs: L10n.string("ui.home.action.hot_songs")
+        case .heartMode: L10n.string("ui.home.action.heart_mode")
+        case .privateRadar: L10n.string("ui.home.action.private_radar")
+        case .privateRoaming: L10n.string("ui.home.action.private_roaming")
+        case .similarSongs: L10n.string("ui.home.action.similar_songs")
         }
     }
 
     var subtitle: String {
         switch self {
-        case .dailySongs: "每天为你更新"
-        case .hotSongs: "全站热门歌曲"
-        case .heartMode: "喜欢与惊喜交替"
-        case .privateRadar: "发现合口味的歌单"
-        case .privateRoaming: "漫游到新的好音乐"
-        case .similarSongs: "从当前歌曲出发"
+        case .dailySongs: L10n.string("ui.home.action.daily_songs.subtitle")
+        case .hotSongs: L10n.string("ui.home.action.hot_songs.subtitle")
+        case .heartMode: L10n.string("ui.home.action.heart_mode.subtitle")
+        case .privateRadar: L10n.string("ui.home.action.private_radar.subtitle")
+        case .privateRoaming: L10n.string("ui.home.action.private_roaming.subtitle")
+        case .similarSongs: L10n.string("ui.home.action.similar_songs.subtitle")
         }
     }
 
     var eyebrow: String {
         switch self {
-        case .dailySongs: "每日更新"
-        case .heartMode: "专属心情好歌"
-        case .privateRoaming: "探索新鲜好音乐"
-        case .hotSongs: "全站实时热度"
-        case .privateRadar: "持续发现"
-        case .similarSongs: "从正在播放出发"
+        case .dailySongs: L10n.string("ui.home.action.daily_songs.eyebrow")
+        case .heartMode: L10n.string("ui.home.action.heart_mode.eyebrow")
+        case .privateRoaming: L10n.string("ui.home.action.private_roaming.eyebrow")
+        case .hotSongs: L10n.string("ui.home.action.hot_songs.eyebrow")
+        case .privateRadar: L10n.string("ui.home.action.private_radar.eyebrow")
+        case .similarSongs: L10n.string("ui.home.action.similar_songs.eyebrow")
         }
     }
 
@@ -106,7 +106,7 @@ struct DesktopHomeQuickActionsView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 14) {
-            DesktopSectionHeader(title: "专属精选推荐")
+            DesktopSectionHeader(title: L10n.string("ui.home.section.quick_actions"))
 
             DesktopHomePagingShelf(
                 items: DesktopHomeQuickAction.allCases,
@@ -128,15 +128,15 @@ struct DesktopHomeQuickActionsView: View {
             }
         }
         .alert(
-            "无法完成操作",
+            L10n.string("ui.error.operation_failed.title"),
             isPresented: Binding(
                 get: { errorMessage != nil },
                 set: { if !$0 { errorMessage = nil } }
             )
         ) {
-            Button("好") { errorMessage = nil }
+            Button("ui.common.ok") { errorMessage = nil }
         } message: {
-            Text(errorMessage ?? "请稍后重试。")
+            Text(errorMessage ?? L10n.string("ui.error.try_again_later"))
         }
     }
 
@@ -153,7 +153,7 @@ struct DesktopHomeQuickActionsView: View {
         case .privateRadar:
             guard presentLoginIfNeeded() else { return }
             guard let playlist = privateRadarPlaylist else {
-                errorMessage = "当前推荐中没有可用的私人雷达歌单。"
+                errorMessage = L10n.string("ui.home.error.no_private_radar")
                 return
             }
             model.ui.navigate(to: .playlist(playlist.id))
@@ -303,7 +303,9 @@ private struct DesktopHomeQuickActionButton: View {
                         .padding(18)
                         .background(.regularMaterial, in: .circle)
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .accessibilityLabel("正在启动\(action.title)")
+                        .accessibilityLabel(
+                            L10n.format("ui.desktop.home.action.starting", action.title)
+                        )
                 }
             }
             .frame(width: width, height: height)
@@ -319,13 +321,13 @@ private struct DesktopHomeQuickActionButton: View {
         .disabled(isDisabled)
         .help(
             action.startsPlayback
-                ? "开始播放\(action.title)"
-                : "打开\(action.title)"
+                ? L10n.format("ui.home.action.play_hint", action.title)
+                : L10n.format("ui.home.action.open_hint", action.title)
         )
         .accessibilityHint(
             action.startsPlayback
-                ? "开始播放\(action.title)"
-                : "打开\(action.title)"
+                ? L10n.format("ui.home.action.play_hint", action.title)
+                : L10n.format("ui.home.action.open_hint", action.title)
         )
         .scaleEffect(isHovered && !isDisabled ? 1.012 : 1)
         .onHover { isHovered = $0 }
@@ -380,9 +382,9 @@ private enum DesktopHomePlaybackActionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noLikedSongs:
-            "请先收藏一些歌曲，等待“我喜欢的音乐”同步后再试。"
+            L10n.string("ui.home.error.liked_songs_required")
         case .songRequired:
-            "请先播放一首普通歌曲，再打开相似歌曲。"
+            L10n.string("ui.home.error.current_song_required")
         }
     }
 }

@@ -9,26 +9,22 @@ struct WatchAudioSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Picker("播放音质", selection: $qualityRawValue) {
+                Picker("ui.player.playback_quality", selection: $qualityRawValue) {
                     ForEach(WatchStreamingQuality.allCases) { quality in
                         Text(quality.title).tag(quality.rawValue)
                     }
                 }
             } header: {
-                Text("流媒体")
+                Text("ui.watch.audio.streaming")
             } footer: {
-                Text(
-                    "音质受歌曲版权和网易云账号权限限制；Hi-Res、环绕声与"
-                        + "超清母带仅在曲目支持时可用，不支持时会自动降级。"
-                        + "修改后会从当前进度重新载入音源。"
-                )
+                Text("ui.watch.audio.quality.footer")
             }
 
-            Section("音量") {
+            Section("ui.player.volume") {
                 LabeledContent(
-                    "当前音量",
+                    "ui.watch.audio.current_volume",
                     value: coordinator.volume.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
 
@@ -39,10 +35,10 @@ struct WatchAudioSettingsView: View {
                     ),
                     in: 0...1
                 )
-                .accessibilityLabel("音量")
+                .accessibilityLabel("ui.player.volume")
             }
         }
-        .navigationTitle("音质与音量")
+        .navigationTitle("ui.watch.settings.audio")
         .onChange(of: qualityRawValue) {
             Task {
                 await coordinator.reloadForSelectedQuality()
@@ -66,9 +62,9 @@ struct WatchPlaybackBehaviorSettingsView: View {
 
     var body: some View {
         Form {
-            Section("队列") {
+            Section("ui.player.queue") {
                 Picker(
-                    "循环方式",
+                    "ui.watch.playback.repeat_mode",
                     selection: Binding(
                         get: { coordinator.repeatMode },
                         set: { coordinator.setRepeatMode($0) }
@@ -80,7 +76,7 @@ struct WatchPlaybackBehaviorSettingsView: View {
                 }
 
                 Toggle(
-                    "随机播放",
+                    "ui.player.shuffle",
                     isOn: Binding(
                         get: { coordinator.isShuffled },
                         set: { coordinator.setShuffleEnabled($0) }
@@ -88,11 +84,11 @@ struct WatchPlaybackBehaviorSettingsView: View {
                 )
             }
 
-            Section("操作") {
-                Toggle("选择歌曲后自动播放", isOn: $autoPlaySelection)
+            Section("ui.watch.playback.actions") {
+                Toggle("ui.watch.playback.auto_play_selection", isOn: $autoPlaySelection)
 
                 Picker(
-                    "上一首按钮",
+                    "ui.watch.playback.previous_button",
                     selection: $previousBehaviorRawValue
                 ) {
                     ForEach(WatchPreviousButtonBehavior.allCases) { behavior in
@@ -102,15 +98,15 @@ struct WatchPlaybackBehaviorSettingsView: View {
             }
 
             Section {
-                Toggle("恢复上次队列和进度", isOn: $restoresLastSession)
-                Toggle("中断结束后继续播放", isOn: $resumesAfterInterruption)
+                Toggle("ui.watch.playback.restore_session", isOn: $restoresLastSession)
+                Toggle("ui.watch.playback.resume_interruption", isOn: $resumesAfterInterruption)
             } header: {
-                Text("恢复")
+                Text("ui.watch.playback.restore")
             } footer: {
-                Text("恢复播放只使用手表本地保存的数据，不依赖 iPhone。")
+                Text("ui.watch.playback.restore.footer")
             }
         }
-        .navigationTitle("播放行为")
+        .navigationTitle("ui.watch.settings.playback_behavior")
         .onChange(of: restoresLastSession) { _, isEnabled in
             coordinator.setRestoresLastSession(isEnabled)
         }

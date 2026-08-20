@@ -260,7 +260,11 @@ struct DesktopLyricLineView: View, Equatable {
                         && showsRomanization
             )
         )
-        .accessibilityValue(isActualPlaybackLine ? "当前歌词" : "")
+        .accessibilityValue(
+            isActualPlaybackLine
+                ? L10n.string("ui.desktop.lyrics.current_line")
+                : ""
+        )
         .animation(
             reduceMotion ? nil : .easeOut(duration: 0.16),
             value: isHovered

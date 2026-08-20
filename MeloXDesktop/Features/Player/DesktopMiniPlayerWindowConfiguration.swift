@@ -17,7 +17,7 @@ enum DesktopMiniPlayerWindowCoordinator {
     static func bringToFrontAfterOpening() async {
         try? await Task.sleep(for: .milliseconds(80))
         guard let miniWindow = NSApp.windows.first(where: { window in
-            window.title == "迷你播放器"
+            window.title == L10n.string("ui.desktop.mini_player")
                 || (
                     abs(window.frame.width - 320) < 2
                         && window.frame.height <= 920

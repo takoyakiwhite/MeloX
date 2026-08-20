@@ -98,8 +98,8 @@ struct PodcastDetailContent: View {
 
     private var emptyProgramTitle: String {
         searchQuery.podcastNonempty == nil
-            ? "暂无节目"
-            : "没有匹配的节目"
+            ? L10n.string("ui.podcasts.no_episodes")
+            : L10n.string("ui.podcasts.no_matching_episodes")
     }
 }
 
@@ -132,7 +132,7 @@ private struct PodcastDetailHero: View {
                 .padding(.top, 24)
                 .padding(.horizontal, 24)
 
-            Text(podcast.host?.nickname ?? "网易云音乐")
+            Text(podcast.host?.nickname ?? L10n.string("ui.service.netease_cloud_music"))
                 .font(.title3)
                 .lineLimit(1)
                 .padding(.top, 8)
@@ -165,19 +165,22 @@ private struct PodcastDetailHero: View {
     private var metadataText: String {
         var values: [String] = []
         if podcast.programCount > 0 {
-            values.append("\(podcast.programCount) 期节目")
+            values.append(L10n.format("ui.podcasts.episode_count", podcast.programCount))
         }
         if podcast.subscriberCount > 0 {
             values.append(
-                "\(podcast.subscriberCount.podcastCountText) 人订阅"
+                L10n.format("ui.podcasts.subscriber_count", podcast.subscriberCount.podcastCountText)
             )
         }
         if podcast.playCount > 0 {
             values.append(
-                "\(podcast.playCount.podcastCountText) 次播放"
+                L10n.format("ui.podcasts.play_count", podcast.playCount.podcastCountText)
             )
         }
-        return values.joined(separator: " · ")
+        return L10n.joined(
+            values,
+            separatorKey: "ui.common.metadata_separator"
+        )
     }
 }
 
@@ -194,7 +197,7 @@ private struct PodcastPrimaryActions: View {
         GlassEffectContainer(spacing: 14) {
             HStack(spacing: 14) {
                 Button(action: onPlay) {
-                    Label("播放", systemImage: "play.fill")
+                    Label("ui.common.play", systemImage: "play.fill")
                         .font(.title3.weight(.bold))
                         .frame(minWidth: 116)
                 }
@@ -227,7 +230,9 @@ private struct PodcastPrimaryActions: View {
                 .controlSize(.large)
                 .disabled(isSubscribing)
                 .accessibilityLabel(
-                    isSubscribed ? "取消订阅" : "订阅播客"
+                    isSubscribed
+                        ? L10n.string("ui.common.unsubscribe")
+                        : L10n.string("ui.podcasts.subscribe")
                 )
             }
         }
@@ -260,13 +265,13 @@ private struct PodcastProgramContent: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("节目")
+                Text("ui.podcasts.episodes")
                     .font(.title3.bold())
 
                 Spacer()
 
                 if programCount > 0 {
-                    Text("\(programCount) 期")
+                    Text(L10n.format("ui.podcasts.episode_count_short", programCount))
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -276,7 +281,7 @@ private struct PodcastProgramContent: View {
 
             Group {
                 if isLoading {
-                    ProgressView("正在载入节目")
+                    ProgressView("ui.podcasts.loading_episodes")
                         .tint(.primary)
                         .foregroundStyle(.secondary)
                         .frame(
@@ -296,7 +301,7 @@ private struct PodcastProgramContent: View {
                     ContentUnavailableView(
                         emptyTitle,
                         systemImage:
-                            emptyTitle == "暂无节目"
+                            emptyTitle == L10n.string("ui.podcasts.no_episodes")
                             ? "waveform"
                             : "magnifyingglass"
                     )
@@ -344,7 +349,7 @@ private struct PodcastProgramContent: View {
                                     loadMoreProgramsError,
                                 loadToken: programs.count,
                                 loadingTitle:
-                                    "正在加载更多节目",
+                                    L10n.string("ui.podcasts.loading_more_episodes"),
                                 action: onLoadMore
                             )
                         }
@@ -385,7 +390,7 @@ private struct ExpandablePodcastDescription: View {
             }
         } label: {
             Text(
-                "\(description)  \(Text(isExpanded ? "收起" : "更多").bold())"
+                "\(description)  \(Text(isExpanded ? L10n.string("ui.common.collapse") : L10n.string("ui.common.more")).bold())"
             )
             .font(.body)
             .foregroundStyle(.secondary)
@@ -396,7 +401,9 @@ private struct ExpandablePodcastDescription: View {
         .buttonStyle(.plain)
         .padding(.horizontal, 20)
         .accessibilityLabel(
-            isExpanded ? "收起播客简介" : "展开播客简介"
+            isExpanded
+                ? L10n.string("ui.podcasts.collapse_description")
+                : L10n.string("ui.podcasts.expand_description")
         )
     }
 }

@@ -22,11 +22,11 @@ struct ListenTogetherView: View {
                     inactiveContent
                 }
             }
-            .navigationTitle("一起听")
+            .navigationTitle("ui.listen_together.title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("关闭") {
+                    Button("ui.common.close") {
                         dismiss()
                     }
                     .disabled(listenTogether.operation == .leaving)
@@ -41,11 +41,15 @@ struct ListenTogetherView: View {
             }
             .disabled(listenTogether.isBusy)
             .confirmationDialog(
-                listenTogether.isHost ? "结束一起听？" : "退出一起听？",
+                listenTogether.isHost
+                    ? L10n.string("ui.listen_together.end.confirmation")
+                    : L10n.string("ui.listen_together.leave.confirmation"),
                 isPresented: $showsLeaveConfirmation
             ) {
                 Button(
-                    listenTogether.isHost ? "结束一起听" : "退出一起听",
+                    listenTogether.isHost
+                        ? L10n.string("ui.listen_together.end")
+                        : L10n.string("ui.listen_together.leave"),
                     role: .destructive
                 ) {
                     Task {
@@ -55,12 +59,12 @@ struct ListenTogetherView: View {
             } message: {
                 Text(
                     listenTogether.isHost
-                        ? "房间中的成员将停止同步播放。"
-                        : "退出后，本机播放将不再与房间同步。"
+                        ? L10n.string("ui.listen_together.end.message")
+                        : L10n.string("ui.listen_together.leave.message")
                 )
             }
             .alert(
-                "一起听操作失败",
+                "ui.listen_together.error.title",
                 isPresented: Binding(
                     get: { listenTogether.errorMessage != nil },
                     set: { isPresented in
@@ -70,13 +74,13 @@ struct ListenTogetherView: View {
                     }
                 )
             ) {
-                Button("好", role: .cancel) {
+                Button("ui.common.ok", role: .cancel) {
                     listenTogether.dismissError()
                 }
             } message: {
                 Text(
                     listenTogether.errorMessage
-                        ?? "网易云音乐未完成操作。"
+                        ?? L10n.string("ui.error.netease_operation_incomplete")
                 )
             }
         }
@@ -91,10 +95,10 @@ struct ListenTogetherView: View {
                     .foregroundStyle(.red)
                     .accessibilityHidden(true)
 
-                Text("和朋友同步听歌")
+                Text("ui.listen_together.welcome.title")
                     .font(.title3.weight(.semibold))
 
-                Text("房间内的播放、暂停、切歌、播放进度和队列会自动同步。")
+                Text("ui.listen_together.welcome.message")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -112,24 +116,24 @@ struct ListenTogetherView: View {
                     }
                 } label: {
                     Label(
-                        "发起一起听",
+                        "ui.listen_together.start",
                         systemImage: "person.2.badge.plus"
                     )
                 }
                 .disabled(player.currentSong == nil)
             } header: {
-                Text("创建房间")
+                Text("ui.listen_together.create_room")
             } footer: {
                 if player.currentSong == nil {
-                    Text("请先播放一首歌曲。")
+                    Text("ui.floating_lyrics.error.song_required")
                 } else {
-                    Text("创建后可通过系统分享把网易云邀请链接发送给朋友。")
+                    Text("ui.listen_together.create_room.message")
                 }
             }
 
             Section {
                 TextField(
-                    "粘贴网易云一起听邀请链接",
+                    "ui.listen_together.paste_invitation",
                     text: $invitationText,
                     axis: .vertical
                 )
@@ -146,7 +150,7 @@ struct ListenTogetherView: View {
                     }
                 } label: {
                     Label(
-                        "加入房间",
+                        "ui.listen_together.join_room",
                         systemImage: "rectangle.portrait.and.arrow.right"
                     )
                 }
@@ -156,19 +160,19 @@ struct ListenTogetherView: View {
                     ).isEmpty
                 )
             } header: {
-                Text("加入房间")
+                Text("ui.listen_together.join_room")
             } footer: {
-                Text("邀请链接需要同时包含房间 ID 与邀请者 ID。")
+                Text("ui.listen_together.invitation_requirements")
             }
         } else {
             Section {
                 ContentUnavailableView {
                     Label(
-                        "需要登录网易云音乐",
+                        "ui.listen_together.login_required",
                         systemImage: "person.crop.circle.badge.exclamationmark"
                     )
                 } description: {
-                    Text("请先在“设置”的网易云账号页面完成登录。")
+                    Text("ui.listen_together.login_message")
                 }
             }
         }
@@ -178,7 +182,7 @@ struct ListenTogetherView: View {
     private func activeRoomContent(
         _ room: ListenTogetherRoom
     ) -> some View {
-        Section("正在播放") {
+        Section("ui.player.now_playing") {
             if let song = player.currentSong {
                 HStack(spacing: 12) {
                     songArtwork(song)
@@ -197,50 +201,52 @@ struct ListenTogetherView: View {
                 .accessibilityElement(children: .combine)
             } else {
                 Label(
-                    "正在等待房间播放内容",
+                    "ui.listen_together.waiting_for_playback",
                     systemImage: "music.note"
                 )
                 .foregroundStyle(.secondary)
             }
         }
 
-        Section("房间同步") {
+        Section("ui.listen_together.room_sync") {
             ListenTogetherSyncStatusView()
         }
 
         Section {
             ListenTogetherMemberRows(room: room)
         } header: {
-            Text("房间成员")
+            Text("ui.listen_together.room_members")
         } footer: {
-            Text("\(room.users.count) 人在线")
+            Text(L10n.format("ui.listen_together.online_count", room.users.count))
         }
 
         Section {
-            LabeledContent("房间 ID", value: room.id)
+            LabeledContent(L10n.string("ui.listen_together.room_id"), value: room.id)
                 .textSelection(.enabled)
 
             if let invitationURL = listenTogether.invitationURL {
                 ShareLink(
                     item: invitationURL,
-                    subject: Text("网易云音乐一起听邀请"),
-                    message: Text("和我一起听歌")
+                    subject: Text("ui.listen_together.share_subject"),
+                    message: Text("ui.listen_together.share_message")
                 ) {
                     Label(
-                        "邀请朋友",
+                        "ui.listen_together.invite_friends",
                         systemImage: "square.and.arrow.up"
                     )
                 }
             }
         } header: {
-            Text("邀请")
+            Text("ui.listen_together.invite")
         } footer: {
-            Text("对方可使用网易云音乐打开链接，或将链接粘贴到 MeloX 加入。")
+            Text("ui.listen_together.invite.footer")
         }
 
         Section {
             Button(
-                listenTogether.isHost ? "结束一起听" : "退出一起听",
+                listenTogether.isHost
+                    ? L10n.string("ui.listen_together.end")
+                    : L10n.string("ui.listen_together.leave"),
                 systemImage: "rectangle.portrait.and.arrow.right",
                 role: .destructive
             ) {

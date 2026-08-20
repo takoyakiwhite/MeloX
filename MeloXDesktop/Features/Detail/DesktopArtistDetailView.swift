@@ -27,7 +27,7 @@ struct DesktopArtistDetailView: View {
 
                         HStack(alignment: .top, spacing: 36) {
                             VStack(alignment: .leading, spacing: 12) {
-                                DesktopSectionHeader(title: "最新发布")
+                                DesktopSectionHeader(title: L10n.string("ui.desktop.artist.latest_releases"))
                                 LazyVGrid(columns: columns, spacing: 22) {
                                     ForEach(Array(albums.prefix(8))) { album in
                                         DesktopMediaCard(
@@ -43,7 +43,7 @@ struct DesktopArtistDetailView: View {
                             .frame(maxWidth: .infinity, alignment: .topLeading)
 
                             VStack(alignment: .leading, spacing: 12) {
-                                DesktopSectionHeader(title: "歌曲排行")
+                                DesktopSectionHeader(title: L10n.string("ui.artist.popular_songs"))
                                 DesktopCollectionTrackList(
                                     songs: Array(songs.prefix(12)),
                                     sourceID: artist.id
@@ -57,29 +57,29 @@ struct DesktopArtistDetailView: View {
                 }
                 .ignoresSafeArea(edges: .top)
             } else if isLoading {
-                DesktopDetailLoadingView(message: "正在载入艺人…")
+                DesktopDetailLoadingView(message: L10n.string("ui.artist.loading"))
             } else {
-                DesktopDetailErrorView(message: errorMessage ?? "未知错误") {
+                DesktopDetailErrorView(message: errorMessage ?? L10n.string("ui.error.unknown")) {
                     Task { await load() }
                 }
             }
         }
-        .navigationTitle(artist?.name ?? "艺人")
+        .navigationTitle(artist?.name ?? L10n.string("ui.common.artist"))
         .task(id: artistID) { await load() }
         .animation(
             reduceMotion ? nil : .smooth(duration: 0.30),
             value: isLoading
         )
         .alert(
-            "无法更新关注状态",
+            L10n.string("ui.desktop.artist.follow_failed"),
             isPresented: Binding(
                 get: { operationError != nil },
                 set: { if !$0 { operationError = nil } }
             )
         ) {
-            Button("好") { operationError = nil }
+            Button("ui.common.ok") { operationError = nil }
         } message: {
-            Text(operationError ?? "网易云音乐未完成操作。")
+            Text(operationError ?? L10n.string("ui.error.netease_operation_incomplete"))
         }
     }
 
@@ -127,7 +127,9 @@ struct DesktopArtistDetailView: View {
                     .buttonStyle(.plain)
 
                     Button(
-                        isFollowed ? "已关注" : "关注",
+                        isFollowed
+                            ? L10n.string("ui.desktop.artist.following")
+                            : L10n.string("ui.desktop.artist.follow"),
                         systemImage: isFollowed ? "checkmark" : "plus"
                     ) {
                         toggleFollowState(artist)
@@ -144,7 +146,7 @@ struct DesktopArtistDetailView: View {
                         }
                         .buttonStyle(.bordered)
                         .tint(.white)
-                        .help("分享")
+                        .help(L10n.string("ui.common.share"))
                     }
 
                     Text(artist.name)

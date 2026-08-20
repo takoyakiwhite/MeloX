@@ -8,7 +8,7 @@ struct DesktopAccountView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 0) {
-            Text("账户")
+            Text("ui.desktop.settings.account")
                 .font(.system(size: 28, weight: .bold))
                 .padding(.horizontal, 28)
                 .padding(.top, 28)
@@ -22,11 +22,11 @@ struct DesktopAccountView: View {
                     .task { await model.library.refresh(force: true) }
             } else {
                 ContentUnavailableView {
-                    Label("登录网易云音乐", systemImage: "person.crop.circle.badge.plus")
+                    Label("ui.account.login_netease", systemImage: "person.crop.circle.badge.plus")
                 } description: {
-                    Text("登录后可同步喜欢的音乐、歌单、播客、云盘、播放记录、私信与一起听。登录 Cookie 只保存在这台 Mac。")
+                    Text("ui.desktop.account.login_message")
                 } actions: {
-                    Button("登录") { model.ui.sheet = .login }
+                    Button("ui.common.login") { model.ui.sheet = .login }
                         .buttonStyle(.borderedProminent)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -41,13 +41,13 @@ struct DesktopAccountView: View {
         }
         .frame(width: 500, height: 600)
         .confirmationDialog(
-            "要退出当前网易云音乐账户吗？",
+            L10n.string("ui.settings.account.logout.confirmation"),
             isPresented: $showsLogoutConfirmation
         ) {
-            Button("退出登录", role: .destructive) {
+            Button("ui.settings.account.logout", role: .destructive) {
                 model.logOut()
             }
-            Button("取消", role: .cancel) {}
+            Button("ui.common.cancel", role: .cancel) {}
         }
     }
 
@@ -55,7 +55,7 @@ struct DesktopAccountView: View {
         VStack(spacing: 12) {
             accountGroup {
                 VStack(spacing: 0) {
-                    accountAction("私信") {
+                    accountAction(L10n.string("ui.messages.private.title")) {
                         model.ui.sheet = nil
                         model.ui.navigate(to: .section(.messages))
                     }
@@ -63,7 +63,7 @@ struct DesktopAccountView: View {
                     if model.isSectionEnabled(.cloud) {
                         Divider()
                             .padding(.leading, 12)
-                        accountAction("音乐云盘") {
+                        accountAction(L10n.string("ui.navigation.cloud")) {
                             model.ui.sheet = nil
                             model.ui.navigate(to: .section(.cloud))
                         }
@@ -72,7 +72,7 @@ struct DesktopAccountView: View {
                     if model.isSectionEnabled(.downloads) {
                         Divider()
                             .padding(.leading, 12)
-                        accountAction("下载") {
+                        accountAction(L10n.string("ui.navigation.downloads")) {
                             model.ui.sheet = nil
                             model.ui.navigate(to: .section(.downloads))
                         }
@@ -81,7 +81,7 @@ struct DesktopAccountView: View {
             }
 
             accountGroup {
-                accountAction("账户设置") {
+                accountAction(L10n.string("ui.desktop.account.settings")) {
                     dismiss()
                     openSettings()
                 }
@@ -92,7 +92,7 @@ struct DesktopAccountView: View {
                     showsLogoutConfirmation = true
                 } label: {
                     HStack {
-                        Text("退出登录")
+                        Text("ui.settings.account.logout")
                         Spacer()
                         Text(profile.nickname)
                             .foregroundStyle(.secondary)
@@ -131,7 +131,7 @@ struct DesktopAccountView: View {
     }
 
     private var doneButton: some View {
-        Button("完成") { dismiss() }
+        Button("ui.common.done") { dismiss() }
             .buttonStyle(.plain)
             .font(.body.weight(.medium))
             .foregroundStyle(.white)

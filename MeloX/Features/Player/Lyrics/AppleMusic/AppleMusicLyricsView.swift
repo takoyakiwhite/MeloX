@@ -206,7 +206,7 @@ struct AppleMusicLyricsView: View {
         if lyrics.isEmpty {
             if let errorMessage {
                 ContentUnavailableView(
-                    "暂无歌词",
+                    "ui.lyrics.empty",
                     systemImage: "quote.bubble",
                     description: Text(errorMessage)
                 )
@@ -217,7 +217,7 @@ struct AppleMusicLyricsView: View {
                     onInterfaceInteraction?()
                 }
             } else {
-                ProgressView("正在载入歌词")
+                ProgressView("ui.lyrics.loading")
                     .tint(.white)
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -3140,9 +3140,9 @@ struct AppleMusicLyricsView: View {
         isBrowsingFocus: Bool
     ) -> String {
         switch (isPlaybackLine, isBrowsingFocus) {
-        case (true, true): "当前播放，浏览焦点"
-        case (true, false): "当前播放"
-        case (false, true): "浏览焦点"
+        case (true, true): L10n.string("ui.lyrics.current_browse_focus")
+        case (true, false): L10n.string("ui.player.now_playing")
+        case (false, true): L10n.string("ui.lyrics.browse_focus")
         case (false, false): ""
         }
     }
@@ -3534,13 +3534,13 @@ struct AppleMusicLyricsView: View {
             settings.lyricsLongPressToShare && allowsShare
         ) {
         case (true, true):
-            "单击跳转到这行歌词，长按分享"
+            L10n.string("ui.lyrics.tap_seek_long_press_share")
         case (true, false):
-            "单击跳转到这行歌词"
+            L10n.string("ui.lyrics.tap_seek_hint")
         case (false, true):
-            "长按分享这行歌词"
+            L10n.string("ui.lyrics.long_press_share_hint")
         case (false, false):
-            "歌词交互已在设置中关闭"
+            L10n.string("ui.lyrics.interaction_disabled_hint")
         }
     }
 

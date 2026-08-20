@@ -67,7 +67,11 @@ struct MiniPlayerView: View {
                             .contentShape(.circle)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel(player.isPlaying ? "暂停" : "播放")
+                    .accessibilityLabel(
+                        player.isPlaying
+                            ? L10n.string("ui.player.pause")
+                            : L10n.string("ui.common.play")
+                    )
                 }
 
                 if !isInline {
@@ -80,7 +84,7 @@ struct MiniPlayerView: View {
                             .contentShape(.circle)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("下一首")
+                    .accessibilityLabel("ui.player.next")
                 }
             }
             .padding(.horizontal, isInline ? 8 : 12)
@@ -88,10 +92,10 @@ struct MiniPlayerView: View {
             .frame(maxWidth: .infinity)
             .contentShape(.rect)
             .simultaneousGesture(trackSwipeGesture)
-            .accessibilityAction(named: "上一首") {
+            .accessibilityAction(named: L10n.string("ui.player.previous")) {
                 Task { await player.previous() }
             }
-            .accessibilityAction(named: "下一首") {
+            .accessibilityAction(named: L10n.string("ui.player.next")) {
                 Task { await player.next() }
             }
         }

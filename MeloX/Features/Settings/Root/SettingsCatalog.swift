@@ -40,258 +40,133 @@ struct SettingsCatalogItem {
 }
 
 enum SettingsCatalog {
-    static let sections = [
+    static var sections: [SettingsCatalogSection] { [
         SettingsCatalogSection(
-            title: "播放器",
+            title: L10n.string("ui.settings.catalog.player.section"),
             items: [
                 SettingsCatalogItem(
                     route: .playback,
-                    title: "播放与音频",
-                    subtitle: "音质、音量、均衡器、自动混音与播放行为",
+                    title: L10n.string("ui.settings.catalog.playback.title"),
+                    subtitle: L10n.string("ui.settings.catalog.playback.subtitle"),
                     systemImage: "waveform",
-                    keywords: [
-                        "高品质",
-                        "无损",
-                        "上一首",
-                        "页面记忆",
-                        "心动模式",
-                        "启动播放",
-                        "交叉淡化",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.playback.keywords")
                 ),
                 SettingsCatalogItem(
                     route: .playerAppearance,
-                    title: "播放器界面",
-                    subtitle: "背景、封面反馈与屏幕常亮",
+                    title: L10n.string("ui.settings.catalog.player_appearance.title"),
+                    subtitle: L10n.string("ui.settings.catalog.player_appearance.subtitle"),
                     systemImage: "paintbrush",
-                    keywords: [
-                        "模糊",
-                        "色彩",
-                        "饱和度",
-                        "暂停",
-                        "自动锁屏",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.player_appearance.keywords")
                 ),
                 SettingsCatalogItem(
                     route: .lyrics,
-                    title: "歌词",
-                    subtitle: "Apple Music 方案、演奏段、排版、逐字与交互",
+                    title: L10n.string("ui.settings.catalog.lyrics.title"),
+                    subtitle: L10n.string("ui.settings.catalog.lyrics.subtitle"),
                     systemImage: "quote.bubble",
-                    keywords: [
-                        "Apple Music",
-                        "EVA",
-                        "文字PV",
-                        "字体",
-                        "YRC",
-                        "LRC",
-                        "前奏",
-                        "间奏",
-                        "三点",
-                        "罗马音",
-                        "翻译",
-                        "伪逐字",
-                        "辉光",
-                        "刷新率",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.lyrics.keywords")
                 ),
             ]
         ),
         SettingsCatalogSection(
-            title: "系统与扩展歌词",
+            title: L10n.string("ui.settings.catalog.system_lyrics.section"),
             items: [
                 SettingsCatalogItem(
                     route: .systemPlayback,
-                    title: "系统歌词显示",
-                    subtitle: "播放信息、通知横幅、锁定屏幕与灵动岛歌词",
+                    title: L10n.string("ui.settings.catalog.system_lyrics.title"),
+                    subtitle: L10n.string("ui.settings.catalog.system_lyrics.subtitle"),
                     systemImage: "lock.display",
-                    keywords: [
-                        "控制中心",
-                        "系统歌词",
-                        "通知歌词",
-                        "静音通知",
-                        "横幅",
-                        "Notification",
-                        "Live Activity",
-                        "标题格式",
-                        "副标题",
-                        "封面",
-                        "播放进度",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.system_lyrics.keywords")
                 ),
                 SettingsCatalogItem(
                     route: .skylineLyrics,
-                    title: "全屏天际歌词",
-                    subtitle: "横屏布局、背景文字与动态效果",
+                    title: L10n.string("ui.settings.catalog.skyline.title"),
+                    subtitle: L10n.string("ui.settings.catalog.skyline.subtitle"),
                     systemImage: "rectangle.landscape.rotate",
-                    keywords: [
-                        "横屏",
-                        "字号",
-                        "漂移",
-                        "倾斜",
-                        "背景歌词",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.skyline.keywords")
                 ),
                 SettingsCatalogItem(
                     route: .floatingLyrics,
-                    title: "悬浮窗歌词",
-                    subtitle: "画中画歌词、翻译与下一句",
+                    title: L10n.string("ui.settings.catalog.floating.title"),
+                    subtitle: L10n.string("ui.settings.catalog.floating.subtitle"),
                     systemImage: "pip",
-                    keywords: [
-                        "画中画",
-                        "悬浮歌词",
-                        "其他应用",
-                        "歌词大小",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.floating.keywords")
                 ),
             ]
         ),
         SettingsCatalogSection(
-            title: "内容与存储",
+            title: L10n.string("ui.settings.catalog.content_storage.section"),
             items: [
                 SettingsCatalogItem(
                     route: .contentFeatures,
-                    title: "功能模块",
-                    subtitle: "启用或停用播客、下载、云盘与最近播放",
+                    title: L10n.string("ui.settings.catalog.features.title"),
+                    subtitle: L10n.string("ui.settings.catalog.features.subtitle"),
                     systemImage: "switch.2",
-                    keywords: [
-                        "开关",
-                        "隐藏",
-                        "播客",
-                        "广播",
-                        "下载",
-                        "云盘",
-                        "最近播放",
-                        "播放记录",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.features.keywords")
                 ),
                 SettingsCatalogItem(
                     route: .content,
-                    title: "发现内容",
-                    subtitle: "新碟地区、歌单信息与听歌识曲",
+                    title: L10n.string("ui.settings.catalog.content.title"),
+                    subtitle: L10n.string("ui.settings.catalog.content.subtitle"),
                     systemImage: "rectangle.stack",
-                    keywords: [
-                        "华语",
-                        "欧美",
-                        "韩国",
-                        "日本",
-                        "播放量",
-                        "听歌识曲",
-                        "麦克风",
-                        "识别时长",
-                        "持续识别",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.content.keywords")
                 ),
                 SettingsCatalogItem(
                     route: .storage,
-                    title: "存储管理",
+                    title: L10n.string("ui.settings.catalog.storage.title"),
                     subtitle:
                         AppFeatureAvailability.downloads
-                            ? "空间统计、下载管理与缓存清理"
-                            : "空间统计与缓存清理",
+                            ? L10n.string("ui.settings.catalog.storage.subtitle.downloads")
+                            : L10n.string("ui.settings.catalog.storage.subtitle"),
                     systemImage: "internaldrive",
                     keywords:
                         AppFeatureAvailability.downloads
-                            ? [
-                                "下载",
-                                "自动缓存",
-                                "存储",
-                                "空间",
-                                "清理",
-                                "临时文件",
-                                "数据库",
-                                "触发次数",
-                                "缓存音质",
-                                "删除下载",
-                            ]
-                            : [
-                                "存储",
-                                "空间",
-                                "清理",
-                                "临时文件",
-                                "数据库",
-                            ]
+                            ? L10n.keywords("ui.settings.catalog.storage.keywords.downloads")
+                            : L10n.keywords("ui.settings.catalog.storage.keywords")
                 ),
             ]
         ),
         SettingsCatalogSection(
-            title: "界面与应用",
+            title: L10n.string("ui.settings.catalog.interface.section"),
             items: [
                 SettingsCatalogItem(
                     route: .tabLayout,
-                    title: "页面与标签栏",
-                    subtitle: "调整首页、标签栏与音乐库中的页面",
+                    title: L10n.string("ui.settings.catalog.tab_layout.title"),
+                    subtitle: L10n.string("ui.settings.catalog.tab_layout.subtitle"),
                     systemImage: "rectangle.3.group",
-                    keywords: [
-                        "首页",
-                        "TabView",
-                        "标签栏",
-                        "排序",
-                        "推荐",
-                        "播客",
-                        "云盘",
-                        "歌曲",
-                        "歌单",
-                        "历史",
-                    ] + (AppFeatureAvailability.downloads ? ["下载"] : [])
+                    keywords: L10n.keywords("ui.settings.catalog.tab_layout.keywords")
+                        + (AppFeatureAvailability.downloads
+                            ? L10n.keywords("ui.settings.catalog.download.keyword")
+                            : [])
                 ),
                 SettingsCatalogItem(
                     route: .general,
-                    title: "通用",
-                    subtitle: "主题、启动页面、剪贴板链接与音乐库记忆",
+                    title: L10n.string("ui.settings.catalog.general.title"),
+                    subtitle: L10n.string("ui.settings.catalog.general.subtitle"),
                     systemImage: "gearshape",
-                    keywords: [
-                        "主题",
-                        "浅色",
-                        "深色",
-                        "跟随系统",
-                        "默认页面",
-                        "上次页面",
-                        "首页",
-                        "发现",
-                        "音乐库",
-                        "搜索",
-                        "剪贴板",
-                        "歌曲链接",
-                        "一起听链接",
-                        "网易云链接",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.general.keywords")
                 ),
             ]
         ),
         SettingsCatalogSection(
-            title: "关于与开发",
+            title: L10n.string("ui.settings.catalog.about.section"),
             items: [
                 SettingsCatalogItem(
                     route: .about,
-                    title: "关于 MeloX",
-                    subtitle: "版本、更新、社区与开源许可",
+                    title: L10n.string("ui.settings.catalog.about.title"),
+                    subtitle: L10n.string("ui.settings.catalog.about.subtitle"),
                     systemImage: "info.circle",
-                    keywords: [
-                        "GitHub",
-                        "Telegram",
-                        "更新日志",
-                        "检查更新",
-                        "声明",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.about.keywords")
                 ),
                 SettingsCatalogItem(
                     route: .developer,
-                    title: "开发者选项",
-                    subtitle: "BeatNet 分析与播放器调试工具",
+                    title: L10n.string("ui.settings.catalog.developer.title"),
+                    subtitle: L10n.string("ui.settings.catalog.developer.subtitle"),
                     systemImage: "hammer",
-                    keywords: [
-                        "BeatNet",
-                        "节拍",
-                        "重拍",
-                        "Onset",
-                        "调试",
-                        "Core ML",
-                        "全曲分析",
-                    ]
+                    keywords: L10n.keywords("ui.settings.catalog.developer.keywords")
                 ),
             ]
         ),
-    ]
+    ] }
 
     static func filteredSections(
         matching query: String
@@ -314,29 +189,14 @@ enum SettingsCatalog {
     static func matchesAccount(_ query: String) -> Bool {
         matches(
             query,
-            values: [
-                "网易云账号",
-                "登录",
-                "退出登录",
-                "Cookie",
-                "个人主页",
-                "用户 ID",
-            ]
+            values: L10n.keywords("ui.settings.catalog.account.keywords")
         )
     }
 
     static func matchesReset(_ query: String) -> Bool {
         matches(
             query,
-            values: [
-                "恢复播放器默认设置",
-                "重置",
-                "还原",
-                "播放器",
-                "歌词",
-                "均衡器",
-                "自动混音",
-            ]
+            values: L10n.keywords("ui.settings.catalog.reset.keywords")
         )
     }
 

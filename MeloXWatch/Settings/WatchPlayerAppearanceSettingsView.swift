@@ -14,49 +14,49 @@ struct WatchPlayerAppearanceSettingsView: View {
 
     var body: some View {
         Form {
-            Section("模糊封面背景") {
+            Section("ui.watch.appearance.blurred_background") {
                 LabeledContent(
-                    "模糊半径",
+                    "ui.watch.appearance.blur_radius",
                     value: backgroundBlur.formatted(
-                        .number.precision(.fractionLength(0))
+                        .number.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $backgroundBlur, in: 8...32)
-                    .accessibilityLabel("背景模糊半径")
+                    .accessibilityLabel("ui.watch.appearance.blur_radius_accessibility")
 
                 LabeledContent(
-                    "暗化程度",
+                    "ui.watch.appearance.dim_amount",
                     value: backgroundDim.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $backgroundDim, in: 0.35...0.85)
-                    .accessibilityLabel("背景暗化程度")
+                    .accessibilityLabel("ui.watch.appearance.dim_accessibility")
 
                 LabeledContent(
-                    "饱和度",
+                    "ui.watch.appearance.saturation",
                     value: backgroundSaturation.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $backgroundSaturation, in: 0.5...1.5)
-                    .accessibilityLabel("背景饱和度")
+                    .accessibilityLabel("ui.watch.appearance.saturation_accessibility")
             }
 
-            Section("封面") {
-                Toggle("暂停时缩小封面", isOn: $shrinksPausedArtwork)
+            Section("ui.watch.appearance.artwork") {
+                Toggle("ui.settings.player_appearance.shrink_paused_artwork", isOn: $shrinksPausedArtwork)
             }
 
-            Section("信息") {
-                Toggle("显示歌手", isOn: $showsArtist)
+            Section("ui.watch.appearance.information") {
+                Toggle("ui.watch.appearance.show_artist", isOn: $showsArtist)
             }
 
             Section {
-                Text("播放器采用固定单屏布局，封面、标题和播放按钮不会触发上下滚动。")
+                Text("ui.watch.appearance.footer")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
         }
-        .navigationTitle("播放器外观")
+        .navigationTitle("ui.watch.settings.player_appearance")
     }
 }

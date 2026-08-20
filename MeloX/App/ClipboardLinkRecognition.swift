@@ -7,7 +7,7 @@ private enum ClipboardLinkOpenError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .songNotFound:
-            "网易云音乐没有返回这首歌曲的信息。"
+            L10n.string("ui.clipboard.error.song_not_found")
         }
     }
 }
@@ -36,7 +36,7 @@ struct ClipboardLinkRecognitionModifier: ViewModifier {
                 inspectClipboardOnLaunchIfNeeded()
             }
             .alert(
-                detectedLink?.promptTitle ?? "剪贴板链接",
+                detectedLink?.promptTitle ?? L10n.string("ui.clipboard.title"),
                 isPresented: detectedLinkPresented
             ) {
                 if let link = detectedLink {
@@ -44,11 +44,11 @@ struct ClipboardLinkRecognitionModifier: ViewModifier {
                         open(link)
                     }
                 }
-                Button("忽略", role: .cancel) {}
+                Button("ui.common.ignore", role: .cancel) {}
             } message: {
                 Text(
                     detectedLink?.promptMessage
-                        ?? "是否在 MeloX 中打开此链接？"
+                        ?? L10n.string("ui.clipboard.open_link_prompt")
                 )
             }
             .sheet(item: $listenTogetherInvitation) { invitation in
@@ -59,24 +59,24 @@ struct ClipboardLinkRecognitionModifier: ViewModifier {
                 .presentationDragIndicator(.visible)
             }
             .alert(
-                "无法打开剪贴板链接",
+                "ui.clipboard.error.title",
                 isPresented: errorPresented
             ) {
-                Button("好", role: .cancel) {
+                Button("ui.common.ok", role: .cancel) {
                     errorMessage = nil
                 }
             } message: {
-                Text(errorMessage ?? "请稍后重试。")
+                Text(errorMessage ?? L10n.string("ui.error.try_again_later"))
             }
             .overlay {
                 if isOpeningSong {
-                    ProgressView("正在打开歌曲…")
+                    ProgressView("ui.clipboard.opening_song")
                         .padding()
                         .background(
                             .regularMaterial,
                             in: .rect(cornerRadius: 14)
                         )
-                        .accessibilityLabel("正在打开剪贴板中的歌曲")
+                        .accessibilityLabel("ui.clipboard.opening_song_accessibility")
                 }
             }
     }
@@ -153,27 +153,27 @@ private extension NeteaseMusicLink {
     var promptTitle: String {
         switch self {
         case .song:
-            "发现网易云歌曲链接"
+            L10n.string("ui.clipboard.song_link_found")
         case .listenTogether:
-            "发现一起听邀请"
+            L10n.string("ui.clipboard.listen_together_found")
         }
     }
 
     var promptMessage: String {
         switch self {
         case .song:
-            "是否在 MeloX 中打开剪贴板里的歌曲？"
+            L10n.string("ui.clipboard.song_prompt")
         case .listenTogether:
-            "是否查看剪贴板里的一起听邀请？加入前仍可核对邀请链接。"
+            L10n.string("ui.clipboard.listen_together_prompt")
         }
     }
 
     var actionTitle: String {
         switch self {
         case .song:
-            "打开歌曲"
+            L10n.string("ui.clipboard.open_song")
         case .listenTogether:
-            "查看邀请"
+            L10n.string("ui.clipboard.view_invitation")
         }
     }
 }

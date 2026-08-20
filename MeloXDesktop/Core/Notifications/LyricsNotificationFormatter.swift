@@ -27,11 +27,11 @@ enum LyricsNotificationFormatter {
         settings: LyricsNotificationDisplaySettings
     ) -> LyricsNotificationText {
         let lyric = nonempty(currentLyric) ?? songTitle
-        let replacements = [
-            "{歌词}": lyric,
-            "{歌名}": songTitle,
-            "{作者}": songArtist,
-        ]
+        let replacements = L10n.lyricFormatReplacements(
+            lyric: lyric,
+            title: songTitle,
+            artist: songArtist
+        )
 
         var bodyLines = [lyric]
         if settings.supplementaryContent.includesTranslation,
@@ -42,7 +42,9 @@ enum LyricsNotificationFormatter {
         if settings.supplementaryContent.includesNextLyric,
            let nextLyric = nonempty(nextLyric),
            nextLyric != lyric {
-            bodyLines.append("下一句：\(nextLyric)")
+            bodyLines.append(
+                L10n.format("ui.lyrics.notification.next", nextLyric)
+            )
         }
 
         return LyricsNotificationText(

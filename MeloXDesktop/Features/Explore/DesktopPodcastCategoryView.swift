@@ -25,7 +25,7 @@ struct DesktopPodcastCategoryView: View {
                         .font(.system(size: 32, weight: .bold))
                     Spacer()
                     if !podcasts.isEmpty {
-                        Text("\(podcasts.count) 个播客")
+                        Text(L10n.format("ui.desktop.podcasts.count", podcasts.count))
                             .font(.callout)
                             .foregroundStyle(.secondary)
                             .contentTransition(.numericText())
@@ -39,7 +39,7 @@ struct DesktopPodcastCategoryView: View {
         }
         .navigationTitle(title)
         .desktopLoadingStatus(
-            "正在载入\(title)…",
+            L10n.format("ui.desktop.podcasts.loading_category", title),
             isPresented: isLoading
         )
         .task(id: categoryID) {
@@ -58,18 +58,18 @@ struct DesktopPodcastCategoryView: View {
                 .frame(maxWidth: .infinity, minHeight: 320)
         } else if podcasts.isEmpty, let errorMessage {
             ContentUnavailableView {
-                Label("无法载入播客", systemImage: "wifi.exclamationmark")
+                Label("ui.desktop.podcasts.load_failed", systemImage: "wifi.exclamationmark")
             } description: {
                 Text(errorMessage)
             } actions: {
-                Button("重试") { Task { await reload() } }
+                Button("ui.common.retry") { Task { await reload() } }
             }
             .frame(maxWidth: .infinity, minHeight: 320)
         } else if podcasts.isEmpty {
             ContentUnavailableView(
-                "暂无播客",
+                "ui.desktop.podcasts.empty",
                 systemImage: "dot.radiowaves.left.and.right",
-                description: Text("这个类别暂时没有可展示的节目。")
+                description: Text("ui.desktop.podcasts.category_empty.message")
             )
             .frame(maxWidth: .infinity, minHeight: 320)
         } else {
@@ -96,7 +96,7 @@ struct DesktopPodcastCategoryView: View {
             Color.clear
                 .frame(height: 37)
         } else if let errorMessage, !podcasts.isEmpty {
-            Button("继续载入", systemImage: "arrow.clockwise") {
+            Button("ui.common.loading_more", systemImage: "arrow.clockwise") {
                 Task { await loadNextPage() }
             }
             .help(errorMessage)

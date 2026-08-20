@@ -54,14 +54,18 @@ final class StorageManagementModel {
                             preservingDownloadTransfers:
                                 !downloads.activeDownloads.isEmpty
                         )
-                operationMessage =
-                    "已清理约 \(formattedSize(networkBytes + temporaryBytes))"
+                operationMessage = L10n.format(
+                    "ui.settings.storage.operation.cleared_approximately",
+                    formattedSize(networkBytes + temporaryBytes)
+                )
 
             case .networkCache:
                 let byteCount = usage.networkCacheBytes
                 StorageMaintenance.clearNetworkAndArtworkCaches()
-                operationMessage =
-                    "已清理 \(formattedSize(byteCount)) 网络与图片缓存"
+                operationMessage = L10n.format(
+                    "ui.settings.storage.operation.cleared_network_cache",
+                    formattedSize(byteCount)
+                )
 
             case .temporaryFiles:
                 await player.clearPlaybackAnalysisCache()
@@ -71,8 +75,10 @@ final class StorageManagementModel {
                             preservingDownloadTransfers:
                                 !downloads.activeDownloads.isEmpty
                         )
-                operationMessage =
-                    "已清理 \(formattedSize(byteCount)) 临时文件"
+                operationMessage = L10n.format(
+                    "ui.settings.storage.operation.cleared_temporary_files",
+                    formattedSize(byteCount)
+                )
 
             case .repairDownloads:
                 let result = downloads.repairStorage()
@@ -83,18 +89,18 @@ final class StorageManagementModel {
             case .automaticCacheHistory:
                 downloads.resetAutomaticCacheHistory()
                 try checkDownloadOperation(downloads)
-                operationMessage = "已重置自动缓存播放计数"
+                operationMessage = L10n.string("ui.settings.storage.operation.reset_cache_history")
 
             case .optimizeDatabase:
                 downloads.optimizeStorageDatabase()
                 try checkDownloadOperation(downloads)
-                operationMessage = "本地数据库优化完成"
+                operationMessage = L10n.string("ui.settings.storage.operation.database_optimized")
 
             case .allDownloads:
                 let count = downloads.downloads.count
                 downloads.removeAll()
                 try checkDownloadOperation(downloads)
-                operationMessage = "已删除 \(count) 首本地歌曲"
+                operationMessage = L10n.format("ui.settings.storage.operation.deleted_songs", count)
             }
 
             await refreshUsage()
@@ -117,28 +123,34 @@ final class StorageManagementModel {
     }
 
     private func formattedSize(_ byteCount: Int64) -> String {
-        byteCount.formatted(.byteCount(style: .file))
+        L10n.byteCount(byteCount)
     }
 
     private func repairMessage(
         for result: DownloadStorageRepairResult
     ) -> String {
         guard result.repairedAnything else {
-            return "下载存储检查完成，未发现异常"
+            return L10n.string("ui.settings.storage.operation.repair_no_issues")
         }
 
         var repairs: [String] = []
         if result.removedMissingRecordCount > 0 {
             repairs.append(
-                "移除 \(result.removedMissingRecordCount) 条失效记录"
+                L10n.format(
+                    "ui.settings.storage.operation.removed_records",
+                    result.removedMissingRecordCount
+                )
             )
         }
         if result.removedUntrackedByteCount > 0 {
             repairs.append(
-                "清理 \(formattedSize(result.removedUntrackedByteCount)) 未登记文件"
+                L10n.format(
+                    "ui.settings.storage.operation.removed_untracked_files",
+                    formattedSize(result.removedUntrackedByteCount)
+                )
             )
         }
-        return repairs.joined(separator: "，")
+        return repairs.joined(separator: L10n.string("ui.common.list_separator"))
     }
 }
 
@@ -156,51 +168,51 @@ enum StorageCleanupAction: String, Identifiable {
     var title: String {
         switch self {
         case .allCaches:
-            "清理所有可重建缓存？"
+            L10n.string("ui.settings.storage.confirm.clear_all_caches.title")
         case .networkCache:
-            "清理网络与图片缓存？"
+            L10n.string("ui.settings.storage.confirm.clear_network_cache.title")
         case .temporaryFiles:
-            "清理临时播放文件？"
+            L10n.string("ui.settings.storage.confirm.clear_temporary_files.title")
         case .repairDownloads:
-            "修复下载存储？"
+            L10n.string("ui.settings.storage.confirm.repair_downloads.title")
         case .automaticCacheHistory:
-            "重置自动缓存计数？"
+            L10n.string("ui.settings.storage.confirm.reset_cache_history.title")
         case .optimizeDatabase:
-            "压缩本地数据库？"
+            L10n.string("ui.settings.storage.confirm.optimize_database.title")
         case .allDownloads:
-            "删除所有下载？"
+            L10n.string("ui.settings.storage.confirm.delete_all_downloads.title")
         }
     }
 
     var confirmButtonTitle: String {
         switch self {
         case .repairDownloads:
-            "检查并修复"
+            L10n.string("ui.settings.storage.confirm.repair")
         case .automaticCacheHistory:
-            "重置计数"
+            L10n.string("ui.settings.storage.confirm.reset_count")
         case .allDownloads:
-            "删除所有下载"
+            L10n.string("ui.settings.storage.delete_all_downloads")
         default:
-            "立即清理"
+            L10n.string("ui.settings.storage.confirm.clean_now")
         }
     }
 
     var confirmationMessage: String {
         switch self {
         case .allCaches:
-            "将清除可重新生成的网络、图片和非活动临时文件，不会影响收藏、账号数据或播放队列。"
+            L10n.string("ui.settings.storage.confirm.clear_all_caches.message")
         case .networkCache:
-            "封面和网络响应会在之后使用时重新获取。"
+            L10n.string("ui.settings.storage.confirm.clear_network_cache.message")
         case .temporaryFiles:
-            "将清理自动混音分析、歌词附件等临时内容；正在使用的文件会保留或按需重新生成。"
+            L10n.string("ui.settings.storage.confirm.clear_temporary_files.message")
         case .repairDownloads:
-            "将移除文件已缺失的下载记录，以及没有对应下载记录的本地文件。"
+            L10n.string("ui.settings.storage.confirm.repair_downloads.message")
         case .automaticCacheHistory:
-            "歌曲用于触发自动缓存的播放次数将从零重新计算，不会删除播放历史或已下载歌曲。"
+            L10n.string("ui.settings.storage.confirm.reset_cache_history.message")
         case .optimizeDatabase:
-            "只会回收数据库中的空闲空间，不会删除记录。"
+            L10n.string("ui.settings.storage.confirm.optimize_database.message")
         case .allDownloads:
-            "所有已下载歌曲和正在进行的下载任务都将从本机移除，此操作无法撤销。"
+            L10n.string("ui.settings.storage.confirm.delete_all_downloads.message")
         }
     }
 }

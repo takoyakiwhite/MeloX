@@ -28,27 +28,27 @@ struct PlaybackSleepTimerSheet: View {
                 } header: {
                     Text(
                         player.sleepTimer.isActive
-                            ? "重新设置"
-                            : "关闭时间"
+                            ? L10n.string("ui.sleep_timer.reset")
+                            : L10n.string("ui.sleep_timer.stop_time")
                     )
                 } footer: {
-                    Text("倒计时结束后将暂停播放，并保留当前播放列表与进度。")
+                    Text("ui.sleep_timer.message")
                 }
 
                 if player.sleepTimer.isActive {
                     Section {
-                        Button("取消定时关闭", role: .destructive) {
+                        Button("ui.sleep_timer.cancel", role: .destructive) {
                             player.sleepTimer.cancel()
                             dismiss()
                         }
                     }
                 }
             }
-            .navigationTitle("定时关闭")
+            .navigationTitle("ui.sleep_timer.title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") {
+                    Button("ui.common.done") {
                         dismiss()
                     }
                 }
@@ -58,7 +58,7 @@ struct PlaybackSleepTimerSheet: View {
 
     private func activeTimerSection(endDate: Date) -> some View {
         Section {
-            LabeledContent("剩余时间") {
+            LabeledContent("ui.sleep_timer.remaining") {
                 Text(
                     timerInterval:
                         min(Date.now, endDate)...endDate,
@@ -67,14 +67,14 @@ struct PlaybackSleepTimerSheet: View {
                 .monospacedDigit()
             }
 
-            LabeledContent("预计停止") {
+            LabeledContent("ui.sleep_timer.estimated_stop") {
                 Text(
                     endDate,
                     format: .dateTime.hour().minute()
                 )
             }
         } header: {
-            Text("当前计时")
+            Text("ui.sleep_timer.current")
         }
     }
 }
@@ -89,7 +89,7 @@ private enum PlaybackSleepTimerPreset: Int, CaseIterable, Identifiable {
     var id: Int { rawValue }
 
     var title: String {
-        "\(rawValue) 分钟后"
+        L10n.format("ui.sleep_timer.minutes_later", rawValue)
     }
 
     var duration: TimeInterval {

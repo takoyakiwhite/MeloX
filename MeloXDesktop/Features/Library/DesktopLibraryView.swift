@@ -51,7 +51,7 @@ struct DesktopLibraryView: View {
             }
         }
         .alert(
-            "无法播放全部",
+            L10n.string("ui.desktop.collection.play_all_failed"),
             isPresented: Binding(
                 get: { playbackErrorMessage != nil },
                 set: { isPresented in
@@ -61,11 +61,11 @@ struct DesktopLibraryView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 playbackErrorMessage = nil
             }
         } message: {
-            Text(playbackErrorMessage ?? "无法读取完整歌曲列表。")
+            Text(playbackErrorMessage ?? L10n.string("ui.desktop.collection.complete_list_failed"))
         }
     }
 
@@ -75,7 +75,7 @@ struct DesktopLibraryView: View {
         case .songs:
             Button(action: playFavoriteSongs) {
                 HStack(spacing: 7) {
-                    Label("播放全部", systemImage: "play.fill")
+                    Label("ui.common.play_all", systemImage: "play.fill")
                     if isPreparingPlayback {
                         ProgressView()
                             .controlSize(.small)
@@ -87,12 +87,12 @@ struct DesktopLibraryView: View {
                     || isPreparingPlayback
             )
         case .downloads:
-            Button("播放全部", systemImage: "play.fill") {
+            Button("ui.common.play_all", systemImage: "play.fill") {
                 Task { await model.player.playAll(model.downloads.downloadedSongs) }
             }
             .disabled(model.downloads.downloadedSongs.isEmpty)
         case .cloud:
-            Button("上传音乐", systemImage: "plus") { showsImporter = true }
+            Button("ui.cloud.upload_music", systemImage: "plus") { showsImporter = true }
         default:
             EmptyView()
         }
@@ -257,7 +257,7 @@ struct DesktopLibraryView: View {
                         model.library.isLoadingMoreSubscribedPodcasts,
                     failureMessage:
                         model.library.subscribedPodcastsLoadMoreError,
-                    loadingTitle: "正在加载更多播客"
+                    loadingTitle: L10n.string("ui.podcasts.loading_more")
                 ) {
                     await model.library.loadMoreSubscribedPodcasts()
                 }
@@ -296,14 +296,20 @@ struct DesktopLibraryView: View {
     private var libraryEmptyView: some View {
         ContentUnavailableView {
             Label(
-                model.library.isLoggedIn ? "这里还没有内容" : "登录后查看完整资料库",
+                model.library.isLoggedIn
+                    ? L10n.string("ui.desktop.library.empty")
+                    : L10n.string("ui.desktop.library.sign_in_title"),
                 systemImage: section.systemImage
             )
         } description: {
-            Text(model.library.isLoggedIn ? "在 MeloX 中收藏、播放或下载内容后会显示在这里。" : "使用网易云音乐账户同步收藏、播客和云盘。")
+            Text(
+                model.library.isLoggedIn
+                    ? L10n.string("ui.desktop.library.empty.message")
+                    : L10n.string("ui.desktop.library.sign_in_message")
+            )
         } actions: {
             if !model.library.isLoggedIn {
-                Button("登录") { model.ui.sheet = .login }
+                Button("ui.common.login") { model.ui.sheet = .login }
                     .buttonStyle(.borderedProminent)
             }
         }

@@ -75,9 +75,9 @@ enum AppUpdateError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noRelease:
-            "当前仓库还没有发布版本。"
+            L10n.string("ui.error.update.no_release")
         case .invalidRelease:
-            "发布信息格式不完整。"
+            L10n.string("ui.error.update.invalid_release")
         }
     }
 }

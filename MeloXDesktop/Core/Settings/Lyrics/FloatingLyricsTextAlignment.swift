@@ -9,9 +9,9 @@ enum FloatingLyricsTextAlignment: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .leading: "居左"
-        case .center: "居中"
-        case .trailing: "居右"
+        case .leading: L10n.string("ui.desktop.floating_lyrics.alignment.leading")
+        case .center: L10n.string("ui.desktop.floating_lyrics.alignment.center")
+        case .trailing: L10n.string("ui.desktop.floating_lyrics.alignment.trailing")
         }
     }
 }

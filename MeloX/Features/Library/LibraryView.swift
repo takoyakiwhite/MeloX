@@ -31,7 +31,7 @@ struct LibraryView: View {
     var body: some View {
         VStack(spacing: 0) {
             if fixedPage == nil, availablePages.count > 1 {
-                Picker("音乐库分类", selection: $section) {
+                Picker("ui.library.category_picker", selection: $section) {
                     ForEach(availablePages) { item in
                         Text(item.title).tag(item)
                     }
@@ -44,9 +44,9 @@ struct LibraryView: View {
 
             if availablePages.isEmpty {
                 ContentUnavailableView(
-                    "音乐库页面均已拆分",
+                    "ui.library.pages_separated.title",
                     systemImage: "rectangle.3.group",
-                    description: Text("可在“页面与标签栏”设置中调整页面归属。")
+                    description: Text("ui.library.pages_separated.message")
                 )
             } else if section == .downloads {
                 LibraryDownloadsView(searchQuery: searchQuery)
@@ -61,7 +61,7 @@ struct LibraryView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .libraryNavigationTitle(
             fixedPage.map { AppTab(libraryPage: $0).title }
-                ?? "音乐库",
+                ?? L10n.string("ui.navigation.library"),
             isPresented: showsNavigationTitle
         )
         .librarySearchable(
@@ -102,7 +102,7 @@ struct LibraryView: View {
             await library.refresh()
         }
         .alert(
-            "音乐库操作失败",
+            "ui.library.error.title",
             isPresented: Binding(
                 get: { library.errorMessage != nil },
                 set: { presented in
@@ -112,25 +112,25 @@ struct LibraryView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 library.clearError()
             }
         } message: {
-            Text(library.errorMessage ?? "未知错误")
+            Text(library.errorMessage ?? L10n.string("ui.common.unknown_error"))
         }
     }
 
     private var loginUnavailableView: some View {
         ContentUnavailableView {
-            Label("需要登录", systemImage: "person.crop.circle.badge.exclamationmark")
+            Label("ui.account.login_required", systemImage: "person.crop.circle.badge.exclamationmark")
         } description: {
             Text(
                 AppFeatureAvailability.downloads
-                    ? "登录后可读取收藏歌曲、歌单、订阅播客、音乐云盘和播放记录；已下载歌曲无需登录。"
-                    : "登录后可读取收藏歌曲、歌单、订阅播客、音乐云盘和播放记录。"
+                    ? L10n.string("ui.library.login_message.downloads")
+                    : L10n.string("ui.library.login_message")
             )
         } actions: {
-            Button("登录网易云音乐") {
+            Button("ui.account.login_netease") {
                 showsLogin = true
             }
             .buttonStyle(.borderedProminent)
@@ -141,7 +141,7 @@ struct LibraryView: View {
     private var libraryContent: some View {
         switch library.phase {
         case .loading where library.profile == nil:
-            ProgressView("正在读取音乐库")
+            ProgressView("ui.library.loading")
         case .failed(let message) where library.profile == nil:
             ConnectionUnavailableView(message: message) {
                 Task { await library.refresh(force: true) }
@@ -172,19 +172,19 @@ struct LibraryView: View {
     private var searchPrompt: String {
         switch section {
         case .songs:
-            "在收藏歌曲中搜索"
+            L10n.string("ui.library.search.favorite_songs")
         case .playlists:
-            "在收藏歌单中搜索"
+            L10n.string("ui.library.search.favorite_playlists")
         case .podcasts:
-            "在订阅播客中搜索"
+            L10n.string("ui.library.search.subscribed_podcasts")
         case .downloads:
             AppFeatureAvailability.downloads
-                ? "在下载歌曲中搜索"
-                : "搜索歌曲"
+                ? L10n.string("ui.library.search.downloads")
+                : L10n.string("ui.library.search.songs")
         case .cloud:
-            "在云盘歌曲中搜索"
+            L10n.string("ui.library.search.cloud")
         case .history:
-            "在播放历史中搜索"
+            L10n.string("ui.library.search.history")
         }
     }
 }

@@ -48,8 +48,8 @@ struct DesktopQueueView: View {
                     LazyVStack(spacing: 0) {
                         if !historyEntries.isEmpty {
                             queueHeader(
-                                title: "历史记录",
-                                actionTitle: "清除",
+                                title: L10n.string("ui.common.history"),
+                                actionTitle: L10n.string("ui.common.clear"),
                                 isActionDisabled: historyEntries.count <= 1,
                                 action: {
                                     model.player.clearPlaybackHistory()
@@ -59,8 +59,8 @@ struct DesktopQueueView: View {
                         }
 
                         queueHeader(
-                            title: "继续播放",
-                            actionTitle: "清除",
+                            title: L10n.string("ui.desktop.player.continue_playing"),
+                            actionTitle: L10n.string("ui.common.clear"),
                             isActionDisabled: upcomingEntries.isEmpty,
                             action: {
                                 model.player.clearUpcomingQueue()
@@ -69,7 +69,7 @@ struct DesktopQueueView: View {
                         .id(continueHeaderID)
 
                         if upcomingEntries.isEmpty {
-                            Text("队列中无音乐。")
+                            Text("ui.player.queue_empty")
                                 .font(.system(size: 15, weight: .regular))
                                 .foregroundStyle(.secondary)
                                 .frame(
@@ -162,14 +162,14 @@ struct DesktopQueueView: View {
     private var modeControlRow: some View {
         HStack(spacing: metrics.modeSpacing) {
             modeButton(
-                "自动连播",
+                L10n.string("ui.desktop.player.autoplay"),
                 iconWeight: .semibold,
                 isSelected: model.player.isAutoplayEnabled
             ) {
                 model.player.toggleAutoplay()
             }
             modeButton(
-                "自动过渡",
+                L10n.string("ui.settings.automix.title"),
                 iconWeight: .black,
                 isSelected: model.player.isAutoMixEnabled
             ) {
@@ -204,7 +204,11 @@ struct DesktopQueueView: View {
                 .stroke(.primary.opacity(0.07), lineWidth: 0.5)
         }
         .accessibilityLabel(title)
-        .accessibilityValue(isSelected ? "已开启" : "已关闭")
+        .accessibilityValue(
+            isSelected
+                ? L10n.string("ui.common.on")
+                : L10n.string("ui.common.off")
+        )
         .animation(.easeInOut(duration: 0.18), value: isSelected)
     }
 

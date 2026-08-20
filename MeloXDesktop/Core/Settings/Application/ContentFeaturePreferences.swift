@@ -11,19 +11,19 @@ enum ContentFeature: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .podcasts: "播客与广播"
-        case .downloads: "下载"
-        case .cloudMusic: "音乐云盘"
-        case .listeningHistory: "最近播放"
+        case .podcasts: L10n.string("ui.settings.content_feature.podcasts.title")
+        case .downloads: L10n.string("ui.navigation.downloads")
+        case .cloudMusic: L10n.string("ui.settings.content_feature.cloud.title")
+        case .listeningHistory: L10n.string("ui.navigation.recently_played")
         }
     }
 
     var detail: String {
         switch self {
-        case .podcasts: "广播、播客推荐、搜索与订阅内容"
-        case .downloads: "本地下载入口与下载资料库"
-        case .cloudMusic: "网易云音乐云盘入口与云盘内容"
-        case .listeningHistory: "主页及资料库中的播放记录"
+        case .podcasts: L10n.string("ui.settings.content_feature.podcasts.detail")
+        case .downloads: L10n.string("ui.settings.content_feature.downloads.detail")
+        case .cloudMusic: L10n.string("ui.settings.content_feature.cloud.detail")
+        case .listeningHistory: L10n.string("ui.settings.content_feature.history.detail")
         }
     }
 

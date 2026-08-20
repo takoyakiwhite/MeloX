@@ -271,7 +271,7 @@ extension TextPVEffectPainter {
 
         if style == "high" {
             drawText(
-                "NO MATCH // 77%",
+                L10n.string("ui.text_pv.generated.no_match"),
                 in: &context,
                 at: CGPoint(x: targets[1].midX, y: targets[1].minY - 12),
                 color: stroke,

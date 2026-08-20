@@ -9,9 +9,9 @@ enum LyricsStyle: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .appleMusic: "Apple Music"
-        case .eva: "EVA"
-        case .textPV: "文字PV"
+        case .appleMusic: L10n.string("ui.settings.lyrics.style.apple_music")
+        case .eva: L10n.string("ui.settings.lyrics.style.eva")
+        case .textPV: L10n.string("ui.settings.lyrics.style.text_pv")
         }
     }
 
@@ -25,9 +25,9 @@ enum LyricsStyle: String, CaseIterable, Identifiable {
 
     var description: String {
         switch self {
-        case .appleMusic: "滚动歌词、距离模糊与逐字高亮"
-        case .eva: "拐角排版、自适应标题卡与暖白辉光"
-        case .textPV: "模板化动态排字、几何图层与后期效果"
+        case .appleMusic: L10n.string("ui.settings.lyrics.style.apple_music.detail")
+        case .eva: L10n.string("ui.settings.lyrics.style.eva.detail")
+        case .textPV: L10n.string("ui.settings.lyrics.style.text_pv.detail")
         }
     }
 

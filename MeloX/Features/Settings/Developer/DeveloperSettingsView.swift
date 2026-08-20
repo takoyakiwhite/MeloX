@@ -9,23 +9,23 @@ struct DeveloperSettingsView: View {
         Form {
             Section {
                 Toggle(
-                    "BeatNet 实时调试面板",
+                    "ui.settings.developer.beatnet_panel",
                     isOn: $settings.beatNetDebugEnabled
                 )
 
                 LabeledContent(
-                    "入口",
-                    value: "播放器“…”菜单"
+                    L10n.string("ui.settings.developer.entry"),
+                    value: L10n.string("ui.settings.developer.entry.value")
                 )
             } header: {
-                Text("调试")
+                Text("ui.settings.developer.debug.section")
             } footer: {
                 Text(
-                    "此开关只控制播放器更多菜单中的调试入口。正常播放时的分析由“播放器外观”中的“重拍暗角”独立控制。"
+                    "ui.settings.developer.debug.footer"
                 )
             }
         }
-        .navigationTitle("开发者选项")
+        .navigationTitle("ui.settings.catalog.developer.title")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

@@ -14,11 +14,11 @@ enum LyricsLiveActivityFormatter {
         preferences: LyricsLiveActivityPreferences
     ) -> LyricsLiveActivityText {
         let lyric = nonempty(currentLyric) ?? songTitle
-        let replacements = [
-            "{歌词}": lyric,
-            "{歌名}": songTitle,
-            "{作者}": songArtist,
-        ]
+        let replacements = L10n.lyricFormatReplacements(
+            lyric: lyric,
+            title: songTitle,
+            artist: songArtist
+        )
 
         return LyricsLiveActivityText(
             title: render(
@@ -31,7 +31,11 @@ enum LyricsLiveActivityFormatter {
                 replacements: replacements,
                 fallback: [songTitle, songArtist]
                     .filter { !$0.isEmpty }
-                    .joined(separator: " · ")
+                    .joined(
+                        separator: L10n.string(
+                            "ui.common.metadata_separator"
+                        )
+                    )
             ),
             compact: render(
                 preferences.compactFormat,

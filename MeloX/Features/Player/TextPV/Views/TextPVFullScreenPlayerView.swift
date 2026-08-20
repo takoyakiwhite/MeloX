@@ -30,7 +30,9 @@ struct TextPVFullScreenPlayerView: View {
             .accessibilityHidden(!showsControls)
         }
         .accessibilityAction(
-            named: showsControls ? "隐藏播放器控制" : "显示播放器控制"
+            named: showsControls
+                ? L10n.string("ui.player.hide_controls")
+                : L10n.string("ui.player.show_controls")
         ) {
             onToggleInterface()
         }
@@ -101,7 +103,7 @@ struct TextPVFullScreenPlayerView: View {
         }
         .buttonStyle(.plain)
         .frame(height: 52)
-        .accessibilityLabel("收起播放器")
-        .accessibilityHint("轻点收起，或向下拖动播放器")
+        .accessibilityLabel("ui.player.collapse")
+        .accessibilityHint("ui.player.collapse_hint")
     }
 }

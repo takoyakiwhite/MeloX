@@ -13,7 +13,7 @@ struct ReleaseNotesSheet: View {
             )
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("开始体验") {
+                    Button("ui.release_notes.start") {
                         dismiss()
                     }
                 }

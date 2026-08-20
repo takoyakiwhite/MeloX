@@ -166,7 +166,7 @@ final class LibraryStore {
             } catch is CancellationError {
                 return
             } catch {
-                partialFailures.append("歌单：\(error.localizedDescription)")
+                partialFailures.append(L10n.format("ui.library.error.playlists", error.localizedDescription))
             }
 
             if settings.isContentFeatureEnabled(.podcasts) {
@@ -189,7 +189,7 @@ final class LibraryStore {
                     return
                 } catch {
                     partialFailures.append(
-                        "订阅播客：\(error.localizedDescription)"
+                        L10n.format("ui.library.error.subscribed_podcasts", error.localizedDescription)
                     )
                 }
             }
@@ -214,7 +214,7 @@ final class LibraryStore {
             } catch is CancellationError {
                 return
             } catch {
-                partialFailures.append("收藏歌曲：\(error.localizedDescription)")
+                partialFailures.append(L10n.format("ui.library.error.favorite_songs", error.localizedDescription))
             }
 
             if settings.isContentFeatureEnabled(.listeningHistory) {
@@ -224,13 +224,16 @@ final class LibraryStore {
                     return
                 } catch {
                     partialFailures.append(
-                        "播放历史：\(error.localizedDescription)"
+                        L10n.format("ui.library.error.history", error.localizedDescription)
                     )
                 }
             }
 
             if !partialFailures.isEmpty {
-                errorMessage = "部分音乐库内容暂时无法读取。\n" + partialFailures.joined(separator: "\n")
+                errorMessage = L10n.format(
+                    "ui.library.error.partial",
+                    partialFailures.joined(separator: "\n")
+                )
             }
             phase = .loaded
         } catch is CancellationError {
@@ -243,7 +246,7 @@ final class LibraryStore {
                 phase = .failed(error.localizedDescription)
             } else {
                 phase = .loaded
-                errorMessage = "账号刷新失败：\(error.localizedDescription)"
+                errorMessage = L10n.format("ui.library.error.account_refresh", error.localizedDescription)
             }
         }
     }
@@ -636,7 +639,7 @@ private enum LibraryOperationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .playlistIsNotOwned:
-            "只能向自己创建的歌单添加歌曲。"
+            L10n.string("ui.library.error.owned_playlist_only")
         }
     }
 }

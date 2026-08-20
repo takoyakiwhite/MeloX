@@ -166,9 +166,9 @@ enum DownloadDatabaseError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .unavailable:
-            "下载数据库不可用。"
+            L10n.string("ui.error.download.database_unavailable")
         case let .invalidQuality(quality):
-            "下载记录包含无效音质：\(quality)"
+            L10n.format("ui.error.download.invalid_quality", quality)
         }
     }
 }

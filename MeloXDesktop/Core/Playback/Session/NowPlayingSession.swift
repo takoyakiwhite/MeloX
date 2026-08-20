@@ -6,6 +6,7 @@ import MediaPlayer
 final class NowPlayingSession {
     var onPlay: (() -> Void)?
     var onPause: (() -> Void)?
+    var onTogglePlayPause: (() -> Void)?
     var onNext: (() -> Void)?
     var onPrevious: (() -> Void)?
     var onSeek: ((TimeInterval) -> Void)?
@@ -119,6 +120,9 @@ final class NowPlayingSession {
         nowPlayingCenter.playbackState = isPlaying ? .playing : .paused
         commandCenter.playCommand.isEnabled = !isPlaying
         commandCenter.pauseCommand.isEnabled = isPlaying
+        // Some macOS media keys and control surfaces only send the toggle
+        // command, so it must stay registered alongside play/pause.
+        commandCenter.togglePlayPauseCommand.isEnabled = true
     }
 
     func clear() {
@@ -128,6 +132,9 @@ final class NowPlayingSession {
         nowPlayingInfo = [:]
         nowPlayingCenter.nowPlayingInfo = nil
         nowPlayingCenter.playbackState = .stopped
+        commandCenter.playCommand.isEnabled = false
+        commandCenter.pauseCommand.isEnabled = false
+        commandCenter.togglePlayPauseCommand.isEnabled = false
     }
 
     private func installRemoteCommands() {
@@ -152,6 +159,10 @@ final class NowPlayingSession {
         }
         addTarget(to: commandCenter.pauseCommand) { [weak self] _ in
             Task { @MainActor in self?.onPause?() }
+            return .success
+        }
+        addTarget(to: commandCenter.togglePlayPauseCommand) { [weak self] _ in
+            Task { @MainActor in self?.onTogglePlayPause?() }
             return .success
         }
         addTarget(to: commandCenter.nextTrackCommand) { [weak self] _ in

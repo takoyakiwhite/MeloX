@@ -11,7 +11,7 @@ struct SectionTitle: View {
             Spacer()
             if let destination {
                 NavigationLink(value: destination) {
-                    Text("查看全部")
+                    Text("ui.common.view_all")
                         .font(.subheadline)
                 }
             }

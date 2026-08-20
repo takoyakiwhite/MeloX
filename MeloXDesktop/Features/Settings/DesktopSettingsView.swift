@@ -15,23 +15,23 @@ struct DesktopSettingsView: View {
             TabView(selection: $selection) {
                 DesktopGeneralSettingsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .tabItem { Label("通用", systemImage: "gearshape") }
+                    .tabItem { Label("ui.desktop.settings.tab.general", systemImage: "gearshape") }
                     .tag(DesktopSettingsTab.general)
                 DesktopContentFeatureSettingsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .tabItem { Label("功能", systemImage: "switch.2") }
+                    .tabItem { Label("ui.desktop.settings.tab.features", systemImage: "switch.2") }
                     .tag(DesktopSettingsTab.features)
                 DesktopPlaybackAndLyricsSettingsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .tabItem { Label("播放", systemImage: "play.circle") }
+                    .tabItem { Label("ui.settings.playback.section.playback", systemImage: "play.circle") }
                     .tag(DesktopSettingsTab.playback)
                 DesktopFileSettingsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .tabItem { Label("文件", systemImage: "folder") }
+                    .tabItem { Label("ui.desktop.settings.tab.files", systemImage: "folder") }
                     .tag(DesktopSettingsTab.files)
                 DesktopAdvancedSettingsView()
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                    .tabItem { Label("高级", systemImage: "gearshape.2") }
+                    .tabItem { Label("ui.desktop.settings.tab.advanced", systemImage: "gearshape.2") }
                     .tag(DesktopSettingsTab.advanced)
             }
             .tabViewStyle(.automatic)
@@ -50,18 +50,18 @@ struct DesktopSettingsView: View {
                 }
                 .buttonStyle(.bordered)
                 .clipShape(.circle)
-                .help("关于 MeloX")
+                .help(L10n.string("ui.desktop.commands.about_melox"))
 
-                Button("恢复默认值…", role: .destructive) {
+                Button("ui.desktop.settings.restore_defaults_ellipsis", role: .destructive) {
                     showsResetConfirmation = true
                 }
                 .disabled(isResettingSettings)
 
                 Spacer()
 
-                Button("取消") { dismiss() }
+                Button("ui.common.cancel") { dismiss() }
                     .keyboardShortcut(.cancelAction)
-                Button("好") { dismiss() }
+                Button("ui.common.ok") { dismiss() }
                     .keyboardShortcut(.defaultAction)
                     .tint(.red)
             }
@@ -75,15 +75,15 @@ struct DesktopSettingsView: View {
             value: selection
         )
         .alert(
-            "恢复默认设置？",
+            L10n.string("ui.desktop.settings.restore_defaults.confirmation"),
             isPresented: $showsResetConfirmation
         ) {
-            Button("恢复默认值", role: .destructive) {
+            Button("ui.desktop.settings.restore_defaults", role: .destructive) {
                 resetPlayerSettings()
             }
-            Button("取消", role: .cancel) {}
+            Button("ui.common.cancel", role: .cancel) {}
         } message: {
-            Text("这会恢复播放、歌词和扩展显示参数，不会影响账号、下载与音乐数据。")
+            Text("ui.desktop.settings.restore_defaults.message")
         }
     }
 
@@ -121,9 +121,9 @@ private struct DesktopPlaybackAndLyricsSettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("播放设置", selection: $page) {
-                Text("播放").tag(Page.playback)
-                Text("歌词").tag(Page.lyrics)
+            Picker("ui.settings.playback.title", selection: $page) {
+                Text("ui.settings.playback.section.playback").tag(Page.playback)
+                Text("ui.common.lyrics").tag(Page.lyrics)
             }
             .labelsHidden()
             .pickerStyle(.segmented)
@@ -156,8 +156,26 @@ private struct DesktopGeneralSettingsView: View {
         @Bindable var recognition = model.settings.songRecognition
 
         Form {
-            Section("外观") {
-                Picker("外观", selection: $settings.appearance) {
+            Section("ui.settings.language.section") {
+                Picker(
+                    "ui.settings.language.picker",
+                    selection: Binding(
+                        get: { settings.appLanguage },
+                        set: settings.setAppLanguage
+                    )
+                ) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.title)
+                            .tag(language)
+                    }
+                }
+                Text("ui.settings.language.footer")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section("ui.desktop.settings.appearance") {
+                Picker("ui.desktop.settings.appearance", selection: $settings.appearance) {
                     ForEach(AppAppearance.allCases) { appearance in
                         Label(appearance.title, systemImage: appearance.systemImage)
                             .tag(appearance)
@@ -165,25 +183,32 @@ private struct DesktopGeneralSettingsView: View {
                 }
                 .pickerStyle(.segmented)
 
-                Toggle("显示播放次数", isOn: $settings.showPlayCount)
+                Toggle("ui.settings.content.show_play_count", isOn: $settings.showPlayCount)
             }
 
-            Section("内容") {
-                Picker("新碟地区", selection: $settings.musicArea) {
-                    Text("全部").tag("ALL")
-                    Text("华语").tag("ZH")
-                    Text("欧美").tag("EA")
-                    Text("韩国").tag("KR")
-                    Text("日本").tag("JP")
+            Section("ui.desktop.settings.content") {
+                Picker("ui.settings.content.album_region", selection: $settings.musicArea) {
+                    Text("ui.category.all").tag("ALL")
+                    Text("ui.category.chinese").tag("ZH")
+                    Text("ui.category.europe_america").tag("EA")
+                    Text("ui.category.korean").tag("KR")
+                    Text("ui.category.japanese").tag("JP")
                 }
-                Picker("听歌识曲时长", selection: $recognition.duration) {
+                Picker("ui.settings.content.recognition_duration", selection: $recognition.duration) {
                     ForEach(SongRecognitionDuration.allCases) { duration in
-                        Text("\(duration.title) · \(duration.detail)").tag(duration)
+                        Text(
+                            L10n.joined(
+                                [duration.title, duration.detail],
+                                separatorKey:
+                                    "ui.common.metadata_separator"
+                            )
+                        )
+                        .tag(duration)
                     }
                 }
             }
 
-            Section("账户") {
+            Section("ui.desktop.settings.account") {
                 HStack(spacing: 12) {
                     DesktopArtworkView(
                         url: model.library.profile?.artworkURL,
@@ -193,23 +218,31 @@ private struct DesktopGeneralSettingsView: View {
                     .clipShape(.circle)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(model.library.profile?.nickname ?? "未登录网易云音乐")
+                        Text(model.library.profile?.nickname ?? L10n.string("ui.account.not_signed_in"))
                             .font(.headline)
-                        Text(model.library.isLoggedIn ? "收藏、歌单、云盘和记录已启用" : "登录后同步完整资料库")
+                        Text(
+                            model.library.isLoggedIn
+                                ? L10n.string("ui.desktop.settings.account.synced")
+                                : L10n.string("ui.desktop.settings.account.sign_in_message")
+                        )
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                     Spacer()
-                    Button(model.library.isLoggedIn ? "账户详情" : "登录") {
+                    Button(
+                        model.library.isLoggedIn
+                            ? L10n.string("ui.desktop.settings.account.details")
+                            : L10n.string("ui.common.login")
+                    ) {
                         model.ui.sheet = model.library.isLoggedIn ? .account : .login
                     }
                 }
             }
 
-            Section("启动") {
-                Toggle("启动时检查更新", isOn: $settings.checksUpdatesOnLaunch)
-                Toggle("启动时识别剪贴板中的网易云链接", isOn: $settings.recognizesClipboardLinksOnLaunch)
-                Toggle("启动时自动进入心动模式", isOn: $settings.startsHeartModeOnLaunch)
+            Section("ui.desktop.settings.launch") {
+                Toggle("ui.about.check_updates_on_launch", isOn: $settings.checksUpdatesOnLaunch)
+                Toggle("ui.desktop.settings.launch.clipboard", isOn: $settings.recognizesClipboardLinksOnLaunch)
+                Toggle("ui.settings.playback.start_heart_mode", isOn: $settings.startsHeartModeOnLaunch)
             }
         }
         .formStyle(.columns)
@@ -232,22 +265,22 @@ private struct DesktopPlaybackSettingsView: View {
 
         ScrollView {
             Form {
-            Section("音质与控制") {
-                Picker("播放音质", selection: qualityBinding) {
+            Section("ui.desktop.settings.quality_controls") {
+                Picker("ui.player.playback_quality", selection: qualityBinding) {
                     ForEach(MusicQuality.allCases) { quality in
                         Text(quality.title).tag(quality)
                     }
                 }
-                Picker("音量控制", selection: $settings.playerVolumeControlMode) {
+                Picker("ui.settings.playback.volume_control", selection: $settings.playerVolumeControlMode) {
                     ForEach(PlayerVolumeControlMode.allCases) { mode in
                         Text(mode.title).tag(mode)
                     }
                 }
-                Toggle("再次点上一首时从头播放当前歌曲", isOn: $settings.previousRestartsCurrentSong)
+                Toggle("ui.settings.playback.previous_restarts", isOn: $settings.previousRestartsCurrentSong)
             }
 
-            Section("空间音频") {
-                Picker("模式", selection: $settings.spatialAudioMode) {
+            Section("ui.desktop.settings.spatial_audio") {
+                Picker("ui.desktop.settings.mode", selection: $settings.spatialAudioMode) {
                     ForEach(SpatialAudioMode.allCases) { mode in
                         Text(mode.title).tag(mode)
                     }
@@ -255,13 +288,13 @@ private struct DesktopPlaybackSettingsView: View {
                 Text(settings.spatialAudioMode.description)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                Text("实际效果取决于当前输出设备；固定与头部跟踪模式请在 macOS 控制中心中选择。")
+                Text("ui.desktop.settings.spatial_audio.footer")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
-            Section("正在播放") {
-                Picker("背景", selection: $settings.playerBackgroundStyle) {
+            Section("ui.player.now_playing") {
+                Picker("ui.settings.player_appearance.background_style", selection: $settings.playerBackgroundStyle) {
                     ForEach(PlayerBackgroundStyle.allCases) { style in
                         Text(style.title).tag(style)
                     }
@@ -270,19 +303,19 @@ private struct DesktopPlaybackSettingsView: View {
                     value: $settings.playerBackgroundMotionIntensity,
                     in: AppSettings.playerBackgroundMotionIntensityRange,
                     step: 0.1,
-                    label: { Text("背景动效强度") },
-                    minimumValueLabel: { Text("静止") },
-                    maximumValueLabel: { Text("强") }
+                    label: { Text("ui.desktop.settings.background_motion") },
+                    minimumValueLabel: { Text("ui.desktop.settings.motion.still") },
+                    maximumValueLabel: { Text("ui.desktop.settings.motion.strong") }
                 )
                 if settings.playerBackgroundStyle == .flowingLight {
                     Toggle(
-                        "背景响应节拍",
+                        "ui.settings.player_appearance.beat_vignette",
                         isOn: $settings.playerBackgroundBeatEffectsEnabled
                     )
                 }
                 if settings.playerBackgroundStyle == .appleMusicBackdrop {
                     Picker(
-                        "背景画质",
+                        "ui.desktop.settings.background_quality",
                         selection: $settings.playerBackgroundRenderQuality
                     ) {
                         ForEach(PlayerBackgroundRenderQuality.allCases) { quality in
@@ -293,21 +326,21 @@ private struct DesktopPlaybackSettingsView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(
-                        "使用 Music 1.6.6 的三层旋转、响应式遮罩、1.3 倍饱和度与画面对角线模糊参数。"
+                        "ui.desktop.settings.apple_music_backdrop.footer"
                     )
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 }
-                Toggle("暂停时缩小封面", isOn: $settings.shrinksPausedArtwork)
-                Toggle("记住播放器上次页面", isOn: $settings.rememberNowPlayingPage)
+                Toggle("ui.settings.player_appearance.shrink_paused_artwork", isOn: $settings.shrinksPausedArtwork)
+                Toggle("ui.settings.playback.remember_page", isOn: $settings.rememberNowPlayingPage)
                 Text(
                     settings.rememberNowPlayingPage
-                        ? "再次打开播放器时恢复封面、歌词或队列页面。"
-                        : "每次打开播放器时从歌词页面开始。"
+                        ? L10n.string("ui.desktop.settings.remember_page.enabled")
+                        : L10n.string("ui.desktop.settings.remember_page.disabled")
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
-                Picker("保持屏幕唤醒", selection: $settings.playerScreenAwakeMode) {
+                Picker("ui.settings.player_appearance.screen_awake", selection: $settings.playerScreenAwakeMode) {
                     ForEach(
                         PlayerScreenAwakeMode.allCases.filter {
                             $0 != .hiddenLyricsInterface
@@ -318,10 +351,10 @@ private struct DesktopPlaybackSettingsView: View {
                 }
             }
 
-            Section("均衡器") {
-                Toggle("启用均衡器", isOn: $equalizer.isEnabled)
+            Section("ui.settings.equalizer.title") {
+                Toggle("ui.settings.equalizer.enabled", isOn: $equalizer.isEnabled)
                 Picker(
-                    "预设",
+                    "ui.settings.equalizer.preset",
                     selection: Binding(
                         get: { equalizer.selectedPreset },
                         set: { equalizer.apply($0) }
@@ -332,7 +365,7 @@ private struct DesktopPlaybackSettingsView: View {
                     }
                 }
                 HStack {
-                    Text("前级")
+                    Text("ui.settings.equalizer.preamp")
                     Slider(
                         value: Binding(
                             get: { equalizer.preamp },
@@ -340,7 +373,13 @@ private struct DesktopPlaybackSettingsView: View {
                         ),
                         in: AudioEqualizerPreferences.preampRange
                     )
-                    Text("\(equalizer.preamp, specifier: "%.1f") dB")
+                    Text(
+                        equalizer.preamp.formatted(
+                            .number
+                                .precision(.fractionLength(1))
+                                .locale(L10n.locale)
+                        ) + " dB"
+                    )
                         .monospacedDigit()
                         .frame(width: 66, alignment: .trailing)
                 }
@@ -367,26 +406,26 @@ private struct DesktopPlaybackSettingsView: View {
                 }
             }
 
-            Section("自动混音") {
-                Picker("模式", selection: $autoMix.mode) {
+            Section("ui.settings.automix.title") {
+                Picker("ui.settings.automix.transition_mode", selection: $autoMix.mode) {
                     ForEach(AutoMixMode.allCases) { mode in
                         Text(mode.title).tag(mode)
                     }
                 }
-                Picker("过渡长度", selection: $autoMix.transitionBars) {
+                Picker("ui.settings.automix.transition_length", selection: $autoMix.transitionBars) {
                     ForEach(AutoMixTransitionBars.allCases) { value in
                         Text(value.title).tag(value)
                     }
                 }
-                Picker("结尾处理", selection: $autoMix.tailCutBars) {
+                Picker("ui.settings.automix.previous_end_position", selection: $autoMix.tailCutBars) {
                     ForEach(AutoMixTailCutBars.allCases) { value in
                         Text(value.title).tag(value)
                     }
                 }
-                Toggle("匹配速度", isOn: $autoMix.tempoMatchingEnabled)
-                Toggle("跳过安静开头", isOn: $autoMix.skipsQuietOpening)
-                Toggle("分析流媒体歌曲", isOn: $autoMix.analyzesStreamingTracks)
-                Picker("分析失败时", selection: $autoMix.fallbackBehavior) {
+                Toggle("ui.settings.automix.match_tempo", isOn: $autoMix.tempoMatchingEnabled)
+                Toggle("ui.settings.automix.skip_quiet_opening", isOn: $autoMix.skipsQuietOpening)
+                Toggle("ui.settings.automix.analyze_streaming", isOn: $autoMix.analyzesStreamingTracks)
+                Picker("ui.settings.automix.analysis_unavailable", selection: $autoMix.fallbackBehavior) {
                     ForEach(AutoMixFallbackBehavior.allCases) { behavior in
                         Text(behavior.title).tag(behavior)
                     }
@@ -432,63 +471,63 @@ private struct DesktopFileSettingsView: View {
         @Bindable var settings = model.settings
 
         Form {
-            Section("储存空间") {
-                LabeledContent("下载") { Text(bytes(usage.downloadsBytes)) }
-                LabeledContent("网络缓存") { Text(bytes(usage.networkCacheBytes)) }
-                LabeledContent("临时分析文件") { Text(bytes(usage.temporaryFilesBytes)) }
-                LabeledContent("资料库数据库") { Text(bytes(usage.databaseBytes)) }
-                LabeledContent("MeloX 已管理") {
+            Section("ui.settings.storage.title") {
+                LabeledContent("ui.settings.storage.downloads_cache") { Text(bytes(usage.downloadsBytes)) }
+                LabeledContent("ui.settings.storage.network_cache") { Text(bytes(usage.networkCacheBytes)) }
+                LabeledContent("ui.settings.storage.temporary_files") { Text(bytes(usage.temporaryFilesBytes)) }
+                LabeledContent("ui.settings.storage.database") { Text(bytes(usage.databaseBytes)) }
+                LabeledContent("ui.settings.storage.managed_content") {
                     Text(bytes(usage.totalManagedBytes)).fontWeight(.semibold)
                 }
             }
 
-            Section("下载") {
-                LabeledContent("已下载歌曲") {
-                    Text(model.downloads.downloads.count.formatted())
+            Section("ui.common.download") {
+                LabeledContent("ui.desktop.settings.downloaded_songs") {
+                    Text(model.downloads.downloads.count.formatted(.number.locale(L10n.locale)))
                 }
-                LabeledContent("下载目录") {
+                LabeledContent("ui.desktop.settings.download_directory") {
                     Text(AppStorageLocations.downloadsDirectory().path)
                         .lineLimit(1)
                         .truncationMode(.middle)
                         .textSelection(.enabled)
                 }
-                Button("在 Finder 中显示") {
+                Button("ui.desktop.settings.show_in_finder") {
                     NSWorkspace.shared.activateFileViewerSelecting([
                         AppStorageLocations.downloadsDirectory()
                     ])
                 }
-                Button("修复下载资料库") {
+                Button("ui.settings.storage.repair_downloads") {
                     _ = model.downloads.repairStorage()
                     Task { await refreshUsage() }
                 }
             }
 
-            Section("自动缓存") {
-                Toggle("自动缓存经常播放的歌曲", isOn: $settings.automaticallyCachesFrequentlyPlayedSongs)
+            Section("ui.desktop.settings.automatic_cache") {
+                Toggle("ui.desktop.settings.automatic_cache.enabled", isOn: $settings.automaticallyCachesFrequentlyPlayedSongs)
                 Picker(
-                    "缓存阈值",
+                    "ui.desktop.settings.automatic_cache.threshold",
                     selection: $settings.automaticCachePlaybackThreshold
                 ) {
                     ForEach(
                         AppSettings.automaticCachePlaybackThresholdOptions,
                         id: \.self
                     ) { count in
-                        Text("播放 \(count) 次后").tag(count)
+                        Text(L10n.format("ui.desktop.settings.automatic_cache.after_plays", count)).tag(count)
                     }
                 }
-                Picker("缓存音质", selection: $settings.automaticCacheQuality) {
+                Picker("ui.desktop.settings.automatic_cache.quality", selection: $settings.automaticCacheQuality) {
                     ForEach(MusicQuality.allCases) { quality in
                         Text(quality.title).tag(quality)
                     }
                 }
             }
 
-            Section("清理") {
-                Button("清理网络与封面缓存") {
+            Section("ui.desktop.settings.cleanup") {
+                Button("ui.settings.storage.clear_network_cache") {
                     StorageMaintenance.clearNetworkAndArtworkCaches()
                     Task { await refreshUsage() }
                 }
-                Button("清理临时文件") {
+                Button("ui.settings.storage.clear_temporary_files") {
                     Task { await clearTemporaryFiles() }
                 }
                 .disabled(isWorking)
@@ -515,7 +554,7 @@ private struct DesktopFileSettingsView: View {
             let reclaimed = try await StorageMaintenance.clearTemporaryFiles(
                 preservingDownloadTransfers: !model.downloads.activeDownloads.isEmpty
             )
-            statusMessage = "已清理 \(bytes(reclaimed))。"
+            statusMessage = L10n.format("ui.settings.storage.operation.cleared_approximately", bytes(reclaimed))
             await refreshUsage()
         } catch {
             statusMessage = error.localizedDescription
@@ -523,7 +562,7 @@ private struct DesktopFileSettingsView: View {
     }
 
     private func bytes(_ value: Int64) -> String {
-        ByteCountFormatter.string(fromByteCount: value, countStyle: .file)
+        L10n.byteCount(value)
     }
 }
 
@@ -534,49 +573,49 @@ private struct DesktopAdvancedSettingsView: View {
         @Bindable var settings = model.settings
 
         Form {
-            Section("系统媒体") {
-                Toggle("在系统正在播放中显示歌词", isOn: $settings.systemNowPlayingLyricsEnabled)
-                TextField("标题格式", text: $settings.systemNowPlayingLyricsTitleFormat)
-                TextField("副标题格式", text: $settings.systemNowPlayingLyricsSubtitleFormat)
+            Section("ui.settings.system_lyrics.now_playing.section") {
+                Toggle("ui.settings.system_lyrics.enabled", isOn: $settings.systemNowPlayingLyricsEnabled)
+                TextField("ui.settings.system_lyrics.title_format", text: $settings.systemNowPlayingLyricsTitleFormat)
+                TextField("ui.settings.system_lyrics.subtitle_format", text: $settings.systemNowPlayingLyricsSubtitleFormat)
             }
 
-            Section("播放器调试") {
-                Toggle("BeatNet 调试信息", isOn: $settings.beatNetDebugEnabled)
+            Section("ui.desktop.settings.player_debug") {
+                Toggle("ui.settings.developer.beatnet_panel", isOn: $settings.beatNetDebugEnabled)
                 Slider(
                     value: $settings.playerBackgroundBlur,
                     in: AppSettings.playerBackgroundBlurRange,
                     step: 5,
-                    label: { Text("背景模糊") }
+                    label: { Text("ui.settings.player_appearance.blur") }
                 )
                 Slider(
                     value: $settings.playerBackgroundSaturation,
                     in: AppSettings.playerBackgroundSaturationRange,
                     step: 0.05,
-                    label: { Text("背景饱和度") }
+                    label: { Text("ui.settings.player_appearance.saturation") }
                 )
             }
 
-            Section("维护") {
-                Button("再次显示欢迎对话框") {
+            Section("ui.desktop.settings.maintenance") {
+                Button("ui.desktop.settings.show_onboarding_again") {
                     settings.hasCompletedOnboarding = false
                     model.ui.sheet = .onboarding
                 }
-                Button("优化下载数据库") {
+                Button("ui.settings.storage.optimize_database") {
                     model.downloads.optimizeStorageDatabase()
                 }
-                Button("重置自动缓存播放统计") {
+                Button("ui.settings.storage.reset_cache_history") {
                     model.downloads.resetAutomaticCacheHistory()
                 }
-                Button("刷新所有网易云内容") {
+                Button("ui.desktop.settings.refresh_all_content") {
                     Task { await model.refreshAll() }
                 }
             }
 
-            Section("隐私") {
-                Text("账户 Cookie、下载资料库和播放设置仅保存在这台 Mac。听歌识曲只上传在本机生成的音频指纹。")
+            Section("ui.desktop.settings.privacy") {
+                Text("ui.desktop.settings.privacy.message")
                     .foregroundStyle(.secondary)
                 if model.library.isLoggedIn {
-                    Button("退出网易云账户", role: .destructive) {
+                    Button("ui.settings.account.logout", role: .destructive) {
                         model.logOut()
                         Task { await DesktopNeteaseCookieStore.clear() }
                     }

@@ -39,7 +39,7 @@ struct DesktopOnboardingDialog: View {
 
             HStack {
                 if page > 0 {
-                    Button("返回") {
+                    Button("ui.common.back") {
                         withAnimation(.easeInOut(duration: 0.22)) { page -= 1 }
                     }
                 }
@@ -47,20 +47,20 @@ struct DesktopOnboardingDialog: View {
                 Spacer()
 
                 if page < 2 {
-                    Button("继续") {
+                    Button("ui.common.continue") {
                         withAnimation(.easeInOut(duration: 0.22)) { page += 1 }
                     }
                     .buttonStyle(.borderedProminent)
                     .controlSize(.large)
                 } else if model.library.isLoggedIn {
-                    Button("开始使用 MeloX") { finish() }
+                    Button("ui.onboarding.start") { finish() }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
                 } else {
-                    Button("稍后登录") { finish() }
+                    Button("ui.desktop.onboarding.sign_in_later") { finish() }
                         .buttonStyle(.bordered)
                         .controlSize(.large)
-                    Button("登录网易云音乐") { showsLogin = true }
+                    Button("ui.account.login_netease") { showsLogin = true }
                         .buttonStyle(.borderedProminent)
                         .controlSize(.large)
                 }
@@ -79,9 +79,9 @@ struct DesktopOnboardingDialog: View {
 
     private var pageTitle: String {
         switch page {
-        case 0: "欢迎"
-        case 1: "设置 MeloX"
-        default: "网易云音乐账户"
+        case 0: L10n.string("ui.desktop.onboarding.welcome")
+        case 1: L10n.string("ui.desktop.onboarding.configure")
+        default: L10n.string("ui.settings.account.netease_account")
         }
     }
 
@@ -99,18 +99,18 @@ struct DesktopOnboardingDialog: View {
             VStack(spacing: 10) {
                 Text("MeloX")
                     .font(.system(size: 38, weight: .bold))
-                Text("为 Mac 独立构建的网易云音乐播放器")
+                Text("ui.desktop.onboarding.subtitle")
                     .font(.title3)
                     .foregroundStyle(.secondary)
             }
 
             HStack(spacing: 30) {
-                onboardingFeature("完整资料库", symbol: "music.note.list")
-                onboardingFeature("动态歌词", symbol: "quote.bubble")
-                onboardingFeature("下载与云盘", symbol: "icloud.and.arrow.down")
+                onboardingFeature(L10n.string("ui.desktop.onboarding.feature.library"), symbol: "music.note.list")
+                onboardingFeature(L10n.string("ui.desktop.onboarding.feature.lyrics"), symbol: "quote.bubble")
+                onboardingFeature(L10n.string("ui.desktop.onboarding.feature.downloads_cloud"), symbol: "icloud.and.arrow.down")
             }
 
-            Text("MeloX 是非官方第三方客户端，与网易云音乐及其关联公司不存在隶属、合作或授权关系。")
+            Text("ui.legal.unofficial_disclaimer")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -126,8 +126,8 @@ struct DesktopOnboardingDialog: View {
         @Bindable var recognition = model.settings.songRecognition
 
         return Form {
-            Section("外观") {
-                Picker("外观", selection: $settings.appearance) {
+            Section("ui.desktop.settings.appearance") {
+                Picker("ui.desktop.settings.appearance", selection: $settings.appearance) {
                     ForEach(AppAppearance.allCases) { appearance in
                         Label(appearance.title, systemImage: appearance.systemImage)
                             .tag(appearance)
@@ -136,23 +136,23 @@ struct DesktopOnboardingDialog: View {
                 .pickerStyle(.segmented)
             }
 
-            Section("播放") {
-                Picker("播放音质", selection: $settings.quality) {
+            Section("ui.settings.playback.section.playback") {
+                Picker("ui.player.playback_quality", selection: $settings.quality) {
                     ForEach(MusicQuality.allCases) { quality in
                         Text(quality.title).tag(quality)
                     }
                 }
-                Toggle("暂停时缩小封面", isOn: $settings.shrinksPausedArtwork)
-                Toggle("背景响应节拍", isOn: $settings.playerBackgroundBeatEffectsEnabled)
+                Toggle("ui.settings.player_appearance.shrink_paused_artwork", isOn: $settings.shrinksPausedArtwork)
+                Toggle("ui.settings.player_appearance.beat_vignette", isOn: $settings.playerBackgroundBeatEffectsEnabled)
             }
 
-            Section("听歌识曲") {
-                Picker("默认时长", selection: $recognition.duration) {
+            Section("ui.recognition.title") {
+                Picker("ui.desktop.onboarding.recognition.default_duration", selection: $recognition.duration) {
                     ForEach(SongRecognitionDuration.allCases) { duration in
                         Text(duration.title).tag(duration)
                     }
                 }
-                Text("听歌识曲只会发送在这台 Mac 上生成的音频指纹。")
+                Text("ui.desktop.onboarding.recognition.privacy")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -173,7 +173,7 @@ struct DesktopOnboardingDialog: View {
                 VStack(spacing: 7) {
                     Text(profile.nickname)
                         .font(.title.bold())
-                    Label("已登录", systemImage: "checkmark.circle.fill")
+                    Label("ui.account.logged_in", systemImage: "checkmark.circle.fill")
                         .foregroundStyle(.green)
                 }
             } else {
@@ -181,9 +181,9 @@ struct DesktopOnboardingDialog: View {
                     .font(.system(size: 82, weight: .regular))
                     .foregroundStyle(.red)
                 VStack(spacing: 9) {
-                    Text("连接网易云音乐")
+                    Text("ui.onboarding.account.connect")
                         .font(.title.bold())
-                    Text("登录后即可同步喜欢的音乐、歌单、播客、云盘、播放历史、私信和一起听。登录不是使用 MeloX 的必要条件。")
+                    Text("ui.desktop.onboarding.account.message")
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                         .frame(maxWidth: 500)
@@ -191,9 +191,9 @@ struct DesktopOnboardingDialog: View {
             }
 
             VStack(alignment: .leading, spacing: 17) {
-                Label("直接连接网易云音乐原始接口", systemImage: "network")
-                Label("登录 Cookie 只保存在本机", systemImage: "lock.macwindow")
-                Label("手机端与桌面端界面和设置相互独立", systemImage: "macbook.and.iphone")
+                Label("ui.desktop.onboarding.benefit.direct_api", systemImage: "network")
+                Label("ui.onboarding.benefit.local_cookie", systemImage: "lock.macwindow")
+                Label("ui.desktop.onboarding.benefit.independent_interfaces", systemImage: "macbook.and.iphone")
             }
             .font(.body)
 

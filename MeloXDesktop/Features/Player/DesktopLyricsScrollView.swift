@@ -408,11 +408,11 @@ struct DesktopLyricsScrollView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                 } else if model.lyrics.lyrics.isEmpty {
                     ContentUnavailableView(
-                        "暂无歌词",
+                        "ui.desktop.lyrics.unavailable",
                         systemImage: "quote.bubble",
                         description: Text(
                             model.lyrics.errorMessage
-                                ?? "当前歌曲没有可用歌词。"
+                                ?? L10n.string("ui.desktop.lyrics.current_unavailable")
                         )
                     )
                     .frame(maxWidth: .infinity, maxHeight: .infinity)

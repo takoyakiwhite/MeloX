@@ -7,6 +7,15 @@ private let appleMusicBackdropLogger = Logger(
     category: "AppleMusicBackdrop"
 )
 
+/// Identifies one cached artwork variant. Baking the blur into the artwork
+/// keeps the 60Hz timeline free of the per-frame full-pass Gaussian blur.
+private struct DesktopBackdropArtworkKey: Hashable {
+    let url: URL?
+    /// `nil` keeps the original artwork (the `.high` quality path still
+    /// performs the blur every frame); otherwise the baked radius in points.
+    let blurRadius: Double?
+}
+
 /// Owns artwork downloads independently of the 60Hz backdrop TimelineView.
 /// A SwiftUI `.task(id:)` on a view inside that timeline can be cancelled by
 /// high-frequency invalidation; the unstructured Task stored here keeps the
@@ -16,42 +25,60 @@ private let appleMusicBackdropLogger = Logger(
 private final class DesktopAppleMusicBackdropArtworkCache {
     static let shared = DesktopAppleMusicBackdropArtworkCache()
 
-    private var images: [URL: NSImage] = [:]
-    private var tasks: [URL: Task<NSImage?, Never>] = [:]
+    private var images: [DesktopBackdropArtworkKey: NSImage] = [:]
+    private var tasks:
+        [DesktopBackdropArtworkKey: Task<NSImage?, Never>] = [:]
 
-    func image(for sourceURL: URL) async -> NSImage? {
-        if let image = images[sourceURL] {
+    func image(
+        for sourceURL: URL,
+        blurRadius: Double?
+    ) async -> NSImage? {
+        let key = DesktopBackdropArtworkKey(
+            url: sourceURL,
+            blurRadius: blurRadius
+        )
+        if let image = images[key] {
             return image
         }
-        if let task = tasks[sourceURL] {
+        if let task = tasks[key] {
             return await task.value
         }
 
         let task = Task<NSImage?, Never> { [weak self] in
-            let image = await Self.download(from: sourceURL)
+            let image = await Self.download(
+                from: sourceURL,
+                blurRadius: blurRadius
+            )
             guard let self else { return image }
             if let image {
-                self.images[sourceURL] = image
+                self.images[key] = image
                 while self.images.count > 8 {
-                    self.images.remove(at: self.images.startIndex)
+                    self.images.remove(
+                        at: self.images.startIndex
+                    )
                 }
             }
             return image
         }
-        tasks[sourceURL] = task
+        tasks[key] = task
         let image = await task.value
-        tasks[sourceURL] = nil
+        tasks[key] = nil
         return image
     }
 
     @MainActor
     private static func download(
-        from sourceURL: URL
+        from sourceURL: URL,
+        blurRadius: Double?
     ) async -> NSImage? {
         let optimizedURL = optimizedArtworkURL(for: sourceURL)
 
         if let image = await downloadWithURLSession(from: optimizedURL) {
-            return image
+            return await baked(
+                image,
+                sourceURL: sourceURL,
+                blurRadius: blurRadius
+            )
         }
 
         // Some App Sandbox / cache configurations reject URLSession tasks
@@ -62,14 +89,22 @@ private final class DesktopAppleMusicBackdropArtworkCache {
             appleMusicBackdropLogger.warning(
                 "Used Data(contentsOf:) fallback for \(sourceURL, privacy: .public)"
             )
-            return image
+            return await baked(
+                image,
+                sourceURL: sourceURL,
+                blurRadius: blurRadius
+            )
         }
         if optimizedURL != sourceURL,
            let image = await downloadWithData(from: sourceURL) {
             appleMusicBackdropLogger.warning(
                 "Used original-URL Data fallback for \(sourceURL, privacy: .public)"
             )
-            return image
+            return await baked(
+                image,
+                sourceURL: sourceURL,
+                blurRadius: blurRadius
+            )
         }
 
         // ArtworkAccentColorProvider already downloads a 160pt copy for the
@@ -95,6 +130,22 @@ private final class DesktopAppleMusicBackdropArtworkCache {
             "All artwork load paths failed for \(sourceURL, privacy: .public)"
         )
         return nil
+    }
+
+    @MainActor
+    private static func baked(
+        _ image: NSImage,
+        sourceURL: URL,
+        blurRadius: Double?
+    ) async -> NSImage {
+        guard let blurRadius, blurRadius > 0 else {
+            return image
+        }
+        return await DesktopArtworkBackdropRenderer.shared.bakedImage(
+            from: image,
+            sourceURL: sourceURL,
+            blurRadius: blurRadius
+        ) ?? image
     }
 
     @MainActor
@@ -185,9 +236,13 @@ struct DesktopAppleMusicBackdropArtwork<ArtworkContent: View>: View {
     private var accessibilityReduceMotion
 
     let artworkURL: URL?
+    /// Baked blur radius in points. `nil` keeps the original artwork so the
+    /// caller can run Apple's faithful per-frame blur pipeline.
+    let blurRadius: Double?
     private let artworkContent: (Image) -> ArtworkContent
 
     @State private var displayedURL: URL?
+    @State private var displayedBlurRadius: Double?
     @State private var displayedImage: NSImage?
     @State private var outgoingImage: NSImage?
     @State private var hasOutgoingSource = false
@@ -196,9 +251,11 @@ struct DesktopAppleMusicBackdropArtwork<ArtworkContent: View>: View {
 
     init(
         artworkURL: URL?,
+        blurRadius: Double?,
         @ViewBuilder artworkContent: @escaping (Image) -> ArtworkContent
     ) {
         self.artworkURL = artworkURL
+        self.blurRadius = blurRadius
         self.artworkContent = artworkContent
     }
 
@@ -216,15 +273,23 @@ struct DesktopAppleMusicBackdropArtwork<ArtworkContent: View>: View {
                 Color(white: 0.30)
             }
         }
-        .task(id: artworkURL) {
+        .task(id: artworkTaskID) {
             await loadCurrentArtwork()
         }
+    }
+
+    private var artworkTaskID: DesktopBackdropArtworkKey {
+        DesktopBackdropArtworkKey(
+            url: artworkURL,
+            blurRadius: blurRadius
+        )
     }
 
     @MainActor
     private func loadCurrentArtwork() async {
         let newURL = artworkURL
-        if newURL == displayedURL {
+        if newURL == displayedURL,
+           blurRadius == displayedBlurRadius {
             if hasOutgoingSource, incomingOpacity < 1 {
                 startCrossfade(for: newURL)
             }
@@ -243,15 +308,20 @@ struct DesktopAppleMusicBackdropArtwork<ArtworkContent: View>: View {
         outgoingImage = displayedImage
         hasOutgoingSource = displayedImage != nil
         displayedURL = newURL
+        displayedBlurRadius = blurRadius
         displayedImage = nil
         incomingOpacity = 0
 
         guard let newURL else { return }
 
         let image = await DesktopAppleMusicBackdropArtworkCache.shared
-            .image(for: newURL)
+            .image(
+                for: newURL,
+                blurRadius: blurRadius
+            )
         guard generation == transitionGeneration,
-              displayedURL == newURL else {
+              displayedURL == newURL,
+              displayedBlurRadius == blurRadius else {
             return
         }
         guard let image else {

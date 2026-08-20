@@ -54,12 +54,12 @@ extension ListenTogetherStore {
         guard let expectedRoom = room else { return }
         let status = try await api.listenTogetherRoomStatus()
         guard status.isInRoom else {
-            clearSession(notice: "一起听房间已结束。")
+            clearSession(notice: L10n.string("ui.listen_together.notice.room_ended"))
             return
         }
         guard let updatedRoom = status.roomInfo else { return }
         guard updatedRoom.id == expectedRoom.id else {
-            clearSession(notice: "网易云账号已进入另一个一起听房间。")
+            clearSession(notice: L10n.string("ui.listen_together.notice.account_moved"))
             return
         }
         room = updatedRoom

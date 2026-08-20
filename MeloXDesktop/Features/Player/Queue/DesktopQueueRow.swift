@@ -39,12 +39,12 @@ struct DesktopQueueRow: View {
             .buttonStyle(.plain)
 
             Menu {
-                Button("立即播放", systemImage: "play.fill") {
+                Button("ui.common.play", systemImage: "play.fill") {
                     playEntry()
                 }
                 if entry.queueIndex != model.player.currentIndex {
                     Button(
-                        "从队列中移除",
+                        "ui.desktop.player.remove_from_queue",
                         systemImage: "minus.circle",
                         role: .destructive
                     ) {
@@ -74,7 +74,11 @@ struct DesktopQueueRow: View {
     private var metadataText: String {
         [entry.song.artistText, entry.song.album?.name]
             .compactMap { $0 }
-            .joined(separator: " — ")
+            .joined(
+                separator: L10n.string(
+                    "ui.common.title_detail_separator"
+                )
+            )
     }
 
     private var menuColor: Color {

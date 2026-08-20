@@ -47,9 +47,12 @@ enum LyricsNotificationPublicationFactory {
     ) -> LyricsNotificationPublication {
         let resolvedSong = song ?? Song(
             id: -1,
-            name: "示例歌曲",
+            name: L10n.string("ui.lyrics.notification.preview.song"),
             artists: [
-                Artist(id: -1, name: "示例歌手")
+                Artist(
+                    id: -1,
+                    name: L10n.string("ui.lyrics.notification.preview.artist")
+                )
             ]
         )
         let context = lyricContext(
@@ -58,13 +61,12 @@ enum LyricsNotificationPublicationFactory {
         )
         let currentLyric = context.current ?? LyricLine(
             time: 0,
-            text: "这是一条通知歌词预览",
-            translation:
-                "This is a lyrics notification preview"
+            text: L10n.string("ui.lyrics.notification.preview.current"),
+            translation: L10n.string("ui.lyrics.notification.preview.translation")
         )
         let nextLyric = context.next ?? LyricLine(
             time: 4,
-            text: "下一句歌词会显示在这里"
+            text: L10n.string("ui.lyrics.notification.preview.next")
         )
         return publication(
             song: resolvedSong,

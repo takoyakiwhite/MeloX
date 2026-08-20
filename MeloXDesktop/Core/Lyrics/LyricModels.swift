@@ -171,12 +171,12 @@ struct LyricLine: Identifiable, Hashable, Sendable {
         var components = [text]
         if includingRomanization, hasRomanization,
            let romanization {
-            components.append("发音：\(romanization)")
+            components.append(L10n.format("ui.lyrics.accessibility.romanization", romanization))
         }
         if includingTranslation, hasTranslation,
            let translation {
-            components.append("翻译：\(translation)")
+            components.append(L10n.format("ui.lyrics.accessibility.translation", translation))
         }
-        return components.joined(separator: "，")
+        return components.joined(separator: L10n.string("ui.common.spoken_separator"))
     }
 }

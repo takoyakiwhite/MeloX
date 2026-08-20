@@ -11,26 +11,26 @@ enum PlayerBackgroundRenderQuality: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .automatic:
-            "自动"
+            L10n.string("ui.desktop.render_quality.automatic")
         case .high:
-            "高"
+            L10n.string("ui.desktop.render_quality.high")
         case .standard:
-            "标准"
+            L10n.string("ui.desktop.render_quality.standard")
         case .low:
-            "低"
+            L10n.string("ui.desktop.render_quality.low")
         }
     }
 
     var detail: String {
         switch self {
         case .automatic:
-            "根据系统状态自动选择渲染分辨率，低电量模式下使用更低画质。"
+            L10n.string("ui.desktop.render_quality.automatic.detail")
         case .high:
-            "使用播放器窗口的原始分辨率，画质最佳，GPU 占用最高。"
+            L10n.string("ui.desktop.render_quality.high.detail")
         case .standard:
-            "渲染最长边限制为 640pt，画质与性能平衡。"
+            L10n.string("ui.desktop.render_quality.standard.detail")
         case .low:
-            "渲染最长边限制为 480pt，更省电，画面略柔和。"
+            L10n.string("ui.desktop.render_quality.low.detail")
         }
     }
 }

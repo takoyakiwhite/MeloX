@@ -61,9 +61,15 @@ struct DesktopNowPlayingPageSwitcher: View {
             page == destination ? .black.opacity(0.78) : .white
         )
         .accessibilityLabel(
-            destination == .lyrics ? "显示歌词" : "显示播放列表"
+            destination == .lyrics
+                ? L10n.string("ui.desktop.commands.show_lyrics")
+                : L10n.string("ui.desktop.commands.show_queue")
         )
-        .accessibilityValue(page == destination ? "已选择" : "未选择")
+        .accessibilityValue(
+            page == destination
+                ? L10n.string("ui.common.selected")
+                : L10n.string("ui.common.not_selected")
+        )
         .background {
             if page == destination {
                 Circle()

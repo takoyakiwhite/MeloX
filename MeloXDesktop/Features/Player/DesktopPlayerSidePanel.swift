@@ -115,9 +115,9 @@ private extension DesktopInspector {
     var accessibilityTitle: String {
         switch self {
         case .lyrics:
-            "歌词"
+            L10n.string("ui.common.lyrics")
         case .queue:
-            "播放列表"
+            L10n.string("ui.player.queue")
         }
     }
 }

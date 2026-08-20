@@ -29,15 +29,15 @@ enum HomeMusicRegion: String {
     var title: String {
         switch self {
         case .all:
-            "全部地区"
+            L10n.string("ui.music_area.all")
         case .chinese:
-            "华语地区"
+            L10n.string("ui.music_area.chinese")
         case .western:
-            "欧美地区"
+            L10n.string("ui.music_area.western")
         case .korean:
-            "韩国地区"
+            L10n.string("ui.music_area.korean")
         case .japanese:
-            "日本地区"
+            L10n.string("ui.music_area.japanese")
         }
     }
 }

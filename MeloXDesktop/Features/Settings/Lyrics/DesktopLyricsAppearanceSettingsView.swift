@@ -9,11 +9,11 @@ struct DesktopLyricsAppearanceSettingsView: View {
 
         ScrollView {
             Form {
-                Section("基础排版") {
-                    LabeledContent("样式", value: LyricsStyle.appleMusic.title)
+                Section("ui.settings.lyrics.appearance.section.typography") {
+                    LabeledContent("ui.settings.lyrics.appearance.style", value: LyricsStyle.appleMusic.title)
 
                     Picker(
-                        "呈现方案",
+                        "ui.settings.lyrics.appearance.motion_preset",
                         selection: $appleMusicLyrics.motionPreset
                     ) {
                         ForEach(AppleMusicLyricsMotionPreset.allCases) {
@@ -24,25 +24,28 @@ struct DesktopLyricsAppearanceSettingsView: View {
 
                     if appleMusicLyrics.usesAppleMusic26Motion {
                         LabeledContent(
-                            "正文字号",
-                            value: "24 / 28 / 38 / 50 / 72 磅（随列宽）"
+                            "ui.settings.lyrics.appearance.body_font_size",
+                            value: L10n.string("ui.desktop.lyrics.fixed.responsive_font_sizes")
                         )
-                        LabeledContent("字体粗细", value: "粗体")
+                        LabeledContent(
+                            "ui.settings.lyrics.appearance.font_weight",
+                            value: L10n.string("ui.settings.font_weight.bold")
+                        )
                     } else {
                         HStack {
-                            Text("字体大小")
+                            Text("ui.settings.lyrics.appearance.font_size")
                             Slider(
                                 value: $settings.lyricsFontSize,
                                 in: AppSettings.desktopLyricsFontSizeRange,
                                 step: 1
                             )
-                            Text("\(Int(settings.lyricsFontSize.rounded())) 磅")
+                            Text(L10n.format("ui.common.points", Int(settings.lyricsFontSize.rounded())))
                                 .monospacedDigit()
                                 .frame(width: 62, alignment: .trailing)
                         }
 
                         Picker(
-                            "字体粗细",
+                            "ui.settings.lyrics.appearance.font_weight",
                             selection: $settings.lyricsFontWeight
                         ) {
                             ForEach(LyricsFontWeight.allCases) { weight in
@@ -56,66 +59,70 @@ struct DesktopLyricsAppearanceSettingsView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                Section("Apple Music 布局") {
+                Section("ui.settings.lyrics.appearance.section.apple_music_layout") {
                     Toggle(
-                        "显示等待倒计时",
+                        "ui.settings.lyrics.appearance.intro_interlude",
                         isOn: $settings.lyricsInterludeCountdownEnabled
                     )
 
                     if appleMusicLyrics.usesAppleMusic26Motion {
-                        LabeledContent("失焦歌词缩放", value: "98%")
-                        LabeledContent("歌词行间距", value: "25 磅")
-                        LabeledContent("单句换行附加", value: "0 磅")
-                        LabeledContent("段落组间距", value: "39 磅")
-                        LabeledContent("首行起始位置", value: "60 磅")
+                        LabeledContent("ui.settings.lyrics.appearance.unfocused_scale", value: "98%")
+                        LabeledContent("ui.settings.lyrics.appearance.line_spacing", value: L10n.format("ui.common.points", 25))
+                        LabeledContent("ui.desktop.lyrics.fixed.line_wrap_addition", value: L10n.format("ui.common.points", 0))
+                        LabeledContent("ui.settings.lyrics.appearance.paragraph_spacing", value: L10n.format("ui.common.points", 39))
+                        LabeledContent("ui.settings.lyrics.appearance.first_line_position", value: L10n.format("ui.common.points", 60))
                         LabeledContent(
-                            "焦点位置规则",
-                            value: "对齐主封面垂直中心"
+                            "ui.desktop.lyrics.fixed.focus_rule",
+                            value: L10n.string("ui.desktop.lyrics.fixed.align_artwork_center")
                         )
-                        LabeledContent("顶部安全补偿", value: "22 磅")
-                        LabeledContent("顶部渐变结束", value: "8%")
+                        LabeledContent("ui.desktop.lyrics.fixed.top_safe_offset", value: L10n.format("ui.common.points", 22))
+                        LabeledContent("ui.desktop.lyrics.fixed.top_gradient_end", value: "8%")
                         LabeledContent(
-                            "节奏指示器",
-                            value: "3 点 · 高 40 · 18 + 11"
+                            "ui.desktop.lyrics.fixed.rhythm_indicator",
+                            value: L10n.string("ui.desktop.lyrics.fixed.rhythm_indicator_value")
                         )
-                        LabeledContent("双人声部宽度", value: "85%")
-                        LabeledContent("背景声部间距", value: "15 磅")
+                        LabeledContent("ui.desktop.lyrics.fixed.duet_width", value: "85%")
+                        LabeledContent("ui.desktop.lyrics.fixed.background_vocal_spacing", value: L10n.format("ui.common.points", 15))
                     } else {
                         HStack {
-                            Text("当前歌词大小")
+                            Text("ui.settings.lyrics.appearance.current_line_scale")
                             Slider(
                                 value: $settings.lyricsCurrentLineScale,
                                 in: AppSettings.lyricsCurrentLineScaleRange,
                                 step: 0.01
                             )
                             Text(
-                                "\(Int((settings.lyricsCurrentLineScale * 100).rounded()))%"
+                                L10n.percent(settings.lyricsCurrentLineScale)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)
                         }
 
                         HStack {
-                            Text("歌词行距")
+                            Text("ui.settings.lyrics.appearance.line_spacing")
                             Slider(
                                 value: $settings.lyricsLineSpacing,
                                 in: AppSettings.desktopLyricsLineSpacingRange,
                                 step: 1
                             )
-                            Text("\(Int(settings.lyricsLineSpacing.rounded()))")
+                            Text(
+                                Int(settings.lyricsLineSpacing.rounded()).formatted(
+                                    .number.locale(L10n.locale)
+                                )
+                            )
                                 .monospacedDigit()
                                 .frame(width: 48, alignment: .trailing)
                         }
 
                         HStack {
-                            Text("焦点垂直位置")
+                            Text("ui.settings.lyrics.appearance.focus_vertical_position")
                             Slider(
                                 value: $settings.lyricsFocusPosition,
                                 in: AppSettings.lyricsFocusPositionRange,
                                 step: 0.01
                             )
                             Text(
-                                "\(Int((settings.lyricsFocusPosition * 100).rounded()))%"
+                                L10n.percent(settings.lyricsFocusPosition)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)
@@ -123,15 +130,15 @@ struct DesktopLyricsAppearanceSettingsView: View {
                     }
                 }
 
-                Section("焦点与模糊") {
+                Section("ui.settings.lyrics.appearance.section.apple_music_focus") {
                     if appleMusicLyrics.usesAppleMusic26Motion {
-                        LabeledContent("非焦点模糊", value: "3 磅")
-                        LabeledContent("最大模糊", value: "4 磅")
-                        LabeledContent("非焦点文字", value: "17.5%")
-                        LabeledContent("焦点待播放文字", value: "35%")
+                        LabeledContent("ui.settings.lyrics.appearance.unfocused_blur", value: L10n.format("ui.common.points", 3))
+                        LabeledContent("ui.settings.lyrics.appearance.maximum_blur", value: L10n.format("ui.common.points", 4))
+                        LabeledContent("ui.settings.lyrics.appearance.unfocused_text", value: "17.5%")
+                        LabeledContent("ui.settings.lyrics.appearance.upcoming_text", value: "35%")
                     } else {
                         HStack {
-                            Text("基础模糊强度")
+                            Text("ui.settings.lyrics.appearance.base_blur")
                             Slider(
                                 value: $settings.lyricsBlurIntensity,
                                 in: AppSettings.lyricsBlurIntensityRange,
@@ -139,7 +146,9 @@ struct DesktopLyricsAppearanceSettingsView: View {
                             )
                             Text(
                                 settings.lyricsBlurIntensity.formatted(
-                                    .number.precision(.fractionLength(1))
+                                    .number
+                                        .precision(.fractionLength(1))
+                                        .locale(L10n.locale)
                                 )
                             )
                             .monospacedDigit()
@@ -147,28 +156,28 @@ struct DesktopLyricsAppearanceSettingsView: View {
                         }
 
                         HStack {
-                            Text("逐句模糊加强")
+                            Text("ui.settings.lyrics.appearance.distance_blur_scale")
                             Slider(
                                 value: $settings.lyricsDistanceBlurScale,
                                 in: AppSettings.lyricsDistanceBlurScaleRange,
                                 step: 0.05
                             )
                             Text(
-                                "\(Int((settings.lyricsDistanceBlurScale * 100).rounded()))%"
+                                L10n.percent(settings.lyricsDistanceBlurScale)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)
                         }
 
                         HStack {
-                            Text("非焦点歌词变暗")
+                            Text("ui.settings.lyrics.appearance.unfocused_dimming")
                             Slider(
                                 value: $settings.lyricsDimAmount,
                                 in: 0...1,
                                 step: 0.1
                             )
                             Text(
-                                "\(Int((settings.lyricsDimAmount * 100).rounded()))%"
+                                L10n.percent(settings.lyricsDimAmount)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)

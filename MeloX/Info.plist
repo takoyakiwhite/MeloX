@@ -23,7 +23,7 @@
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSMicrophoneUsageDescription</key>
-	<string>MeloX 需要使用麦克风聆听环境音乐并在设备端生成音频指纹；持续识别会在您手动停止前保持麦克风使用。</string>
+	<string>MeloX uses the microphone to identify nearby music on this device.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>

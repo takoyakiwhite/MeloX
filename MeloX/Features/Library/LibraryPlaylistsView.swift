@@ -8,20 +8,24 @@ struct LibraryPlaylistsView: View {
     var body: some View {
         List {
             if !isSearching, let userID = library.profile?.id {
-                Section("我的") {
+                Section("ui.library.section.mine") {
                     NavigationLink {
                         UserListeningRankView(userID: userID)
                     } label: {
                         Label(
-                            "我的听歌排行",
+                            "ui.library.my_listening_rank",
                             systemImage: "chart.bar.xaxis"
                         )
                     }
-                    .accessibilityHint("查看最近一周或所有时间的听歌排行")
+                    .accessibilityHint("ui.library.my_listening_rank.hint")
                 }
             }
 
-            Section(isSearching ? "搜索结果" : "歌单") {
+            Section(
+                isSearching
+                    ? L10n.string("ui.common.search_results")
+                    : L10n.string("ui.common.playlists")
+            ) {
                 ForEach(displayedPlaylists) { playlist in
                     NavigationLink(value: MusicRoute.playlist(playlist)) {
                         LibraryPlaylistRow(playlist: playlist)
@@ -35,7 +39,7 @@ struct LibraryPlaylistsView: View {
                                 library.toggle(playlist: playlist)
                             } label: {
                                 Label(
-                                    "取消收藏",
+                                    L10n.string("ui.common.unfavorite"),
                                     systemImage: "heart.slash"
                                 )
                             }
@@ -57,10 +61,10 @@ struct LibraryPlaylistsView: View {
                         )
                     } else {
                         ContentUnavailableView(
-                            "还没有收藏歌单",
+                            "ui.library.no_favorite_playlists",
                             systemImage: "music.note.list",
                             description: Text(
-                                "打开歌单详情后，轻点收藏按钮。"
+                                "ui.library.no_favorite_playlists.message"
                             )
                         )
                     }
@@ -96,7 +100,7 @@ private struct LibraryPlaylistRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(playlist.name)
                     .lineLimit(1)
-                Text("\(playlist.trackCount) 首歌曲")
+                Text(L10n.format("ui.common.song_count", playlist.trackCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

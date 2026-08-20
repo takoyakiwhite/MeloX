@@ -92,14 +92,14 @@ struct NowPlayingView: View {
                         portraitContent(for: song)
                     }
                 } else {
-                    ContentUnavailableView("没有正在播放的歌曲", systemImage: "music.note")
+                    ContentUnavailableView("ui.player.no_current_song", systemImage: "music.note")
                         .foregroundStyle(.white)
                 }
 
                 if usesFullScreenTextPV,
                    showsTextPVLandscapeSuggestion,
                    proxy.size.width <= proxy.size.height {
-                    Label("建议切换至横屏观看文字PV", systemImage: "rectangle.landscape.rotate")
+                    Label("ui.text_pv.landscape_recommended", systemImage: "rectangle.landscape.rotate")
                         .font(.subheadline.weight(.semibold))
                         .padding(.horizontal, 16)
                         .padding(.vertical, 11)
@@ -108,7 +108,7 @@ struct NowPlayingView: View {
                         .transition(.move(edge: .top).combined(with: .opacity))
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                         .safeAreaPadding(.top, 58)
-                        .accessibilityLabel("建议切换至横屏观看文字PV")
+                        .accessibilityLabel("ui.text_pv.landscape_recommended")
                 }
             }
         }
@@ -403,8 +403,8 @@ struct NowPlayingView: View {
             dismiss()
         }
         .accessibilityElement()
-        .accessibilityLabel("收起播放器")
-        .accessibilityHint("轻点收起，或向下拖动播放器")
+        .accessibilityLabel("ui.player.collapse")
+        .accessibilityHint("ui.player.collapse_hint")
         .accessibilityAction {
             dismiss()
         }
@@ -872,11 +872,11 @@ struct NowPlayingView: View {
 
     private var lyricsInterfaceAccessibilityActionName: String {
         if settings.lyricsStyle == .appleMusic {
-            return "显示播放器控制"
+            return L10n.string("ui.player.show_controls")
         }
         return showsLyricsControls
-            ? "隐藏播放器控制"
-            : "显示播放器控制"
+            ? L10n.string("ui.player.hide_controls")
+            : L10n.string("ui.player.show_controls")
     }
 
     private func handleLyricsInterfaceInteraction() {

@@ -23,7 +23,7 @@ extension NeteaseAPI {
         )
         try validate(
             responseCode: response.code,
-            message: response.message ?? "无法载入首页推荐。"
+            message: response.message ?? L10n.string("ui.error.home.load_failed")
         )
         guard let payload = response.data else {
             throw APIError.invalidResponse
@@ -112,7 +112,7 @@ extension NeteaseAPI {
         guard response.code == 200 else {
             throw APIError.server(
                 statusCode: response.code,
-                message: response.message ?? "无法开始私人漫游。"
+                message: response.message ?? L10n.string("ui.error.private_radio.start_failed")
             )
         }
         return response.data.filter { $0.id > 0 }

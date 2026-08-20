@@ -10,9 +10,9 @@ enum LyricsLongSyllableDetectionMode:
     var title: String {
         switch self {
         case .word:
-            "按词识别"
+            L10n.string("ui.settings.lyrics.long_syllable.word")
         case .character:
-            "按字识别"
+            L10n.string("ui.settings.lyrics.long_syllable.character")
         }
     }
 }

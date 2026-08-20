@@ -17,7 +17,9 @@ struct DesktopNowPlayingVolumeControl: View {
                 model.playbackVolume.toggleMuted(minimumRestoreVolume: 0.2)
             } label: {
                 Label(
-                    currentVolume > 0.001 ? "静音" : "取消静音",
+                    currentVolume > 0.001
+                        ? L10n.string("ui.desktop.player.mute")
+                        : L10n.string("ui.desktop.player.unmute"),
                     systemImage: volumeSymbol
                 )
                     .labelStyle(.iconOnly)
@@ -25,7 +27,11 @@ struct DesktopNowPlayingVolumeControl: View {
                     .frame(width: 30, height: 30)
             }
             .buttonStyle(.plain)
-            .accessibilityLabel(currentVolume > 0.001 ? "静音" : "取消静音")
+            .accessibilityLabel(
+                currentVolume > 0.001
+                    ? L10n.string("ui.desktop.player.mute")
+                    : L10n.string("ui.desktop.player.unmute")
+            )
         }
         .foregroundStyle(.white)
         .padding(.horizontal, 10)
@@ -51,7 +57,7 @@ struct DesktopNowPlayingVolumeControl: View {
         .controlSize(.mini)
         .frame(width: 130, height: 22)
         .contentShape(.rect)
-        .accessibilityLabel("音量")
+        .accessibilityLabel("ui.player.volume")
     }
 
     private var volumeBinding: Binding<Double> {

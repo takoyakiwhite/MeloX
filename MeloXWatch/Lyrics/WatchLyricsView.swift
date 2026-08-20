@@ -481,13 +481,19 @@ private struct WatchLyricLineView: View {
         .contentShape(.rect)
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityText)
-        .accessibilityHint("轻点跳转到这句歌词")
+        .accessibilityHint("ui.watch.lyrics.seek_hint")
     }
 
     private var accessibilityText: String {
         [line.text, line.romanization, line.translation]
             .compactMap { $0 }
             .filter { !$0.isEmpty }
-            .joined(separator: "，")
+            .localizedList
+    }
+}
+
+private extension Array where Element == String {
+    var localizedList: String {
+        L10n.list(self)
     }
 }

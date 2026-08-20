@@ -22,12 +22,12 @@ struct ContentFeatureSettingsView: View {
                     }
                 }
             } header: {
-                Text("可选功能")
+                Text("ui.settings.content_features.section")
             } footer: {
-                Text("关闭后会隐藏相关入口并停止主动载入对应内容，不会删除收藏、下载、云盘歌曲或播放记录。")
+                Text("ui.settings.content_features.footer")
             }
         }
-        .navigationTitle("功能模块")
+        .navigationTitle("ui.settings.catalog.features.title")
         .navigationBarTitleDisplayMode(.inline)
     }
 

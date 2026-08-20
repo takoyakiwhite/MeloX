@@ -113,7 +113,7 @@ final class FloatingLyricsController: NSObject {
 
     func toggle() {
         guard let pictureInPictureController else {
-            errorMessage = "当前设备不支持系统画中画。"
+            errorMessage = L10n.string("ui.floating_lyrics.error.unsupported")
             return
         }
 
@@ -125,7 +125,7 @@ final class FloatingLyricsController: NSObject {
         }
 
         guard player.currentSong != nil else {
-            errorMessage = "请先播放一首歌曲。"
+            errorMessage = L10n.string("ui.floating_lyrics.error.song_required")
             return
         }
 
@@ -136,7 +136,7 @@ final class FloatingLyricsController: NSObject {
             .isPictureInPicturePossible
 
         guard isPossible else {
-            errorMessage = "系统画中画暂时不可用，请稍后再试。"
+            errorMessage = L10n.string("ui.floating_lyrics.error.unavailable")
             return
         }
 
@@ -297,7 +297,7 @@ final class FloatingLyricsController: NSObject {
                 .sampleBufferRenderer
                 .error?
                 .localizedDescription
-                ?? "画中画画面尚未准备好，请稍后再试。"
+                ?? L10n.string("ui.floating_lyrics.error.not_ready")
         }
     }
 
@@ -342,10 +342,10 @@ final class FloatingLyricsController: NSObject {
             return FloatingLyricsPresentation(
                 songID: nil,
                 title: "MeloX",
-                artist: "悬浮歌词",
+                artist: L10n.string("ui.floating_lyrics.title"),
                 currentLine: nil,
                 upcomingLines: [],
-                fallbackText: "播放音乐后显示歌词",
+                fallbackText: L10n.string("ui.floating_lyrics.play_to_show"),
                 playbackTime: 0,
                 isPlaying: false,
                 usesPseudoTiming: false,
@@ -389,9 +389,9 @@ final class FloatingLyricsController: NSObject {
         if let currentLine {
             fallbackText = currentLine.text
         } else if lyricsStore.songID != song.id || lyricsStore.isLoading {
-            fallbackText = "正在载入歌词…"
+            fallbackText = L10n.string("ui.lyrics.loading_ellipsis")
         } else if lyricsStore.errorMessage != nil || lyrics.isEmpty {
-            fallbackText = "当前歌曲暂无滚动歌词"
+            fallbackText = L10n.string("ui.lyrics.no_scrolling_lyrics")
         } else {
             fallbackText = "♪"
         }

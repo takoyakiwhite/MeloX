@@ -9,7 +9,7 @@ struct PlayerAppearanceSettingsView: View {
         Form {
             Section {
                 Picker(
-                    "背景样式",
+                    "ui.settings.player_appearance.background_style",
                     selection: $settings.playerBackgroundStyle
                 ) {
                     ForEach(PlayerBackgroundStyle.allCases) { style in
@@ -18,36 +18,36 @@ struct PlayerAppearanceSettingsView: View {
                 }
 
                 valueSlider(
-                    title: "背景色彩",
+                    title: L10n.string("ui.settings.player_appearance.saturation"),
                     value: $settings.playerBackgroundSaturation,
                     range: 0.4...1.2,
                     step: 0.05,
                     valueText:
-                        "\(Int(settings.playerBackgroundSaturation * 100))%"
+                        L10n.percent(settings.playerBackgroundSaturation)
                 )
 
                 if settings.playerBackgroundStyle != .blurredArtwork {
                     valueSlider(
-                        title: "动态速度",
+                        title: L10n.string("ui.settings.player_appearance.motion_speed"),
                         value:
                             $settings
                                 .playerBackgroundMotionIntensity,
                         range: 0.4...1.4,
                         step: 0.1,
                         valueText:
-                            "\(Int(settings.playerBackgroundMotionIntensity * 100))%"
+                            L10n.percent(settings.playerBackgroundMotionIntensity)
                     )
 
                     if settings.playerBackgroundStyle == .flowingLight {
                         Toggle(
-                            "重拍暗角",
+                            "ui.settings.player_appearance.beat_vignette",
                             isOn:
                                 $settings
                                     .playerBackgroundBeatEffectsEnabled
                         )
                     } else {
                         Toggle(
-                            "随音乐响应",
+                            "ui.settings.player_appearance.audio_response",
                             isOn:
                                 $settings
                                     .playerBackgroundAudioResponseEnabled
@@ -55,28 +55,28 @@ struct PlayerAppearanceSettingsView: View {
                     }
                 } else {
                     valueSlider(
-                        title: "背景模糊",
+                        title: L10n.string("ui.settings.player_appearance.blur"),
                         value: $settings.playerBackgroundBlur,
                         range: 0...140,
                         step: 5,
                         valueText:
-                            "\(Int(settings.playerBackgroundBlur))"
+                            L10n.integer(Int(settings.playerBackgroundBlur))
                     )
                 }
 
                 Toggle(
-                    "暂停时缩小封面",
+                    "ui.settings.player_appearance.shrink_paused_artwork",
                     isOn: $settings.shrinksPausedArtwork
                 )
             } header: {
-                Text("背景与封面")
+                Text("ui.settings.player_appearance.background.section")
             } footer: {
                 Text(backgroundFooter)
             }
 
             Section {
                 Picker(
-                    "屏幕常亮",
+                    "ui.settings.player_appearance.screen_awake",
                     selection: $settings.playerScreenAwakeMode
                 ) {
                     ForEach(PlayerScreenAwakeMode.allCases) { mode in
@@ -84,23 +84,23 @@ struct PlayerAppearanceSettingsView: View {
                     }
                 }
             } header: {
-                Text("屏幕")
+                Text("ui.settings.player_appearance.screen.section")
             } footer: {
-                Text("决定竖屏播放器何时阻止自动锁屏；横屏天际歌词使用独立设置。")
+                Text("ui.settings.player_appearance.screen.footer")
             }
         }
-        .navigationTitle("播放器界面")
+        .navigationTitle("ui.settings.catalog.player_appearance.title")
         .navigationBarTitleDisplayMode(.inline)
     }
 
     private var backgroundFooter: String {
         switch settings.playerBackgroundStyle {
         case .appleMusicBackdrop:
-            "Apple Music 背景由公开的 SwiftUI 与 Metal API 实现；可选的音乐响应默认关闭，效果遵循“减少动态效果”和“调暗闪烁光线”设置。"
+            L10n.string("ui.settings.player_appearance.background.apple_music.footer")
         case .flowingLight:
-            "流动光影会从封面提取颜色；100% 是增强后的流动基准，速度和位移约为旧效果的 2 倍。开启“重拍暗角”后，Onset 达到 0.4 且 Beat 或 Downbeat 在前后 20 ms 内达到 0.4 时触发暗角；Downbeat 达到 0.6 时会略微加深。效果遵循系统的“减少动态效果”和“调暗闪烁光线”设置。"
+            L10n.string("ui.settings.player_appearance.background.flowing_light.footer")
         case .blurredArtwork:
-            "模糊封面保留原有背景效果。背景选项会实时生效。"
+            L10n.string("ui.settings.player_appearance.background.blurred_artwork.footer")
         }
     }
 

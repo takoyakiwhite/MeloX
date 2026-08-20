@@ -91,12 +91,12 @@ private struct HomeMediaStrip<Content: View>: View {
 
                 if let playAll {
                     Button(action: playAll) {
-                        Label("播放全部", systemImage: "play.fill")
+                        Label("ui.common.play_all", systemImage: "play.fill")
                     }
                     .labelStyle(.iconOnly)
                     .buttonStyle(.bordered)
                     .buttonBorderShape(.circle)
-                    .accessibilityLabel("播放\(title)")
+                    .accessibilityLabel(L10n.format("ui.common.play_named", title))
                 }
             }
             .padding(.horizontal, 16)

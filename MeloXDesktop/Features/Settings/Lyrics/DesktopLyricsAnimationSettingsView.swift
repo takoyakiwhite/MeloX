@@ -9,9 +9,9 @@ struct DesktopLyricsAnimationSettingsView: View {
 
         ScrollView {
             Form {
-                Section("性能") {
+                Section("ui.settings.lyrics.animation.section.performance") {
                     Picker(
-                        "刷新频率",
+                        "ui.settings.lyrics.animation.refresh_rate",
                         selection: $settings.lyricsRefreshRate
                     ) {
                         ForEach(LyricsRefreshRate.allCases) { rate in
@@ -21,16 +21,16 @@ struct DesktopLyricsAnimationSettingsView: View {
                 }
 
                 if appleMusicLyrics.usesAppleMusic26Motion {
-                    Section("Apple Music 26 参数") {
-                        LabeledContent("正向逐行延迟", value: "50 毫秒")
-                        LabeledContent("反向逐行延迟", value: "25 毫秒")
-                        LabeledContent("前两行", value: "同时开始")
-                        LabeledContent("行变更弹簧", value: "1 / 100 / 18")
-                        LabeledContent("精确逐字行", value: "随行间隔动态响应")
-                        LabeledContent("高光预启动", value: "100 毫秒")
-                        LabeledContent("焦点模糊过渡", value: "120 毫秒")
+                    Section("ui.settings.lyrics.animation.section.apple_music_parameters") {
+                        LabeledContent("ui.settings.lyrics.animation.forward_line_delay", value: L10n.format("ui.common.milliseconds", 50))
+                        LabeledContent("ui.settings.lyrics.animation.reverse_line_delay", value: L10n.format("ui.common.milliseconds", 25))
+                        LabeledContent("ui.desktop.lyrics.animation.first_two_lines", value: L10n.string("ui.desktop.lyrics.animation.start_together"))
+                        LabeledContent("ui.settings.lyrics.animation.line_change_spring", value: "1 / 100 / 18")
+                        LabeledContent("ui.settings.lyrics.animation.precise_word_line", value: L10n.string("ui.settings.lyrics.animation.dynamic_line_interval"))
+                        LabeledContent("ui.desktop.lyrics.animation.highlight_prestart", value: L10n.format("ui.common.milliseconds", 100))
+                        LabeledContent("ui.desktop.lyrics.animation.focus_blur_transition", value: L10n.format("ui.common.milliseconds", 120))
 
-                        Text("向前移动按歌词顺序错峰，向后移动按倒序错峰。带精确结束时间的逐字歌词会根据相邻行间隔重算物理弹簧。")
+                        Text("ui.settings.lyrics.animation.apple_music.footer")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -49,55 +49,55 @@ struct DesktopLyricsAnimationSettingsView: View {
     private func customMovementSection(settings: AppSettings) -> some View {
         @Bindable var settings = settings
 
-        Section("移动与追赶") {
+        Section("ui.settings.lyrics.animation.section.movement") {
             valueSlider(
-                title: "基础拖尾延迟",
+                title: L10n.string("ui.settings.lyrics.animation.base_cascade_delay"),
                 value: $settings.lyricsFocusCascadeDelay,
                 range: AppSettings.lyricsFocusCascadeDelayRange,
                 step: 0.001,
-                valueText: "\(Int((settings.lyricsFocusCascadeDelay * 1_000).rounded())) ms"
+                valueText: L10n.format("ui.common.milliseconds", Int((settings.lyricsFocusCascadeDelay * 1_000).rounded()))
             )
             valueSlider(
-                title: "逐句拖尾增量",
+                title: L10n.string("ui.settings.lyrics.animation.cascade_increment"),
                 value: $settings.lyricsFocusCascadeDelayIncrease,
                 range: AppSettings.lyricsFocusCascadeDelayIncreaseRange,
                 step: 0.001,
-                valueText: "\(Int((settings.lyricsFocusCascadeDelayIncrease * 1_000).rounded())) ms"
+                valueText: L10n.format("ui.common.milliseconds", Int((settings.lyricsFocusCascadeDelayIncrease * 1_000).rounded()))
             )
             valueSlider(
-                title: "后续歌词启动延迟",
+                title: L10n.string("ui.settings.lyrics.animation.following_delay"),
                 value: $settings.lyricsFocusCascadeFollowingDelay,
                 range: AppSettings.lyricsFocusCascadeFollowingDelayRange,
                 step: 0.001,
-                valueText: "\(Int((settings.lyricsFocusCascadeFollowingDelay * 1_000).rounded())) ms"
+                valueText: L10n.format("ui.common.milliseconds", Int((settings.lyricsFocusCascadeFollowingDelay * 1_000).rounded()))
             )
             valueSlider(
-                title: "拖尾追赶节奏",
+                title: L10n.string("ui.settings.lyrics.animation.catch_up_ratio"),
                 value: $settings.lyricsFocusCascadeCatchUpRatio,
                 range: AppSettings.lyricsFocusCascadeCatchUpRatioRange,
                 step: 0.01,
-                valueText: "\(Int((settings.lyricsFocusCascadeCatchUpRatio * 100).rounded()))%"
+                valueText: L10n.percent(settings.lyricsFocusCascadeCatchUpRatio)
             )
             valueSlider(
-                title: "追赶速度梯度",
+                title: L10n.string("ui.settings.lyrics.animation.chase_speed_gradient"),
                 value: $settings.lyricsFocusCascadeChaseSpeedGradient,
                 range: AppSettings.lyricsFocusCascadeChaseSpeedGradientRange,
                 step: 0.01,
-                valueText: "\(Int((settings.lyricsFocusCascadeChaseSpeedGradient * 100).rounded()))%"
+                valueText: L10n.percent(settings.lyricsFocusCascadeChaseSpeedGradient)
             )
             valueSlider(
-                title: "位移收束时长",
+                title: L10n.string("ui.settings.lyrics.animation.settle_duration"),
                 value: $settings.lyricsFocusCascadeDuration,
                 range: AppSettings.lyricsFocusCascadeDurationRange,
                 step: 0.01,
-                valueText: "\(settings.lyricsFocusCascadeDuration.formatted(.number.precision(.fractionLength(2)))) s"
+                valueText: L10n.format("ui.common.seconds_two_decimals", settings.lyricsFocusCascadeDuration)
             )
             valueSlider(
-                title: "瞬移阈值",
+                title: L10n.string("ui.settings.lyrics.animation.snap_threshold"),
                 value: $settings.lyricsFocusSnapThreshold,
                 range: AppSettings.lyricsFocusSnapThresholdRange,
                 step: 0.001,
-                valueText: "\(Int((settings.lyricsFocusSnapThreshold * 1_000).rounded())) ms"
+                valueText: L10n.format("ui.common.milliseconds", Int((settings.lyricsFocusSnapThreshold * 1_000).rounded()))
             )
         }
     }
@@ -106,55 +106,55 @@ struct DesktopLyricsAnimationSettingsView: View {
     private func customBounceSection(settings: AppSettings) -> some View {
         @Bindable var settings = settings
 
-        Section("回弹与焦点") {
+        Section("ui.settings.lyrics.animation.section.bounce_focus") {
             Toggle(
-                "启用位移回弹",
+                "ui.settings.lyrics.animation.enable_movement_bounce",
                 isOn: $settings.lyricsFocusCascadeBounceEnabled
             )
             if settings.lyricsFocusCascadeBounceEnabled {
                 valueSlider(
-                    title: "最大回弹弹性",
+                    title: L10n.string("ui.settings.lyrics.animation.maximum_bounce"),
                     value: $settings.lyricsFocusCascadeBounce,
                     range: AppSettings.lyricsFocusCascadeBounceRange,
                     step: 0.01,
-                    valueText: "\(Int((settings.lyricsFocusCascadeBounce * 100).rounded()))%"
+                    valueText: L10n.percent(settings.lyricsFocusCascadeBounce)
                 )
                 valueSlider(
-                    title: "回弹强度梯度",
+                    title: L10n.string("ui.settings.lyrics.animation.bounce_gradient"),
                     value: $settings.lyricsFocusCascadeBounceGradient,
                     range: AppSettings.lyricsFocusCascadeBounceGradientRange,
                     step: 0.01,
-                    valueText: "\(Int((settings.lyricsFocusCascadeBounceGradient * 100).rounded()))%"
+                    valueText: L10n.percent(settings.lyricsFocusCascadeBounceGradient)
                 )
             }
 
             Toggle(
-                "启用当前句回弹",
+                "ui.settings.lyrics.animation.enable_scale_bounce",
                 isOn: $settings.lyricsFocusScaleBounceEnabled
             )
             if settings.lyricsFocusScaleBounceEnabled {
                 valueSlider(
-                    title: "当前句回弹时长",
+                    title: L10n.string("ui.settings.lyrics.animation.scale_bounce_duration"),
                     value: $settings.lyricsFocusScaleBounceDuration,
                     range: AppSettings.lyricsFocusScaleBounceDurationRange,
                     step: 0.01,
-                    valueText: "\(settings.lyricsFocusScaleBounceDuration.formatted(.number.precision(.fractionLength(2)))) s"
+                    valueText: L10n.format("ui.common.seconds_two_decimals", settings.lyricsFocusScaleBounceDuration)
                 )
                 valueSlider(
-                    title: "当前句回弹弹性",
+                    title: L10n.string("ui.settings.lyrics.animation.scale_bounce_elasticity"),
                     value: $settings.lyricsFocusScaleBounce,
                     range: AppSettings.lyricsFocusScaleBounceRange,
                     step: 0.01,
-                    valueText: "\(Int((settings.lyricsFocusScaleBounce * 100).rounded()))%"
+                    valueText: L10n.percent(settings.lyricsFocusScaleBounce)
                 )
             }
 
             valueSlider(
-                title: "焦点颜色提前",
+                title: L10n.string("ui.settings.lyrics.animation.focus_color_lead"),
                 value: $settings.lyricsFocusColorLeadTime,
                 range: AppSettings.lyricsFocusColorLeadTimeRange,
                 step: 0.005,
-                valueText: "\(Int((settings.lyricsFocusColorLeadTime * 1_000).rounded())) ms"
+                valueText: L10n.format("ui.common.milliseconds", Int((settings.lyricsFocusColorLeadTime * 1_000).rounded()))
             )
         }
     }

@@ -50,7 +50,7 @@ final class LyricsStore {
             lyrics = loaded.lines
             source = loaded.source
             errorMessage = loaded.lines.isEmpty
-                ? "当前歌曲暂无滚动歌词。"
+                ? L10n.string("ui.error.lyrics.unavailable")
                 : nil
             isLoading = false
         } catch is CancellationError {

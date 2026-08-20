@@ -24,7 +24,7 @@ struct ListenTogetherUser: Decodable, Hashable, Identifiable {
         nickname = try container.decodeIfPresent(
             String.self,
             forKey: .nickname
-        ) ?? "网易云用户"
+        ) ?? L10n.string("ui.metadata.netease_user")
         avatarURLString = try container.decodeIfPresent(
             String.self,
             forKey: .avatarURLString
@@ -388,7 +388,7 @@ struct ListenTogetherIdentifier: Decodable, Hashable {
                 String.self,
                 DecodingError.Context(
                     codingPath: decoder.codingPath,
-                    debugDescription: "预期字符串或数字标识符。"
+                    debugDescription: L10n.string("ui.error.decode.string_or_numeric_id")
                 )
             )
         }
@@ -412,7 +412,7 @@ private struct ListenTogetherInteger: Decodable {
                 Int64.self,
                 DecodingError.Context(
                     codingPath: decoder.codingPath,
-                    debugDescription: "预期整数或整数字符串。"
+                    debugDescription: L10n.string("ui.error.decode.integer")
                 )
             )
         }
@@ -503,11 +503,11 @@ enum ListenTogetherInvitationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .empty:
-            "请粘贴一起听邀请链接。"
+            L10n.string("ui.error.listen_together.invitation_empty")
         case .missingRoomID:
-            "邀请链接中缺少房间 ID。"
+            L10n.string("ui.error.listen_together.missing_room_id")
         case .missingInviterID:
-            "邀请链接中缺少邀请者 ID。"
+            L10n.string("ui.error.listen_together.missing_inviter_id")
         }
     }
 }

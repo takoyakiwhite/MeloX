@@ -17,13 +17,13 @@ enum LyricsNotificationSupplementaryContent:
     var title: String {
         switch self {
         case .none:
-            "仅当前歌词"
+            L10n.string("ui.settings.lyrics_notification.content.current")
         case .translation:
-            "当前歌词与翻译"
+            L10n.string("ui.settings.lyrics_notification.content.translation")
         case .nextLyric:
-            "当前歌词与下一句"
+            L10n.string("ui.settings.lyrics_notification.content.next")
         case .translationAndNextLyric:
-            "当前歌词、翻译与下一句"
+            L10n.string("ui.settings.lyrics_notification.content.translation_and_next")
         }
     }
 
@@ -40,9 +40,13 @@ enum LyricsNotificationSupplementaryContent:
 @Observable
 final class LyricsNotificationPreferences {
     static let defaultIsEnabled = false
-    static let defaultTitleFormat = "{歌名}"
+    static var defaultTitleFormat: String {
+        L10n.string("ui.lyrics.format.token.title")
+    }
     static let defaultShowsSubtitle = true
-    static let defaultSubtitleFormat = "{作者}"
+    static var defaultSubtitleFormat: String {
+        L10n.string("ui.lyrics.format.token.artist")
+    }
     static let defaultShowsArtwork = true
     static let defaultSupplementaryContent:
         LyricsNotificationSupplementaryContent = .translation

@@ -10,12 +10,12 @@ struct DesktopDiscoveryView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 34) {
-                Text("新发现")
+                Text("ui.navigation.explore")
                     .font(.system(size: 32, weight: .bold))
 
                 if !model.home.newSongs.isEmpty {
                     VStack(alignment: .leading, spacing: 14) {
-                        DesktopSectionHeader(title: "新歌速递")
+                        DesktopSectionHeader(title: L10n.string("ui.desktop.explore.new_songs"))
                         LazyVStack(spacing: 2) {
                             ForEach(Array(Array(model.home.newSongs.prefix(12)).enumerated()), id: \.element.id) {
                                 index,
@@ -33,7 +33,7 @@ struct DesktopDiscoveryView: View {
 
                 if !model.home.toplists.isEmpty {
                     VStack(alignment: .leading, spacing: 14) {
-                        DesktopSectionHeader(title: "排行榜")
+                        DesktopSectionHeader(title: L10n.string("ui.category.toplists"))
                         LazyVGrid(columns: columns, spacing: 24) {
                             ForEach(model.home.toplists) { playlist in
                                 DesktopMediaCard(
@@ -54,7 +54,7 @@ struct DesktopDiscoveryView: View {
 
                 if !model.home.topArtists.isEmpty {
                     VStack(alignment: .leading, spacing: 14) {
-                        DesktopSectionHeader(title: "热门艺人")
+                        DesktopSectionHeader(title: L10n.string("ui.desktop.explore.popular_artists"))
                         LazyVGrid(columns: columns, spacing: 24) {
                             ForEach(Array(model.home.topArtists.prefix(18))) { artist in
                                 DesktopMediaCard(
@@ -74,7 +74,7 @@ struct DesktopDiscoveryView: View {
             .padding(.horizontal, 34)
             .padding(.vertical, 28)
         }
-        .navigationTitle("新发现")
+        .navigationTitle("ui.navigation.explore")
         .task { await model.home.load() }
     }
 
@@ -99,12 +99,12 @@ struct DesktopRadioView: View {
     var body: some View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 32) {
-                Text("广播")
+                Text("ui.navigation.podcasts")
                     .font(.system(size: 32, weight: .bold))
 
                 if !model.home.podcastCategories.isEmpty {
                     VStack(alignment: .leading, spacing: 12) {
-                        DesktopSectionHeader(title: "浏览类别")
+                        DesktopSectionHeader(title: L10n.string("ui.search.browse_categories"))
                         ScrollView(.horizontal, showsIndicators: false) {
                             LazyHStack(spacing: 10) {
                                 ForEach(model.home.podcastCategories) { category in
@@ -112,12 +112,12 @@ struct DesktopRadioView: View {
                                         model.ui.navigate(
                                             to: .podcastCategory(
                                                 id: category.id,
-                                                title: category.name
+                                                title: category.localizedName
                                             )
                                         )
                                     } label: {
                                         Label(
-                                            category.name,
+                                            category.localizedName,
                                             systemImage: "dot.radiowaves.left.and.right"
                                         )
                                         .font(.system(size: 13, weight: .medium))
@@ -127,7 +127,12 @@ struct DesktopRadioView: View {
                                         .contentShape(.capsule)
                                     }
                                     .buttonStyle(.plain)
-                                    .help("浏览\(category.name)播客")
+                                    .help(
+                                        L10n.format(
+                                            "ui.desktop.podcasts.browse_category",
+                                            category.localizedName
+                                        )
+                                    )
                                 }
                             }
                         }
@@ -136,7 +141,7 @@ struct DesktopRadioView: View {
 
                 if !model.home.featuredPodcasts.isEmpty {
                     VStack(alignment: .leading, spacing: 14) {
-                        DesktopSectionHeader(title: "编辑精选")
+                        DesktopSectionHeader(title: L10n.string("ui.podcasts.editors_choice"))
                         LazyVGrid(columns: columns, spacing: 24) {
                             ForEach(model.home.featuredPodcasts) { podcast in
                                 DesktopMediaCard(
@@ -154,7 +159,7 @@ struct DesktopRadioView: View {
 
                 if !model.home.podcastPrograms.isEmpty {
                     VStack(alignment: .leading, spacing: 14) {
-                        DesktopSectionHeader(title: "最新节目")
+                        DesktopSectionHeader(title: L10n.string("ui.desktop.podcasts.latest_episodes"))
                         LazyVStack(spacing: 2) {
                             ForEach(Array(model.home.podcastPrograms.enumerated()), id: \.element.id) {
                                 index,
@@ -176,7 +181,7 @@ struct DesktopRadioView: View {
             .padding(.horizontal, 34)
             .padding(.vertical, 28)
         }
-        .navigationTitle("广播")
+        .navigationTitle("ui.navigation.podcasts")
         .task { await model.home.load() }
     }
 }

@@ -17,7 +17,7 @@ struct StorageManagementView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("存储管理")
+        .navigationTitle("ui.settings.storage.title")
         .navigationBarTitleDisplayMode(.inline)
         .refreshable {
             await model.refreshUsage()
@@ -34,7 +34,7 @@ struct StorageManagementView: View {
                     }
                 }
                 .disabled(model.isRefreshing || model.isBusy)
-                .accessibilityLabel("重新统计存储空间")
+                .accessibilityLabel("ui.settings.storage.refresh_accessibility")
             }
         }
         .task {
@@ -47,7 +47,7 @@ struct StorageManagementView: View {
             Task { await model.refreshUsage() }
         }
         .alert(
-            "存储操作失败",
+            "ui.settings.storage.error.title",
             isPresented: Binding(
                 get: { model.errorMessage != nil },
                 set: { isPresented in
@@ -57,11 +57,11 @@ struct StorageManagementView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 model.errorMessage = nil
             }
         } message: {
-            Text(model.errorMessage ?? "未知错误")
+            Text(model.errorMessage ?? L10n.string("ui.common.unknown_error"))
         }
     }
 
@@ -75,7 +75,7 @@ struct StorageManagementView: View {
                         .frame(width: 34, height: 34)
 
                     VStack(alignment: .leading, spacing: 2) {
-                        Text("MeloX 管理的内容")
+                        Text("ui.settings.storage.managed_content")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
@@ -99,7 +99,7 @@ struct StorageManagementView: View {
             .padding(.vertical, 6)
 
             LabeledContent(
-                "可重新生成的缓存",
+                L10n.string("ui.settings.storage.reclaimable_cache"),
                 value: formattedSize(
                     model.usage.reclaimableCacheBytes
                 )
@@ -114,12 +114,12 @@ struct StorageManagementView: View {
                 .foregroundStyle(.secondary)
             }
         } header: {
-            Text("总览")
+            Text("ui.settings.storage.section.overview")
         } footer: {
             Text(
                 AppFeatureAvailability.downloads
-                    ? "统计包含下载、MeloX 数据库、网络缓存和临时播放文件，不包含 App 本体与系统管理的其他空间。"
-                    : "统计包含 MeloX 数据库、网络缓存和临时播放文件，不包含 App 本体与系统管理的其他空间。"
+                    ? L10n.string("ui.settings.storage.overview.footer.downloads")
+                    : L10n.string("ui.settings.storage.overview.footer")
             )
         }
     }
@@ -138,9 +138,9 @@ struct StorageManagementView: View {
             .tint(.accentColor)
 
             HStack {
-                Text("设备已使用 \(formattedSize(used))")
+                Text(L10n.format("ui.settings.storage.device_used", formattedSize(used)))
                 Spacer()
-                Text("可用 \(formattedSize(available))")
+                Text(L10n.format("ui.settings.storage.device_available", formattedSize(available)))
             }
             .font(.caption)
             .foregroundStyle(.secondary)
@@ -148,15 +148,15 @@ struct StorageManagementView: View {
     }
 
     private var storageItemsSection: some View {
-        Section("存储项目") {
+        Section("ui.settings.storage.section.items") {
             if AppFeatureAvailability.downloads {
                 NavigationLink {
                     DownloadsView()
                 } label: {
                     storageUsageRow(
-                        title: "下载与自动缓存",
+                        title: L10n.string("ui.settings.storage.downloads_cache"),
                         subtitle:
-                            "\(downloads.downloads.count) 首歌曲",
+                            L10n.format("ui.common.song_count", downloads.downloads.count),
                         systemImage: "arrow.down.circle.fill",
                         byteCount: model.usage.downloadsBytes
                     )
@@ -164,25 +164,25 @@ struct StorageManagementView: View {
             }
 
             storageUsageRow(
-                title: "网络与图片缓存",
-                subtitle: "封面与网络响应，可按需重新获取",
+                title: L10n.string("ui.settings.storage.network_cache"),
+                subtitle: L10n.string("ui.settings.storage.network_cache.subtitle"),
                 systemImage: "photo.stack",
                 byteCount: model.usage.networkCacheBytes
             )
 
             storageUsageRow(
-                title: "临时播放文件",
-                subtitle: "自动混音分析与歌词附件",
+                title: L10n.string("ui.settings.storage.temporary_files"),
+                subtitle: L10n.string("ui.settings.storage.temporary_files.subtitle"),
                 systemImage: "waveform.path",
                 byteCount: model.usage.temporaryFilesBytes
             )
 
             storageUsageRow(
-                title: "本地数据库",
+                title: L10n.string("ui.settings.storage.database"),
                 subtitle:
                     AppFeatureAvailability.downloads
-                        ? "下载记录与自动缓存计数"
-                        : "播放与应用数据",
+                        ? L10n.string("ui.settings.storage.database.subtitle.downloads")
+                        : L10n.string("ui.settings.storage.database.subtitle"),
                 systemImage: "cylinder.split.1x2",
                 byteCount: model.usage.databaseBytes
             )
@@ -193,37 +193,37 @@ struct StorageManagementView: View {
         Section {
             cleanupButton(
                 action: .allCaches,
-                title: "清理所有可重建缓存",
-                subtitle: "网络、图片和非活动临时文件",
+                title: L10n.string("ui.settings.storage.clear_all_caches"),
+                subtitle: L10n.string("ui.settings.storage.clear_all_caches.subtitle"),
                 systemImage: "eraser",
                 byteCount: model.usage.reclaimableCacheBytes
             )
 
             cleanupButton(
                 action: .networkCache,
-                title: "清理网络与图片缓存",
-                subtitle: "之后浏览时会按需重新获取",
+                title: L10n.string("ui.settings.storage.clear_network_cache"),
+                subtitle: L10n.string("ui.settings.storage.clear_network_cache.subtitle"),
                 systemImage: "photo.on.rectangle.angled",
                 byteCount: model.usage.networkCacheBytes
             )
 
             cleanupButton(
                 action: .temporaryFiles,
-                title: "清理临时播放文件",
+                title: L10n.string("ui.settings.storage.clear_temporary_files"),
                 subtitle:
                     AppFeatureAvailability.downloads
-                        ? "保留正在下载与正在使用的文件"
-                        : "保留正在使用的文件",
+                        ? L10n.string("ui.settings.storage.clear_temporary_files.subtitle.downloads")
+                        : L10n.string("ui.settings.storage.clear_temporary_files.subtitle"),
                 systemImage: "waveform",
                 byteCount: model.usage.temporaryFilesBytes
             )
         } header: {
-            Text("缓存清理")
+            Text("ui.settings.storage.section.cache_cleanup")
         } footer: {
             Text(
                 AppFeatureAvailability.downloads
-                    ? "缓存清理不会删除已下载歌曲、收藏、账号信息或播放队列。正在使用的文件可能会被保留或立即重新生成。"
-                    : "缓存清理不会删除收藏、账号信息或播放队列。正在使用的文件可能会被保留或立即重新生成。"
+                    ? L10n.string("ui.settings.storage.cache_cleanup.footer.downloads")
+                    : L10n.string("ui.settings.storage.cache_cleanup.footer")
             )
         }
     }
@@ -233,8 +233,8 @@ struct StorageManagementView: View {
             if AppFeatureAvailability.downloads {
                 cleanupButton(
                     action: .repairDownloads,
-                    title: "修复下载存储",
-                    subtitle: "清除缺失记录与未登记文件",
+                    title: L10n.string("ui.settings.storage.repair_downloads"),
+                    subtitle: L10n.string("ui.settings.storage.repair_downloads.subtitle"),
                     systemImage: "wrench.and.screwdriver",
                     byteCount: nil,
                     disabled: !downloads.activeDownloads.isEmpty
@@ -242,8 +242,8 @@ struct StorageManagementView: View {
 
                 cleanupButton(
                     action: .automaticCacheHistory,
-                    title: "重置自动缓存计数",
-                    subtitle: "重新计算歌曲的播放触发次数",
+                    title: L10n.string("ui.settings.storage.reset_cache_history"),
+                    subtitle: L10n.string("ui.settings.storage.reset_cache_history.subtitle"),
                     systemImage: "arrow.counterclockwise",
                     byteCount: nil
                 )
@@ -260,8 +260,8 @@ struct StorageManagementView: View {
             } label: {
                 operationLabel(
                     action: .optimizeDatabase,
-                    title: "压缩本地数据库",
-                    subtitle: "回收已删除记录留下的空间",
+                    title: L10n.string("ui.settings.storage.optimize_database"),
+                    subtitle: L10n.string("ui.settings.storage.optimize_database.subtitle"),
                     systemImage: "cylinder.split.1x2",
                     byteCount: model.usage.databaseBytes
                 )
@@ -274,11 +274,11 @@ struct StorageManagementView: View {
                     )
             )
         } header: {
-            Text("维护")
+            Text("ui.settings.storage.section.maintenance")
         } footer: {
             if AppFeatureAvailability.downloads,
                !downloads.activeDownloads.isEmpty {
-                Text("下载任务完成或取消后，才能修复下载存储或压缩数据库。")
+                Text("ui.settings.storage.maintenance.footer.active_downloads")
             }
         }
     }
@@ -290,8 +290,8 @@ struct StorageManagementView: View {
             } label: {
                 operationLabel(
                     action: .allDownloads,
-                    title: "删除所有下载",
-                    subtitle: "同时取消正在进行的下载任务",
+                    title: L10n.string("ui.settings.storage.delete_all_downloads"),
+                    subtitle: L10n.string("ui.settings.storage.delete_all_downloads.subtitle"),
                     systemImage: "trash",
                     byteCount: model.usage.downloadsBytes
                 )
@@ -320,9 +320,9 @@ struct StorageManagementView: View {
                 )
             }
         } header: {
-            Text("危险操作")
+            Text("ui.settings.storage.section.destructive")
         } footer: {
-            Text("删除的歌曲文件无法恢复，但不会影响网易云音乐中的收藏和歌单。")
+            Text("ui.settings.storage.destructive.footer")
         }
     }
 
@@ -447,11 +447,11 @@ struct StorageManagementView: View {
                 )
             }
         }
-        Button("取消", role: .cancel) {}
+        Button("ui.common.cancel", role: .cancel) {}
     }
 
     private func formattedSize(_ byteCount: Int64) -> String {
-        byteCount.formatted(.byteCount(style: .file))
+        L10n.byteCount(byteCount)
     }
 
     private var displayedManagedByteCount: Int64 {

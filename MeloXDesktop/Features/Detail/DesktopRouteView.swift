@@ -142,7 +142,11 @@ struct DesktopCollectionHeader: View {
                     .textSelection(.enabled)
 
                 if description.count > 120 || description.contains("\n") {
-                    Button(isDescriptionExpanded ? "收起" : "更多") {
+                    Button(
+                        isDescriptionExpanded
+                            ? L10n.string("ui.common.collapse")
+                            : L10n.string("ui.common.more")
+                    ) {
                         withAnimation(
                             reduceMotion ? nil : .smooth(duration: 0.24)
                         ) {
@@ -159,7 +163,7 @@ struct DesktopCollectionHeader: View {
 
     private var actions: some View {
         HStack(spacing: 12) {
-            Button("播放", systemImage: "play.fill") {
+            Button("ui.common.play", systemImage: "play.fill") {
                 Task {
                     if let onPlayAll {
                         await onPlayAll(false)
@@ -171,7 +175,7 @@ struct DesktopCollectionHeader: View {
             .buttonStyle(.borderedProminent)
             .disabled(songs.isEmpty)
 
-            Button("随机播放", systemImage: "shuffle") {
+            Button("ui.player.shuffle", systemImage: "shuffle") {
                 Task {
                     if let onPlayAll {
                         await onPlayAll(true)
@@ -212,14 +216,18 @@ struct DesktopCollectionHeader: View {
                         .contentTransition(.symbolEffect(.replace))
                 }
                 .buttonStyle(.bordered)
-                .help(isFavorite ? "取消收藏" : "收藏")
+                .help(
+                    isFavorite
+                        ? L10n.string("ui.desktop.collection.unfavorite")
+                        : L10n.string("ui.desktop.collection.favorite")
+                )
             }
 
             if model.settings.isContentFeatureEnabled(.downloads)
                 || shareURL != nil {
                 Menu {
                     if model.settings.isContentFeatureEnabled(.downloads) {
-                        Button("下载全部", systemImage: "arrow.down.circle") {
+                        Button("ui.desktop.collection.download_all", systemImage: "arrow.down.circle") {
                             model.downloads.start(
                                 songs,
                                 quality: model.settings.quality
@@ -230,7 +238,7 @@ struct DesktopCollectionHeader: View {
 
                     if let shareURL {
                         ShareLink(item: shareURL) {
-                            Label("分享", systemImage: "square.and.arrow.up")
+                            Label("ui.common.share", systemImage: "square.and.arrow.up")
                         }
                     }
                 } label: {
@@ -238,7 +246,7 @@ struct DesktopCollectionHeader: View {
                 }
                 .menuStyle(.borderlessButton)
                 .fixedSize()
-                .help("更多")
+                .help(L10n.string("ui.common.more"))
             }
         }
     }
@@ -262,7 +270,7 @@ struct DesktopCollectionTrackList: View {
         LazyVStack(spacing: 1) {
             if groupsByDisc, discGroups.count > 1 {
                 ForEach(discGroups) { group in
-                    Text("碟片 \(group.id)")
+                    Text(L10n.format("ui.desktop.collection.disc", group.id))
                         .font(.system(size: 13, weight: .semibold))
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -378,11 +386,11 @@ struct DesktopDetailErrorView: View {
 
     var body: some View {
         ContentUnavailableView {
-            Label("无法载入", systemImage: "exclamationmark.triangle")
+            Label("ui.error.music_content_load_failed", systemImage: "exclamationmark.triangle")
         } description: {
             Text(message)
         } actions: {
-            Button("重试", action: retry)
+            Button("ui.common.retry", action: retry)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }

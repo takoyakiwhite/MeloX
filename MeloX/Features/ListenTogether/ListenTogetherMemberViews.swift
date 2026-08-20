@@ -7,7 +7,7 @@ struct ListenTogetherMemberRows: View {
     var body: some View {
         if room.users.isEmpty {
             Label(
-                "正在读取房间成员",
+                "ui.listen_together.loading_members",
                 systemImage: "person.2"
             )
             .foregroundStyle(.secondary)
@@ -33,16 +33,16 @@ struct ListenTogetherMembersView: View {
                     Section {
                         ListenTogetherMemberRows(room: room)
                     } header: {
-                        Text("\(room.users.count) 人在线")
+                        Text(L10n.format("ui.listen_together.online_count", room.users.count))
                     }
                 } else {
                     ContentUnavailableView(
-                        "房间已结束",
+                        "ui.listen_together.room_ended",
                         systemImage: "person.2.slash"
                     )
                 }
             }
-            .navigationTitle("一起听成员")
+            .navigationTitle("ui.listen_together.members_title")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
@@ -50,7 +50,7 @@ struct ListenTogetherMembersView: View {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") {
+                    Button("ui.common.done") {
                         dismiss()
                     }
                 }
@@ -66,21 +66,21 @@ struct ListenTogetherMembersView: View {
         if let invitationURL = listenTogether.invitationURL {
             ShareLink(
                 item: invitationURL,
-                subject: Text("网易云音乐一起听邀请"),
-                message: Text("和我一起听歌")
+                subject: Text("ui.listen_together.share_subject"),
+                message: Text("ui.listen_together.share_message")
             ) {
                 Label(
-                    "邀请朋友",
+                    "ui.listen_together.invite_friends",
                     systemImage: "square.and.arrow.up"
                 )
             }
         } else {
             Button(
-                "邀请朋友",
+                "ui.listen_together.invite_friends",
                 systemImage: "square.and.arrow.up"
             ) {}
             .disabled(true)
-            .accessibilityHint("当前没有可分享的播放歌曲")
+            .accessibilityHint("ui.listen_together.no_shareable_song_hint")
         }
     }
 }
@@ -113,7 +113,7 @@ private struct ListenTogetherMemberRow: View {
             Spacer()
 
             if isHost {
-                Text("房主")
+                Text("ui.listen_together.host")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

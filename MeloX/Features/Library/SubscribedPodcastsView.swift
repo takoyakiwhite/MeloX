@@ -13,8 +13,8 @@ struct SubscribedPodcastsView: View {
             if !displayedPodcasts.isEmpty {
                 Text(
                     isSearching
-                        ? "\(displayedPodcasts.count) 个搜索结果"
-                        : "\(library.subscribedPodcastTotalCount) 个订阅播客"
+                        ? L10n.format("ui.common.search_result_count", displayedPodcasts.count)
+                        : L10n.format("ui.library.subscribed_podcast_count", library.subscribedPodcastTotalCount)
                 )
                 .font(.caption)
                 .foregroundStyle(.secondary)
@@ -32,7 +32,7 @@ struct SubscribedPodcastsView: View {
                         library.toggle(podcast: podcast)
                     } label: {
                         Label(
-                            "取消订阅",
+                            L10n.string("ui.common.unsubscribe"),
                             systemImage: "mic.slash"
                         )
                     }
@@ -49,7 +49,7 @@ struct SubscribedPodcastsView: View {
                         library.subscribedPodcastsLoadMoreError,
                     loadToken:
                         library.subscribedPodcastsNextOffset,
-                    loadingTitle: "正在加载更多播客"
+                    loadingTitle: L10n.string("ui.podcasts.loading_more")
                 ) {
                     await library.loadMoreSubscribedPodcasts()
                 }
@@ -73,10 +73,10 @@ struct SubscribedPodcastsView: View {
                     )
                 } else if !library.hasMoreSubscribedPodcasts {
                     ContentUnavailableView(
-                        "还没有订阅播客",
+                        "ui.library.no_subscribed_podcasts",
                         systemImage: "mic",
                         description: Text(
-                            "打开播客详情后，轻点订阅按钮。"
+                            "ui.library.no_subscribed_podcasts.message"
                         )
                     )
                 }
@@ -122,7 +122,7 @@ struct SubscribedPodcastsView: View {
         if isPreparingSearchResults {
             HStack(spacing: 8) {
                 ProgressView()
-                Text("正在搜索全部订阅播客")
+                Text("ui.library.searching_all_subscribed_podcasts")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -138,7 +138,7 @@ struct SubscribedPodcastsView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
-                Button("重新搜索") {
+                Button("ui.library.search_again") {
                     searchReloadToken += 1
                 }
                 .buttonStyle(.bordered)

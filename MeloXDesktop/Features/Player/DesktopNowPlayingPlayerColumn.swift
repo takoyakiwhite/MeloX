@@ -54,7 +54,7 @@ struct DesktopNowPlayingPlayerColumn: View {
 
     private func metadata(elementScale: CGFloat) -> some View {
         VStack(alignment: .leading, spacing: 5 * elementScale) {
-            Text(model.player.currentSong?.name ?? "未在播放")
+            Text(model.player.currentSong?.name ?? L10n.string("ui.desktop.player.not_playing"))
                 .font(
                     .system(
                         size: 18 * elementScale,
@@ -68,7 +68,11 @@ struct DesktopNowPlayingPlayerColumn: View {
                     model.player.currentSong?.album?.name,
                 ]
                 .compactMap { $0 }
-                .joined(separator: " — ")
+                .joined(
+                    separator: L10n.string(
+                        "ui.common.title_detail_separator"
+                    )
+                )
             )
             .font(
                 .system(
@@ -111,7 +115,7 @@ struct DesktopNowPlayingPlayerColumn: View {
         Menu {
             if let song = model.player.currentSong {
                 Picker(
-                    "歌词来源",
+                    "ui.settings.lyrics.content.default_source",
                     selection: Binding(
                         get: { model.settings.lyricsSourcePreference },
                         set: { model.settings.lyricsSourcePreference = $0 }
@@ -124,7 +128,7 @@ struct DesktopNowPlayingPlayerColumn: View {
 
                 Divider()
                 if model.settings.isContentFeatureEnabled(.downloads) {
-                    Button("下载", systemImage: "arrow.down.circle") {
+                    Button("ui.common.download", systemImage: "arrow.down.circle") {
                         model.downloads.start(
                             song,
                             quality: model.settings.quality
@@ -132,16 +136,16 @@ struct DesktopNowPlayingPlayerColumn: View {
                     }
                 }
                 DesktopPlaybackQualityMenu(model: model)
-                Button("桌面歌词", systemImage: "text.quote") {
+                Button("ui.floating_lyrics.title", systemImage: "text.quote") {
                     openWindow(id: "floating-lyrics")
                 }
-                Button("一起听", systemImage: "person.2.wave.2") {
+                Button("ui.listen_together.title", systemImage: "person.2.wave.2") {
                     model.ui.sheet = .listenTogether
                 }
                 if model.settings.beatNetDebugEnabled {
                     Divider()
                     Button(
-                        "BeatNet 调试",
+                        "ui.beatnet.debug.title",
                         systemImage: "waveform.path.ecg"
                     ) {
                         model.ui.sheet = .beatNetDebug

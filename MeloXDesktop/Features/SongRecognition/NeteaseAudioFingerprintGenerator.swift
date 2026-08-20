@@ -9,11 +9,11 @@ enum NeteaseAudioFingerprintError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .resourcesMissing:
-            "听歌识曲所需的音频指纹资源不完整。"
+            L10n.string("ui.recognition.error.fingerprint_resources")
         case .runtimeFailed(let message):
-            "无法生成音频指纹：\(message)"
+            L10n.format("ui.recognition.error.fingerprint_failed", message)
         case .invalidResult:
-            "音频指纹生成了无效结果。"
+            L10n.string("ui.recognition.error.fingerprint_invalid")
         }
     }
 }
@@ -93,7 +93,7 @@ final class NeteaseAudioFingerprintGenerator:
         }
         guard preparationContinuation == nil else {
             throw NeteaseAudioFingerprintError.runtimeFailed(
-                "指纹运行时正在初始化。"
+                L10n.string("ui.recognition.error.fingerprint_initializing")
             )
         }
 

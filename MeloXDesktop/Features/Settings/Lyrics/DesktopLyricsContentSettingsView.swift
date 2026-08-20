@@ -13,14 +13,14 @@ struct DesktopLyricsContentSettingsView: View {
 
         ScrollView {
             Form {
-                Section("翻译与发音") {
+                Section("ui.settings.lyrics.content.section.translation_pronunciation") {
                     Toggle(
-                        "显示发音（罗马音）",
+                        "ui.settings.lyrics.content.show_romanization",
                         isOn: $settings.lyricsRomanizationEnabled
                     )
                     if settings.lyricsRomanizationEnabled {
                         Picker(
-                            "罗马音显示范围",
+                            "ui.settings.lyrics.content.romanization_display_range",
                             selection:
                                 $settings.lyricsRomanizationDisplayMode
                         ) {
@@ -32,7 +32,7 @@ struct DesktopLyricsContentSettingsView: View {
                         }
 
                         HStack {
-                            Text("罗马音大小")
+                            Text("ui.settings.lyrics.content.romanization_size")
                             Slider(
                                 value:
                                     $settings.lyricsRomanizationFontScale,
@@ -40,21 +40,21 @@ struct DesktopLyricsContentSettingsView: View {
                                 step: 0.05
                             )
                             Text(
-                                "\(Int((settings.lyricsRomanizationFontScale * 100).rounded()))%"
+                                L10n.percent(settings.lyricsRomanizationFontScale)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)
                         }
 
                         HStack {
-                            Text("罗马音亮度")
+                            Text("ui.settings.lyrics.content.romanization_brightness")
                             Slider(
                                 value: $settings.lyricsRomanizationOpacity,
                                 in: 0.4...0.9,
                                 step: 0.05
                             )
                             Text(
-                                "\(Int((settings.lyricsRomanizationOpacity * 100).rounded()))%"
+                                L10n.percent(settings.lyricsRomanizationOpacity)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)
@@ -62,12 +62,12 @@ struct DesktopLyricsContentSettingsView: View {
                     }
 
                     Toggle(
-                        "显示歌词翻译",
+                        "ui.settings.lyrics.content.show_translation",
                         isOn: $settings.lyricsTranslationEnabled
                     )
                     if settings.lyricsTranslationEnabled {
                         Picker(
-                            "翻译显示范围",
+                            "ui.settings.lyrics.content.translation_display_range",
                             selection:
                                 $settings.lyricsTranslationDisplayMode
                         ) {
@@ -79,28 +79,28 @@ struct DesktopLyricsContentSettingsView: View {
                         }
 
                         HStack {
-                            Text("翻译歌词大小")
+                            Text("ui.settings.lyrics.content.translation_size")
                             Slider(
                                 value: $settings.lyricsTranslationFontScale,
                                 in: 0.5...0.8,
                                 step: 0.05
                             )
                             Text(
-                                "\(Int((settings.lyricsTranslationFontScale * 100).rounded()))%"
+                                L10n.percent(settings.lyricsTranslationFontScale)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)
                         }
 
                         HStack {
-                            Text("翻译歌词亮度")
+                            Text("ui.settings.lyrics.content.translation_brightness")
                             Slider(
                                 value: $settings.lyricsTranslationOpacity,
                                 in: 0.4...0.9,
                                 step: 0.05
                             )
                             Text(
-                                "\(Int((settings.lyricsTranslationOpacity * 100).rounded()))%"
+                                L10n.percent(settings.lyricsTranslationOpacity)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)
@@ -108,9 +108,9 @@ struct DesktopLyricsContentSettingsView: View {
                     }
                 }
 
-                Section("歌词来源") {
+                Section("ui.settings.lyrics.content.section.source") {
                     Picker(
-                        "默认歌词来源",
+                        "ui.settings.lyrics.content.default_source",
                         selection: $settings.lyricsSourcePreference
                     ) {
                         ForEach(LyricSourcePreference.allCases) { preference in
@@ -118,41 +118,41 @@ struct DesktopLyricsContentSettingsView: View {
                         }
                     }
                     Toggle(
-                        "AMLL TTML 歌词",
+                        "ui.settings.lyrics.content.amll_source",
                         isOn: $settings.lyricsAMLLSourceEnabled
                     )
                     Toggle(
-                        "QQ 音乐歌词补全",
+                        "ui.settings.lyrics.content.qq_source",
                         isOn: $settings.lyricsQQMusicSourceEnabled
                     )
-                    Text("自动优选会先加载并显示网易云歌词，等待 AMLL 与 QQ 音乐返回后再按 AMLL TTML、网易云 YRC、QQ QRC、网易云 LRC、QQ LRC 的顺序统一优选。手动选择某个来源后，将仅使用该来源；也可以随时在播放器菜单中切换。")
+                    Text("ui.settings.lyrics.content.source.footer")
                         .foregroundStyle(.secondary)
                 }
 
-                Section("演唱者布局") {
+                Section("ui.settings.lyrics.content.section.performer_layout") {
                     Toggle(
-                        "双人歌词分列显示",
+                        "ui.settings.lyrics.content.duet_layout",
                         isOn: $settings.lyricsDuetLayoutEnabled
                     )
-                    Text("根据歌词中的演唱者标记，将不同演唱者分别靠左、靠右显示；合唱保持靠左。")
+                    Text("ui.settings.lyrics.content.duet_layout.footer")
                         .foregroundStyle(.secondary)
                 }
 
-                Section("逐字歌词") {
+                Section("ui.settings.lyrics.content.section.word_by_word") {
                     Toggle(
-                        "使用官方逐字歌词",
+                        "ui.settings.lyrics.content.official_word_by_word",
                         isOn: $settings.lyricsWordByWord
                     )
                     Toggle(
-                        "无 YRC 时启用伪逐字",
+                        "ui.settings.lyrics.content.pseudo_word_by_word",
                         isOn: $settings.lyricsPseudoWordByWord
                     )
                 }
 
                 if usesWordByWordPresentation {
-                    Section("高光") {
+                    Section("ui.settings.lyrics.content.section.highlight") {
                         Picker(
-                            "抬升方式",
+                            "ui.settings.lyrics.content.lift_mode",
                             selection: $settings.lyricsLiftMode
                         ) {
                             ForEach(LyricsLiftMode.allCases) { mode in
@@ -162,7 +162,7 @@ struct DesktopLyricsContentSettingsView: View {
                         .pickerStyle(.segmented)
 
                         HStack {
-                            Text("高光渐变宽度")
+                            Text("ui.settings.lyrics.content.highlight_gradient_width")
                             Slider(
                                 value:
                                     $settings.lyricsHighlightGradientWidth,
@@ -177,6 +177,7 @@ struct DesktopLyricsContentSettingsView: View {
                                         .number.precision(
                                             .fractionLength(1)
                                         )
+                                        .locale(L10n.locale)
                                     )
                             )
                             .monospacedDigit()
@@ -184,7 +185,7 @@ struct DesktopLyricsContentSettingsView: View {
                         }
 
                         HStack {
-                            Text("渐变削减程度")
+                            Text("ui.settings.lyrics.content.gradient_reduction")
                             Slider(
                                 value:
                                     $settings
@@ -195,16 +196,16 @@ struct DesktopLyricsContentSettingsView: View {
                                 step: 0.05
                             )
                             Text(
-                                "\(Int((settings.lyricsHighlightGradientReduction * 100).rounded()))%"
+                                L10n.percent(settings.lyricsHighlightGradientReduction)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)
                         }
                     }
 
-                    Section("长音与光效") {
+                    Section("ui.settings.lyrics.content.section.long_tone_glow") {
                         Picker(
-                            "长音识别方式",
+                            "ui.settings.lyrics.content.long_tone_detection",
                             selection:
                                 $settings.lyricsLongSyllableDetectionMode
                         ) {
@@ -217,7 +218,7 @@ struct DesktopLyricsContentSettingsView: View {
                         .pickerStyle(.segmented)
 
                         HStack {
-                            Text("长音判定阈值")
+                            Text("ui.settings.lyrics.content.long_tone_threshold")
                             Slider(
                                 value:
                                     $settings
@@ -228,14 +229,17 @@ struct DesktopLyricsContentSettingsView: View {
                                 step: 0.05
                             )
                             Text(
-                                "\(settings.lyricsLongSyllableDurationThreshold, specifier: "%.2f") s"
+                                L10n.format(
+                                    "ui.common.seconds_two_decimals",
+                                    settings.lyricsLongSyllableDurationThreshold
+                                )
                             )
                             .monospacedDigit()
                             .frame(width: 64, alignment: .trailing)
                         }
 
                         HStack {
-                            Text("长音膨胀大小")
+                            Text("ui.settings.lyrics.content.long_tone_expansion")
                             Slider(
                                 value:
                                     $settings.lyricsLongToneExpansionAmount,
@@ -245,24 +249,24 @@ struct DesktopLyricsContentSettingsView: View {
                                 step: 0.01
                             )
                             Text(
-                                "\(Int((settings.lyricsLongToneExpansionAmount * 100).rounded()))%"
+                                L10n.percent(settings.lyricsLongToneExpansionAmount)
                             )
                             .monospacedDigit()
                             .frame(width: 48, alignment: .trailing)
                         }
 
                         Toggle(
-                            "逐字歌词光效",
+                            "ui.settings.lyrics.content.glow_effect",
                             isOn: $settings.lyricsGlowEnabled
                         )
                         if settings.lyricsGlowEnabled {
                             Toggle(
-                                "仅长音显示辉光",
+                                "ui.settings.lyrics.content.glow_long_tones_only",
                                 isOn:
                                     $settings.lyricsGlowLongSyllablesOnly
                             )
                             HStack {
-                                Text("逐字光效强度")
+                                Text("ui.settings.lyrics.content.glow_intensity")
                                 Slider(
                                     value: $settings.lyricsGlowIntensity,
                                     in:
@@ -275,6 +279,7 @@ struct DesktopLyricsContentSettingsView: View {
                                         .number.precision(
                                             .fractionLength(1)
                                         )
+                                        .locale(L10n.locale)
                                     )
                                 )
                                 .monospacedDigit()

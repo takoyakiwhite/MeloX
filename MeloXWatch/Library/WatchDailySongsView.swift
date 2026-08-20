@@ -12,10 +12,10 @@ struct WatchDailySongsView: View {
         Group {
             switch phase {
             case .idle, .loading:
-                ProgressView("正在载入")
+                ProgressView("ui.common.loading")
             case .failed(let message):
                 ContentUnavailableView(
-                    "无法载入每日推荐",
+                    "ui.watch.daily.load_failed",
                     systemImage: "calendar.badge.exclamationmark",
                     description: Text(message)
                 )
@@ -27,7 +27,7 @@ struct WatchDailySongsView: View {
                             await coordinator.play(first, in: songs)
                         }
                     } label: {
-                        Label("播放全部", systemImage: "play.fill")
+                        Label("ui.action.play_all", systemImage: "play.fill")
                     }
                     .disabled(songs.isEmpty)
 
@@ -43,7 +43,7 @@ struct WatchDailySongsView: View {
                 }
             }
         }
-        .navigationTitle("每日推荐")
+        .navigationTitle("ui.watch.daily.title")
         .task {
             await load()
         }
@@ -51,7 +51,7 @@ struct WatchDailySongsView: View {
 
     private func load() async {
         guard account.isLoggedIn else {
-            phase = .failed("请先同步 iPhone 登录，或在手表上使用二维码登录。")
+            phase = .failed(L10n.string("ui.watch.daily.login_required"))
             return
         }
         phase = .loading

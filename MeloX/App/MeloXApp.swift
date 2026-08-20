@@ -91,6 +91,7 @@ struct MeloXApp: App {
                 .environment(screenAwakeCoordinator)
                 .environment(releaseNotes)
                 .environment(\.effectiveLyricsRefreshRate, effectiveLyricsRefreshRate)
+                .environment(\.locale, settings.appLanguage.locale)
                 .tint(.red)
                 .preferredColorScheme(
                     settings.appearance.preferredColorScheme

@@ -87,7 +87,11 @@ struct PlaylistDetailView: View {
         .searchable(
             text: $searchQuery,
             placement: .navigationBarDrawer(displayMode: .always),
-            prompt: Text(prefersToplistLayout ? "在排行榜中搜索" : "在歌单中搜索")
+            prompt: Text(
+                prefersToplistLayout
+                    ? L10n.string("ui.toplists.search_prompt")
+                    : L10n.string("ui.playlists.search_prompt")
+            )
         )
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(interfaceColorScheme, for: .navigationBar, .tabBar)
@@ -156,7 +160,7 @@ struct PlaylistDetailView: View {
             }
         }
         .alert(
-            "音乐库操作失败",
+            "ui.library.error.title",
             isPresented: Binding(
                 get: { library.errorMessage != nil },
                 set: { isPresented in
@@ -166,14 +170,14 @@ struct PlaylistDetailView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 library.clearError()
             }
         } message: {
-            Text(library.errorMessage ?? "未知错误")
+            Text(library.errorMessage ?? L10n.string("ui.common.unknown_error"))
         }
         .alert(
-            "无法准备下载",
+            "ui.downloads.prepare_failed",
             isPresented: Binding(
                 get: {
                     downloadsEnabled
@@ -186,17 +190,17 @@ struct PlaylistDetailView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 downloadCoordinator.clearError()
             }
         } message: {
             Text(
                 downloadCoordinator.errorMessage
-                    ?? "无法读取\(collectionTitle)歌曲。"
+                    ?? L10n.format("ui.music_collection.load_songs_failed", collectionTitle)
             )
         }
         .alert(
-            "无法播放全部",
+            "ui.library.play_all_failed",
             isPresented: Binding(
                 get: { playbackErrorMessage != nil },
                 set: { isPresented in
@@ -206,11 +210,11 @@ struct PlaylistDetailView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 playbackErrorMessage = nil
             }
         } message: {
-            Text(playbackErrorMessage ?? "无法读取完整歌单。")
+            Text(playbackErrorMessage ?? L10n.string("ui.playlists.load_complete_failed"))
         }
     }
 
@@ -227,7 +231,9 @@ struct PlaylistDetailView: View {
     }
 
     private var collectionTitle: String {
-        prefersToplistLayout ? "排行榜" : "歌单"
+        prefersToplistLayout
+            ? L10n.string("ui.toplists.title")
+            : L10n.string("ui.common.playlist")
     }
 
     private var resolvedPalette: ArtworkDetailPalette {
@@ -290,7 +296,10 @@ struct PlaylistDetailView: View {
                downloadCoordinator.isPreparing {
                 ProgressView()
                     .accessibilityLabel(
-                        "正在准备下载 \(downloadCoordinator.preparingSongCount) 首歌曲"
+                        L10n.format(
+                            "ui.downloads.preparing_song_count",
+                            downloadCoordinator.preparingSongCount
+                        )
                     )
             }
 
@@ -299,7 +308,7 @@ struct PlaylistDetailView: View {
             } label: {
                 Image(systemName: "square.and.arrow.up")
             }
-            .accessibilityLabel("分享\(collectionTitle)")
+            .accessibilityLabel(L10n.format("ui.common.share_named", collectionTitle))
 
             Menu {
                 if downloadsEnabled {
@@ -319,7 +328,9 @@ struct PlaylistDetailView: View {
                     library.toggle(playlist: playlist)
                 } label: {
                     Label(
-                        library.contains(playlist: playlist) ? "取消收藏" : "收藏歌单",
+                        library.contains(playlist: playlist)
+                            ? L10n.string("ui.common.unfavorite")
+                            : L10n.string("ui.playlists.favorite"),
                         systemImage: library.contains(playlist: playlist) ? "checkmark" : "plus"
                     )
                 }
@@ -327,12 +338,12 @@ struct PlaylistDetailView: View {
                 Button {
                     Task { await load() }
                 } label: {
-                    Label("刷新", systemImage: "arrow.clockwise")
+                    Label("ui.common.refresh", systemImage: "arrow.clockwise")
                 }
             } label: {
                 Image(systemName: "ellipsis")
             }
-            .accessibilityLabel("更多")
+            .accessibilityLabel("ui.common.more")
         }
         .sharedBackgroundVisibility(.visible)
     }

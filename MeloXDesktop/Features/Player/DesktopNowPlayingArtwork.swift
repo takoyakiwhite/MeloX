@@ -49,7 +49,8 @@ struct DesktopNowPlayingArtwork: View {
         )
         .accessibilityElement()
         .accessibilityLabel(
-            songName.map { "\($0)的封面" } ?? "歌曲封面"
+            songName.map { L10n.format("ui.song.artwork_accessibility", $0) }
+                ?? L10n.string("ui.desktop.player.song_artwork")
         )
         .task(id: isPlaying) {
             await animateBounce(whenPlaying: isPlaying)

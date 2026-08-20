@@ -9,9 +9,9 @@ struct DesktopPlaybackQualityMenu: View {
     var body: some View {
         Menu {
             if model.player.availablePlaybackQualities.isEmpty {
-                Text("正在获取可用音质")
+                Text("ui.desktop.player.loading_quality")
             } else {
-                Picker("播放音质", selection: qualityBinding) {
+                Picker("ui.player.playback_quality", selection: qualityBinding) {
                     ForEach(model.player.availablePlaybackQualities) { quality in
                         Text(quality.title).tag(quality)
                     }
@@ -25,9 +25,9 @@ struct DesktopPlaybackQualityMenu: View {
 
     private var menuTitle: String {
         if let quality = model.player.effectivePlaybackQuality {
-            return "音质：\(quality.title)"
+            return L10n.format("ui.desktop.player.quality_value", quality.title)
         }
-        return "音质"
+        return L10n.string("ui.player.playback_quality")
     }
 
     private var qualityBinding: Binding<MusicQuality> {

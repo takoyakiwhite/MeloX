@@ -52,7 +52,7 @@ struct SongWikiContent: View {
     @ViewBuilder
     private var memorySection: some View {
         if !wiki.memories.isEmpty {
-            Section("回忆坐标") {
+            Section("ui.song.wiki.section.memories") {
                 ForEach(wiki.memories) { memory in
                     LabeledContent(memory.title) {
                         Text(memory.value)
@@ -67,10 +67,16 @@ struct SongWikiContent: View {
     @ViewBuilder
     private var tagSection: some View {
         if !wiki.tagGroups.isEmpty {
-            Section("歌曲标签") {
+            Section("ui.song.wiki.section.tags") {
                 ForEach(wiki.tagGroups) { group in
                     LabeledContent(group.title) {
-                        Text(group.values.joined(separator: "、"))
+                        Text(
+                            L10n.joined(
+                                group.values,
+                                separatorKey:
+                                    "ui.common.compact_list_separator"
+                            )
+                        )
                             .multilineTextAlignment(.trailing)
                             .foregroundStyle(.secondary)
                     }
@@ -82,7 +88,7 @@ struct SongWikiContent: View {
     @ViewBuilder
     private var attributeSection: some View {
         if !wiki.attributes.isEmpty {
-            Section("基础信息") {
+            Section("ui.song.wiki.section.basic_information") {
                 ForEach(wiki.attributes) { attribute in
                     LabeledContent(attribute.title) {
                         Text(attribute.value)
@@ -131,7 +137,7 @@ struct SongWikiContent: View {
     @ViewBuilder
     private var reviewSection: some View {
         if !wiki.reviews.isEmpty {
-            Section("精选乐评") {
+            Section("ui.song.wiki.section.featured_reviews") {
                 ForEach(wiki.reviews) { review in
                     VStack(alignment: .leading, spacing: 8) {
                         Text(review.body)
@@ -151,7 +157,7 @@ struct SongWikiContent: View {
     @ViewBuilder
     private var similarSongsSection: some View {
         if !wiki.similarSongs.isEmpty {
-            Section("相似歌曲") {
+            Section("ui.song.wiki.section.similar_songs") {
                 ForEach(wiki.similarSongs) { reference in
                     NavigationLink {
                         SongWikiRelatedSongDestination(
@@ -195,7 +201,7 @@ struct SongWikiContent: View {
     @ViewBuilder
     private var relatedPlaylistsSection: some View {
         if !wiki.relatedPlaylists.isEmpty {
-            Section("相关歌单") {
+            Section("ui.song.wiki.section.related_playlists") {
                 ForEach(wiki.relatedPlaylists) { reference in
                     let route = MusicRoute.playlist(
                         reference.playlist
@@ -215,7 +221,10 @@ struct SongWikiContent: View {
 
                                 if reference.playCount > 0 {
                                     Text(
-                                        "\(reference.playCount.formatted()) 次播放"
+                                        L10n.format(
+                                            "ui.common.play_count",
+                                            reference.playCount
+                                        )
                                     )
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -233,10 +242,10 @@ struct SongWikiContent: View {
     @ViewBuilder
     private var contributionSection: some View {
         if let url = wiki.contributionURL {
-            Section("更多") {
+            Section("ui.common.more") {
                 Link(destination: url) {
                     Label(
-                        "参与百科共建",
+                        "ui.song.wiki.contribute",
                         systemImage: "square.and.pencil"
                     )
                 }
@@ -261,7 +270,7 @@ private struct SongWikiRelatedSongDestination: View {
             } else {
                 switch phase {
                 case .loading:
-                    ProgressView("正在载入歌曲")
+                    ProgressView("ui.song.loading")
                         .frame(
                             maxWidth: .infinity,
                             maxHeight: .infinity
@@ -272,7 +281,7 @@ private struct SongWikiRelatedSongDestination: View {
                     }
                 case .loaded:
                     ContentUnavailableView(
-                        "歌曲资料不可用",
+                        "ui.song.information_unavailable",
                         systemImage: "music.note"
                     )
                 }

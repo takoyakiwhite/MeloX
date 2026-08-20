@@ -33,7 +33,9 @@ final class WatchLyricsStore: ObservableObject {
             let loaded = try await api.lyrics(id: songID)
             guard currentGeneration == generation else { return }
             lyrics = loaded
-            errorMessage = loaded.isEmpty ? "当前歌曲暂无滚动歌词。" : nil
+            errorMessage = loaded.isEmpty
+                ? L10n.string("ui.watch.lyrics.no_synced_lyrics")
+                : nil
             isLoading = false
         } catch is CancellationError {
             guard currentGeneration == generation else { return }

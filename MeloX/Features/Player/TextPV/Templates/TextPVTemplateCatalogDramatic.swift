@@ -4,7 +4,7 @@
 import Foundation
 
 extension TextPVTemplateCatalog {
-    static let cyberpunkHUD = TextPVTemplate(
+    static var cyberpunkHUD: TextPVTemplate { TextPVTemplate(
         style: .cyberpunkHUD,
         palette: TextPVPalette(
             background: "#0a0a0a",
@@ -26,8 +26,12 @@ extension TextPVTemplateCatalog {
             ]),
             TextPVEffect(.hudStatusText, layer: .text, [
                 "textColor": "$text", "alertColor": "$accent",
-                "centerText": "SYS.MONITOR // ONLINE",
-                "rightText": "NETWATCH // PROTOCOL V.2.0.77",
+                "centerText": .string(
+                    L10n.string("ui.text_pv.generated.hud.system_online")
+                ),
+                "rightText": .string(
+                    L10n.string("ui.text_pv.generated.hud.netwatch_protocol")
+                ),
                 "fontSize": 13,
             ]),
             TextPVEffect(.motionBrackets, layer: .overlay, [
@@ -47,9 +51,9 @@ extension TextPVTemplateCatalog {
         ],
         bpm: 140,
         features: TextPVFeatures(motionDetection: true)
-    )
+    ) }
 
-    static let emotionCinema = TextPVTemplate(
+    static var emotionCinema: TextPVTemplate { TextPVTemplate(
         style: .emotionCinema,
         palette: TextPVPalette(
             background: "#0d1018",
@@ -68,7 +72,11 @@ extension TextPVTemplateCatalog {
             ]),
             TextPVEffect(.scatteredText, layer: .text, [
                 "count": 6, "color": "$secondary", "minSize": 12, "maxSize": 20,
-                "chars": "MELANCHOLY SOLITUDE VOID FADING ECHO 虚無 薄れゆく 永劫回帰",
+                "chars": .string(
+                    L10n.string(
+                        "ui.text_pv.template.emotion_cinema.decorative_words"
+                    )
+                ),
             ]),
             TextPVEffect(.motionBrackets, layer: .overlay, [
                 "color": "$primary", "alpha": 0.5, "lineWidth": 1, "style": "medium",
@@ -86,7 +94,7 @@ extension TextPVTemplateCatalog {
             ]),
         ],
         features: TextPVFeatures(motionDetection: true)
-    )
+    ) }
 
     static let hystericNight = TextPVTemplate(
         style: .hystericNight,

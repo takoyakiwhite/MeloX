@@ -7,16 +7,16 @@ struct PlaybackIssue: Identifiable, Sendable {
     init(song: Song, error: Error) {
         if let apiError = error as? APIError,
            case .noPlayableSource = apiError {
-            message = "《\(song.name)》可能因版权或地区限制，当前没有可用的播放地址。"
+            message = L10n.format("ui.error.playback.unavailable", song.name)
             return
         }
 
         if let playbackError = error as? AudioPlaybackError,
            case .itemFailed = playbackError {
-            message = "《\(song.name)》的音源无法载入，可能因版权、地区限制或网络问题。"
+            message = L10n.format("ui.error.playback.source_load_failed", song.name)
             return
         }
 
-        message = "《\(song.name)》播放失败：\(error.localizedDescription)"
+        message = L10n.format("ui.error.playback.failed", song.name, error.localizedDescription)
     }
 }

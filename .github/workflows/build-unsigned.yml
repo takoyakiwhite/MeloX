@@ -1,4 +1,4 @@
-name: Build MeloX release artifacts
+name: Build MeloX release artifacts / 构建 MeloX 发版产物
 
 on:
   push:
@@ -23,19 +23,19 @@ concurrency:
 
 jobs:
   select_run:
-    name: Select release platforms
+    name: Select release platforms / 选择发版平台
     runs-on: ubuntu-latest
     outputs:
       should_build: ${{ steps.decision.outputs.should_build }}
       platforms: ${{ steps.decision.outputs.platforms }}
 
     steps:
-      - name: Checkout
+      - name: Checkout / 检出代码
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Parse platform release notes
+      - name: Parse platform release notes / 解析平台更新日志
         id: notes
         shell: bash
         run: |
@@ -44,7 +44,7 @@ jobs:
             --notes RELEASE_NOTES.md \
             --github-output "${GITHUB_OUTPUT}"
 
-      - name: Select build run
+      - name: Select build run / 选择构建任务
         id: decision
         shell: bash
         env:
@@ -62,26 +62,26 @@ jobs:
             if [[ -n "${MATCHING_TAGS}" ]]; then
               SHOULD_BUILD=false
               PLATFORMS='[]'
-              echo "跳过已由标签构建覆盖的 main 分支提交：${MATCHING_TAGS}"
+              echo "Skipping main commit already covered by tag builds / 跳过已由标签构建覆盖的 main 分支提交：${MATCHING_TAGS}"
             fi
           elif [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
             if [[ "${GITHUB_REF_NAME}" == *_mac ]]; then
               if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+_mac$ ]]; then
-                echo "::error::桌面端标签必须使用 v<major>.<minor>.<patch>_mac"
+                echo "::error::macOS tags must use v<major>.<minor>.<patch>_mac / 桌面端标签格式错误"
                 exit 1
               fi
               if [[ "${HAS_MACOS}" != "true" ]]; then
-                echo "::error::桌面端标签要求 macOS 更新日志非空"
+                echo "::error::A macOS tag requires non-empty bilingual macOS release notes / 桌面端标签要求 macOS 双语更新日志非空"
                 exit 1
               fi
               PLATFORMS='["macos"]'
             else
               if [[ ! "${GITHUB_REF_NAME}" =~ ^v[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-                echo "::error::移动端标签必须使用 v<major>.<minor>.<patch>"
+                echo "::error::Mobile tags must use v<major>.<minor>.<patch> / 移动端标签格式错误"
                 exit 1
               fi
               if [[ "${HAS_IOS}" != "true" ]]; then
-                echo "::error::移动端标签要求 iOS + Apple Watch 更新日志非空"
+                echo "::error::A mobile tag requires non-empty bilingual iOS + Apple Watch release notes / 移动端标签要求双语更新日志非空"
                 exit 1
               fi
               PLATFORMS='["ios"]'
@@ -92,7 +92,7 @@ jobs:
           echo "platforms=${PLATFORMS}" >> "${GITHUB_OUTPUT}"
 
   build:
-    name: Build ${{ matrix.platform }} artifact
+    name: Build ${{ matrix.platform }} artifact / 构建 ${{ matrix.platform }} 产物
     needs: select_run
     if: needs.select_run.outputs.should_build == 'true'
     runs-on: macos-26
@@ -103,12 +103,12 @@ jobs:
         platform: ${{ fromJSON(needs.select_run.outputs.platforms) }}
 
     steps:
-      - name: Checkout
+      - name: Checkout / 检出代码
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Select Xcode
+      - name: Select Xcode / 选择 Xcode
         shell: bash
         run: |
           set -euo pipefail
@@ -122,7 +122,7 @@ jobs:
           done
 
           if [[ -z "${XCODE_APP}" ]]; then
-            echo "找不到可用的 Xcode"
+            echo "No supported Xcode installation found / 找不到可用的 Xcode"
             exit 1
           fi
 
@@ -130,7 +130,7 @@ jobs:
           xcodebuild -version
           xcodebuild -showsdks
 
-      - name: Configure platform artifact
+      - name: Configure platform artifact / 配置平台产物
         id: target
         shell: bash
         env:
@@ -147,12 +147,12 @@ jobs:
               echo "asset_path=build/MeloX-macOS-*.dmg" >> "${GITHUB_OUTPUT}"
               ;;
             *)
-              echo "未知平台：${PLATFORM}"
+              echo "Unknown platform / 未知平台：${PLATFORM}"
               exit 1
               ;;
           esac
 
-      - name: Resolve previous platform release
+      - name: Resolve previous platform release / 查找上一平台版本
         id: release_range
         if: startsWith(github.ref, 'refs/tags/v')
         shell: bash
@@ -178,14 +178,14 @@ jobs:
           )"
           echo "previous_tag=${PREVIOUS_TAG}" >> "${GITHUB_OUTPUT}"
 
-      - name: Build release artifact
+      - name: Build release artifact / 构建发版产物
         shell: bash
         env:
           RELEASE_NOTES_CURRENT_REF: ${{ github.ref_type == 'tag' && github.ref || github.sha }}
           RELEASE_NOTES_PREVIOUS_REF: ${{ steps.release_range.outputs.previous_tag }}
         run: bash "${{ steps.target.outputs.build_script }}"
 
-      - name: Upload release artifact
+      - name: Upload release artifact / 上传发版产物
         uses: actions/upload-artifact@v7
         with:
           name: MeloX-${{ matrix.platform }}-${{ github.run_number }}
@@ -197,7 +197,7 @@ jobs:
           retention-days: 14
 
   telegram:
-    name: Send ${{ matrix.platform }} CI artifact to Telegram
+    name: Send ${{ matrix.platform }} CI artifact to Telegram / 发送 CI 产物
     needs:
       - select_run
       - build
@@ -217,18 +217,18 @@ jobs:
         platform: ${{ fromJSON(needs.select_run.outputs.platforms) }}
 
     steps:
-      - name: Checkout commit history
+      - name: Checkout commit history / 检出提交历史
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Download release artifact
+      - name: Download release artifact / 下载发版产物
         uses: actions/download-artifact@v8
         with:
           name: MeloX-${{ matrix.platform }}-${{ github.run_number }}
           path: telegram-assets
 
-      - name: Configure Telegram artifact
+      - name: Configure Telegram artifact / 配置 Telegram 产物
         id: target
         shell: bash
         env:
@@ -238,15 +238,15 @@ jobs:
           if [[ "${PLATFORM}" == "macos" ]]; then
             echo "is_macos=true" >> "${GITHUB_OUTPUT}"
             echo "project=MeloX macOS" >> "${GITHUB_OUTPUT}"
-            echo "build_job=Build macos artifact" >> "${GITHUB_OUTPUT}"
+            echo "build_job=Build macos artifact / 构建 macos 产物" >> "${GITHUB_OUTPUT}"
           else
             echo "is_macos=false" >> "${GITHUB_OUTPUT}"
             echo "filename=MeloX-iOS-unsigned.ipa" >> "${GITHUB_OUTPUT}"
             echo "project=MeloX iOS + Apple Watch" >> "${GITHUB_OUTPUT}"
-            echo "build_job=Build ios artifact" >> "${GITHUB_OUTPUT}"
+            echo "build_job=Build ios artifact / 构建 ios 产物" >> "${GITHUB_OUTPUT}"
           fi
 
-      - name: Generate Telegram CI caption
+      - name: Generate Telegram CI caption / 生成 Telegram CI 文案
         shell: bash
         env:
           GITHUB_TOKEN: ${{ github.token }}
@@ -268,7 +268,7 @@ jobs:
             --website-url "${MELOX_WEBSITE_URL}" \
             --output "${RUNNER_TEMP}/telegram-caption.txt"
 
-      - name: Send artifact to Telegram
+      - name: Send artifact to Telegram / 发送产物到 Telegram
         shell: bash
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -277,13 +277,13 @@ jobs:
           set -euo pipefail
 
           if [[ -z "${TELEGRAM_BOT_TOKEN}" || -z "${TELEGRAM_CHAT_ID}" ]]; then
-            echo "::error::缺少 TELEGRAM_BOT_TOKEN 或 TELEGRAM_CHAT_ID"
+            echo "::error::Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID / 缺少 Telegram 配置"
             exit 1
           fi
 
           CAPTION_PATH="${RUNNER_TEMP}/telegram-caption.txt"
           if [[ ! -f "${CAPTION_PATH}" ]]; then
-            echo "::error::找不到 Telegram Caption"
+            echo "::error::Telegram caption was not generated / 找不到 Telegram Caption"
             exit 1
           fi
 
@@ -292,7 +292,7 @@ jobs:
             APPLE_SILICON_PATH="telegram-assets/MeloX-macOS-Apple-Silicon.dmg"
             INTEL_PATH="telegram-assets/MeloX-macOS-Intel.dmg"
             if [[ ! -f "${APPLE_SILICON_PATH}" || ! -f "${INTEL_PATH}" ]]; then
-              echo "::error::找不到 Apple Silicon 或 Intel DMG"
+              echo "::error::Apple Silicon or Intel DMG is missing / 找不到对应 DMG"
               exit 1
             fi
             MEDIA="$(
@@ -317,7 +317,7 @@ jobs:
           else
             ASSET_PATH="telegram-assets/${{ steps.target.outputs.filename }}"
             if [[ ! -f "${ASSET_PATH}" ]]; then
-              echo "::error::找不到 iOS 构建产物"
+              echo "::error::iOS build artifact is missing / 找不到 iOS 构建产物"
               exit 1
             fi
             curl \
@@ -335,7 +335,7 @@ jobs:
           fi
 
   release:
-    name: Create ${{ matrix.platform }} GitHub Release
+    name: Create ${{ matrix.platform }} GitHub Release / 创建 GitHub 发版
     needs:
       - select_run
       - build
@@ -351,18 +351,18 @@ jobs:
         platform: ${{ fromJSON(needs.select_run.outputs.platforms) }}
 
     steps:
-      - name: Checkout
+      - name: Checkout / 检出代码
         uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
-      - name: Download release artifact
+      - name: Download release artifact / 下载发版产物
         uses: actions/download-artifact@v8
         with:
           name: MeloX-${{ matrix.platform }}-${{ github.run_number }}
           path: release-assets
 
-      - name: Configure release
+      - name: Configure release / 配置发版
         id: target
         shell: bash
         env:
@@ -379,7 +379,7 @@ jobs:
             echo "make_latest=true" >> "${GITHUB_OUTPUT}"
           fi
 
-      - name: Generate release metadata
+      - name: Generate release metadata / 生成发版元数据
         shell: bash
         env:
           PLATFORM: ${{ matrix.platform }}
@@ -389,14 +389,14 @@ jobs:
           RELEASE_METADATA_PATH="release-assets/ReleaseNotes.json"
           RELEASE_NOTES_PATH="release-assets/ReleaseNotes.md"
           if [[ ! -s "${RELEASE_METADATA_PATH}" || ! -s "${RELEASE_NOTES_PATH}" ]]; then
-            echo "::error::构建产物中缺少平台更新日志"
+            echo "::error::Platform release notes are missing from the build artifact / 构建产物中缺少平台更新日志"
             exit 1
           fi
 
           BUNDLED_PLATFORM="$(jq -r '.platform' "${RELEASE_METADATA_PATH}")"
           BUNDLED_VERSION="$(jq -r '.version' "${RELEASE_METADATA_PATH}")"
           if [[ "${BUNDLED_PLATFORM}" != "${PLATFORM}" ]]; then
-            echo "::error::更新日志平台 ${BUNDLED_PLATFORM} 与任务 ${PLATFORM} 不一致"
+            echo "::error::Bundled release-note platform ${BUNDLED_PLATFORM} does not match job ${PLATFORM} / 更新日志平台不一致"
             exit 1
           fi
 
@@ -406,25 +406,58 @@ jobs:
             EXPECTED_TAG="v${BUNDLED_VERSION}"
           fi
           if [[ "${GITHUB_REF_NAME}" != "${EXPECTED_TAG}" ]]; then
-            echo "::error::标签 ${GITHUB_REF_NAME} 与 App 版本 ${EXPECTED_TAG} 不一致"
+            echo "::error::Tag ${GITHUB_REF_NAME} does not match app version ${EXPECTED_TAG} / 标签与 App 版本不一致"
             exit 1
           fi
 
           cp "${RELEASE_NOTES_PATH}" release_notes.md
           if [[ "${PLATFORM}" == "macos" ]]; then
             cat > release_body.md <<EOF
+          ## English
+
+          This MeloX macOS release was built automatically by GitHub Actions.
+
+          ### MeloX Website
+
+          Visit the [MeloX website](${MELOX_WEBSITE_URL}) for project information, notarized downloads, and the latest news.
+
+          ### Downloads
+
+          - \`MeloX-macOS-Apple-Silicon.dmg\`: unsigned image for Apple silicon (M-series, \`arm64\`)
+          - \`MeloX-macOS-Intel.dmg\`: unsigned image for Intel Macs (\`x86_64\`)
+
+          ### Installation
+
+          Drag MeloX Desktop into Applications. These GitHub Actions builds are neither Developer ID signed nor notarized by Apple.
+
+          If macOS reports that the app is damaged or cannot verify its developer, open Terminal and run:
+
+          \`\`\`bash
+          xattr -dr com.apple.quarantine "/Applications/MeloX Desktop.app"
+          \`\`\`
+
+          Reopen MeloX Desktop afterward. Only run this command for files downloaded from this project's official Releases or website links.
+
+          ### Build Information
+
+          - Version: \`${GITHUB_REF_NAME}\`
+          - Commit: \`${GITHUB_SHA}\`
+          - Build: \`${GITHUB_RUN_NUMBER}\`
+
+          ## 简体中文
+
           这是由 GitHub Actions 自动构建的 MeloX macOS 发行版本。
 
-          ## MeloX 官网
+          ### MeloX 官网
 
-          访问 [MeloX 官网](${MELOX_WEBSITE_URL}) 了解项目与最新动态，也欢迎推荐给更多朋友。
+          访问 [MeloX 官网](${MELOX_WEBSITE_URL}) 了解项目、获取已公证版本与查看最新动态。
 
-          ## 下载说明
+          ### 下载说明
 
           - \`MeloX-macOS-Apple-Silicon.dmg\`：Apple 芯片（M 系列，\`arm64\`）未签名安装镜像
           - \`MeloX-macOS-Intel.dmg\`：Intel（\`x86_64\`）未签名安装镜像
 
-          ## 安装说明
+          ### 安装说明
 
           将 MeloX Desktop 拖入“应用程序”。该 GitHub Actions 构建未使用 Developer ID 签名，也未经 Apple 公证。
 
@@ -436,44 +469,68 @@ jobs:
 
           运行后重新打开 MeloX Desktop。只有从本项目官方 Release 或官网链接下载时才应执行该命令。
 
-          ## 版本信息
+          ### 版本信息
 
           - 版本：\`${GITHUB_REF_NAME}\`
           - Commit：\`${GITHUB_SHA}\`
           - 构建编号：\`${GITHUB_RUN_NUMBER}\`
 
-          ## 更新内容
+          ## What's New / 更新内容
 
           EOF
           else
             cat > release_body.md <<EOF
+          ## English
+
+          This MeloX iOS + Apple Watch release was built automatically by GitHub Actions.
+
+          ### MeloX Website
+
+          Visit the [MeloX website](${MELOX_WEBSITE_URL}) for project information and the latest news.
+
+          ### Download
+
+          - \`MeloX-iOS-unsigned.ipa\`: unsigned iOS package containing the Apple Watch app
+
+          ### Installation
+
+          The IPA is unsigned and must be signed before installation.
+
+          ### Build Information
+
+          - Version: \`${GITHUB_REF_NAME}\`
+          - Commit: \`${GITHUB_SHA}\`
+          - Build: \`${GITHUB_RUN_NUMBER}\`
+
+          ## 简体中文
+
           这是由 GitHub Actions 自动构建的 MeloX iOS + Apple Watch 发行版本。
 
-          ## MeloX 官网
+          ### MeloX 官网
 
-          访问 [MeloX 官网](${MELOX_WEBSITE_URL}) 了解项目与最新动态，也欢迎推荐给更多朋友。
+          访问 [MeloX 官网](${MELOX_WEBSITE_URL}) 了解项目与最新动态。
 
-          ## 下载说明
+          ### 下载说明
 
           - \`MeloX-iOS-unsigned.ipa\`：包含 Apple Watch App 的 iOS 未签名安装包
 
-          ## 安装说明
+          ### 安装说明
 
           该 IPA 未签名，需要自行签名后安装。
 
-          ## 版本信息
+          ### 版本信息
 
           - 版本：\`${GITHUB_REF_NAME}\`
           - Commit：\`${GITHUB_SHA}\`
           - 构建编号：\`${GITHUB_RUN_NUMBER}\`
 
-          ## 更新内容
+          ## What's New / 更新内容
 
           EOF
           fi
           cat release_notes.md >> release_body.md
 
-      - name: Create release
+      - name: Create release / 创建发版
         uses: softprops/action-gh-release@v3
         with:
           name: ${{ steps.target.outputs.release_name }}
@@ -485,7 +542,7 @@ jobs:
           fail_on_unmatched_files: true
           files: release-assets/${{ steps.target.outputs.filename }}
 
-      - name: Upload release metadata
+      - name: Upload release metadata / 上传发版元数据
         uses: actions/upload-artifact@v7
         with:
           name: MeloX-release-metadata-${{ matrix.platform }}-${{ github.run_number }}
@@ -494,7 +551,7 @@ jobs:
           retention-days: 14
 
   telegram_release:
-    name: Send and pin ${{ matrix.platform }} Telegram release
+    name: Send and pin ${{ matrix.platform }} Telegram release / 发送并置顶发版消息
     needs:
       - select_run
       - build
@@ -512,22 +569,22 @@ jobs:
         platform: ${{ fromJSON(needs.select_run.outputs.platforms) }}
 
     steps:
-      - name: Checkout
+      - name: Checkout / 检出代码
         uses: actions/checkout@v6
 
-      - name: Download release artifact
+      - name: Download release artifact / 下载发版产物
         uses: actions/download-artifact@v8
         with:
           name: MeloX-${{ matrix.platform }}-${{ github.run_number }}
           path: telegram-assets
 
-      - name: Download release metadata
+      - name: Download release metadata / 下载发版元数据
         uses: actions/download-artifact@v8
         with:
           name: MeloX-release-metadata-${{ matrix.platform }}-${{ github.run_number }}
           path: release-metadata
 
-      - name: Configure Telegram release
+      - name: Configure Telegram release / 配置 Telegram 发版
         id: target
         shell: bash
         env:
@@ -537,17 +594,21 @@ jobs:
           if [[ "${PLATFORM}" == "macos" ]]; then
             echo "is_macos=true" >> "${GITHUB_OUTPUT}"
             echo "project=MeloX macOS" >> "${GITHUB_OUTPUT}"
-            echo "install_note=若提示应用已损坏或无法验证开发者，请运行：xattr -dr com.apple.quarantine '/Applications/MeloX Desktop.app'" >> "${GITHUB_OUTPUT}"
-            echo "distribution_note=本消息附件分为 Apple 芯片与 Intel 两份未签名 DMG；已签名并经 Apple 公证的对应版本请前往官网获取。" >> "${GITHUB_OUTPUT}"
+            echo "install_note_zh=若提示应用已损坏或无法验证开发者，请运行：xattr -dr com.apple.quarantine '/Applications/MeloX Desktop.app'" >> "${GITHUB_OUTPUT}"
+            echo "install_note_en=If macOS reports that the app is damaged or cannot verify its developer, run: xattr -dr com.apple.quarantine '/Applications/MeloX Desktop.app'" >> "${GITHUB_OUTPUT}"
+            echo "distribution_note_zh=附件包含 Apple 芯片与 Intel 两份未签名 DMG；已签名并经 Apple 公证的版本请前往官网获取。" >> "${GITHUB_OUTPUT}"
+            echo "distribution_note_en=The attachments contain separate unsigned DMGs for Apple silicon and Intel. Signed and notarized builds are available from the website." >> "${GITHUB_OUTPUT}"
           else
             echo "is_macos=false" >> "${GITHUB_OUTPUT}"
             echo "filename=MeloX-iOS-unsigned.ipa" >> "${GITHUB_OUTPUT}"
             echo "project=MeloX iOS + Apple Watch" >> "${GITHUB_OUTPUT}"
-            echo "install_note=" >> "${GITHUB_OUTPUT}"
-            echo "distribution_note=" >> "${GITHUB_OUTPUT}"
+            echo "install_note_zh=该 IPA 未签名，需要自行签名后安装。" >> "${GITHUB_OUTPUT}"
+            echo "install_note_en=The IPA is unsigned and must be signed before installation." >> "${GITHUB_OUTPUT}"
+            echo "distribution_note_zh=" >> "${GITHUB_OUTPUT}"
+            echo "distribution_note_en=" >> "${GITHUB_OUTPUT}"
           fi
 
-      - name: Generate Telegram release caption
+      - name: Generate Telegram release caption / 生成 Telegram 发版文案
         shell: bash
         env:
           RELEASE_URL: ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}
@@ -559,13 +620,15 @@ jobs:
             --project "${{ steps.target.outputs.project }}" \
             --version "v${VERSION}" \
             --details-file "release-metadata/release_notes.md" \
-            --install-note "${{ steps.target.outputs.install_note }}" \
-            --distribution-note "${{ steps.target.outputs.distribution_note }}" \
+            --install-note-zh "${{ steps.target.outputs.install_note_zh }}" \
+            --install-note-en "${{ steps.target.outputs.install_note_en }}" \
+            --distribution-note-zh "${{ steps.target.outputs.distribution_note_zh }}" \
+            --distribution-note-en "${{ steps.target.outputs.distribution_note_en }}" \
             --release-url "${RELEASE_URL}" \
             --website-url "${MELOX_WEBSITE_URL}" \
             --output "${RUNNER_TEMP}/telegram-release-caption.txt"
 
-      - name: Send and pin Telegram release
+      - name: Send and pin Telegram release / 发送并置顶 Telegram 发版
         shell: bash
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
@@ -574,7 +637,7 @@ jobs:
           set -euo pipefail
 
           if [[ -z "${TELEGRAM_BOT_TOKEN}" || -z "${TELEGRAM_CHAT_ID}" ]]; then
-            echo "::error::缺少 TELEGRAM_BOT_TOKEN 或 TELEGRAM_CHAT_ID"
+            echo "::error::Missing TELEGRAM_BOT_TOKEN or TELEGRAM_CHAT_ID / 缺少 Telegram 配置"
             exit 1
           fi
 
@@ -584,7 +647,7 @@ jobs:
             APPLE_SILICON_PATH="telegram-assets/MeloX-macOS-Apple-Silicon.dmg"
             INTEL_PATH="telegram-assets/MeloX-macOS-Intel.dmg"
             if [[ ! -f "${APPLE_SILICON_PATH}" || ! -f "${INTEL_PATH}" ]]; then
-              echo "::error::找不到 Apple Silicon 或 Intel DMG"
+              echo "::error::Apple Silicon or Intel DMG is missing / 找不到对应 DMG"
               exit 1
             fi
             MEDIA="$(
@@ -607,14 +670,14 @@ jobs:
                 --form "apple_silicon=@${APPLE_SILICON_PATH};type=application/octet-stream" \
                 --form "intel=@${INTEL_PATH};type=application/octet-stream" \
                 --output "${RESPONSE_FILE}"; then
-              echo "::error::发送 macOS Telegram Release 失败"
+              echo "::error::Failed to send the macOS Telegram release / 发送 macOS Telegram 发版失败"
               exit 1
             fi
             MESSAGE_ID="$(jq -er '.result[0].message_id' "${RESPONSE_FILE}")"
           else
             ASSET_PATH="telegram-assets/${{ steps.target.outputs.filename }}"
             if [[ ! -f "${ASSET_PATH}" ]]; then
-              echo "::error::找不到 iOS Release 产物"
+              echo "::error::iOS release artifact is missing / 找不到 iOS 发版产物"
               exit 1
             fi
             if ! curl \
@@ -630,7 +693,7 @@ jobs:
                 --form "document=@${ASSET_PATH};type=application/octet-stream" \
                 --form-string "caption=${CAPTION}" \
                 --output "${RESPONSE_FILE}"; then
-              echo "::error::发送 iOS Telegram Release 失败"
+              echo "::error::Failed to send the iOS Telegram release / 发送 iOS Telegram 发版失败"
               exit 1
             fi
             MESSAGE_ID="$(jq -er '.result.message_id' "${RESPONSE_FILE}")"

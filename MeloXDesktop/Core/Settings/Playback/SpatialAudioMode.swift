@@ -10,22 +10,22 @@ enum SpatialAudioMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .automatic:
-            "自动（推荐）"
+            L10n.string("ui.desktop.spatial_audio.automatic")
         case .multichannelOnly:
-            "仅多声道"
+            L10n.string("ui.desktop.spatial_audio.multichannel_only")
         case .disabled:
-            "关闭"
+            L10n.string("ui.common.off")
         }
     }
 
     var description: String {
         switch self {
         case .automatic:
-            "允许 macOS 对立体声和多声道音源使用空间音频。"
+            L10n.string("ui.desktop.spatial_audio.automatic.description")
         case .multichannelOnly:
-            "仅允许具有多声道布局的音源使用空间音频。"
+            L10n.string("ui.desktop.spatial_audio.multichannel_only.description")
         case .disabled:
-            "始终以音源原始声道布局播放，不进行系统空间化。"
+            L10n.string("ui.desktop.spatial_audio.disabled.description")
         }
     }
 }

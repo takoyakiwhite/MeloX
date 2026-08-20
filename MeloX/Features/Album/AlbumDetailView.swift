@@ -61,7 +61,7 @@ struct AlbumDetailView: View {
         .searchable(
             text: $searchQuery,
             placement: .navigationBarDrawer(displayMode: .always),
-            prompt: Text("在专辑中搜索")
+            prompt: Text("ui.album.search_prompt")
         )
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(interfaceColorScheme, for: .navigationBar, .tabBar)
@@ -130,7 +130,7 @@ struct AlbumDetailView: View {
             }
         }
         .alert(
-            "专辑操作失败",
+            "ui.album.operation_failed",
             isPresented: Binding(
                 get: { operationError != nil },
                 set: { isPresented in
@@ -140,14 +140,14 @@ struct AlbumDetailView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 operationError = nil
             }
         } message: {
-            Text(operationError ?? "未知错误")
+            Text(operationError ?? L10n.string("ui.common.unknown_error"))
         }
         .alert(
-            "无法准备下载",
+            "ui.downloads.prepare_failed",
             isPresented: Binding(
                 get: {
                     downloadsEnabled
@@ -160,13 +160,13 @@ struct AlbumDetailView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 downloadCoordinator.clearError()
             }
         } message: {
             Text(
                 downloadCoordinator.errorMessage
-                    ?? "无法读取专辑歌曲。"
+                    ?? L10n.string("ui.album.load_songs_failed")
             )
         }
     }
@@ -227,7 +227,10 @@ struct AlbumDetailView: View {
                downloadCoordinator.isPreparing {
                 ProgressView()
                     .accessibilityLabel(
-                        "正在准备下载 \(downloadCoordinator.preparingSongCount) 首歌曲"
+                        L10n.format(
+                            "ui.downloads.preparing_song_count",
+                            downloadCoordinator.preparingSongCount
+                        )
                     )
             }
 
@@ -236,7 +239,7 @@ struct AlbumDetailView: View {
             } label: {
                 Image(systemName: "square.and.arrow.up")
             }
-            .accessibilityLabel("分享专辑")
+            .accessibilityLabel("ui.album.share")
 
             Menu {
                 if downloadsEnabled {
@@ -254,19 +257,19 @@ struct AlbumDetailView: View {
 
                 if let artist = displayedAlbum.artists.first {
                     NavigationLink(value: MusicRoute.artist(artist.id)) {
-                        Label("查看歌手", systemImage: "person")
+                        Label("ui.artist.view", systemImage: "person")
                     }
                 }
 
                 Button {
                     Task { await load() }
                 } label: {
-                    Label("刷新", systemImage: "arrow.clockwise")
+                    Label("ui.common.refresh", systemImage: "arrow.clockwise")
                 }
             } label: {
                 Image(systemName: "ellipsis")
             }
-            .accessibilityLabel("更多")
+            .accessibilityLabel("ui.common.more")
         }
         .sharedBackgroundVisibility(.visible)
     }

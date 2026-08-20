@@ -11,15 +11,15 @@ enum SongRecognitionRecordingError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .microphonePermissionDenied:
-            "没有麦克风权限。请在系统设置中允许 MeloX 使用麦克风。"
+            L10n.string("ui.recognition.error.microphone_permission")
         case .microphoneUnavailable:
-            "当前没有可用的麦克风输入。"
+            L10n.string("ui.recognition.error.microphone_unavailable")
         case .recordingFailed(let message):
-            "无法开始录音：\(message)"
+            L10n.format("ui.recognition.error.recording_failed", message)
         case .recordingTimedOut:
-            "没有收到麦克风音频，请检查输入设备后重试。"
+            L10n.string("ui.recognition.error.recording_timed_out")
         case .conversionFailed:
-            "无法处理录制的音频。"
+            L10n.string("ui.recognition.error.conversion_failed")
         }
     }
 

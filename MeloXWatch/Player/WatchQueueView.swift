@@ -7,9 +7,9 @@ struct WatchQueueView: View {
         Group {
             if coordinator.queue.isEmpty {
                 ContentUnavailableView(
-                    "播放队列为空",
+                    "ui.watch.queue.empty.title",
                     systemImage: "list.bullet",
-                    description: Text("从搜索、每日推荐或歌单中选择歌曲。")
+                    description: Text("ui.watch.queue.empty.description")
                 )
             } else {
                 ScrollViewReader { proxy in
@@ -105,8 +105,15 @@ struct WatchQueueView: View {
         }
         .buttonStyle(.plain)
         .tint(.white)
-        .accessibilityLabel("播放模式：\(playbackMode.title)")
-        .accessibilityHint("轻点切换到\(playbackMode.next.title)")
+        .accessibilityLabel(
+            L10n.format("ui.watch.queue.mode_accessibility", playbackMode.title)
+        )
+        .accessibilityHint(
+            L10n.format(
+                "ui.watch.queue.mode_hint",
+                playbackMode.next.title
+            )
+        )
     }
 
     private var playbackMode: WatchQueuePlaybackMode {
@@ -145,10 +152,10 @@ private enum WatchQueuePlaybackMode: CaseIterable {
 
     var title: String {
         switch self {
-        case .sequential: "顺序播放"
-        case .shuffle: "随机播放"
-        case .repeatAll: "列表循环"
-        case .repeatOne: "单曲循环"
+        case .sequential: L10n.string("ui.watch.queue.mode.sequential")
+        case .shuffle: L10n.string("ui.watch.queue.mode.shuffle")
+        case .repeatAll: L10n.string("ui.watch.repeat.list")
+        case .repeatOne: L10n.string("ui.watch.repeat.song")
         }
     }
 

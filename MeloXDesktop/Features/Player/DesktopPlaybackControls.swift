@@ -74,7 +74,11 @@ struct DesktopPlaybackControls: View {
                         : tint.opacity(secondaryTintOpacity)
                 )
         }
-        .help(model.player.isShuffled ? "关闭随机播放" : "随机播放")
+        .help(
+            model.player.isShuffled
+                ? L10n.string("ui.player.shuffle_off")
+                : L10n.string("ui.player.shuffle_on")
+        )
     }
 
     private var previousButton: some View {
@@ -89,7 +93,7 @@ struct DesktopPlaybackControls: View {
                     )
                 )
         }
-        .help("上一首")
+        .help(L10n.string("ui.player.previous"))
     }
 
     private var playButton: some View {
@@ -110,8 +114,14 @@ struct DesktopPlaybackControls: View {
                     )
                 )
         }
-        .keyboardShortcut(.space, modifiers: [])
-        .help(model.player.isPlaying ? "暂停" : "播放")
+        .keyboardShortcut(
+            DesktopPlaybackKeyboardShortcuts.togglePlayback
+        )
+        .help(
+            model.player.isPlaying
+                ? L10n.string("ui.desktop.player.pause_space")
+                : L10n.string("ui.desktop.player.play_space")
+        )
     }
 
     private var nextButton: some View {
@@ -127,7 +137,7 @@ struct DesktopPlaybackControls: View {
                 )
         }
         .disabled(!model.player.canPlayNext)
-        .help("下一首")
+        .help(L10n.string("ui.player.next"))
     }
 
     private var repeatButton: some View {
@@ -255,7 +265,11 @@ struct DesktopVolumeControl: View {
                     .frame(width: 18, height: 18)
             }
             .buttonStyle(.plain)
-            .help(isExpanded ? "静音或恢复音量" : "显示音量")
+            .help(
+                isExpanded
+                    ? L10n.string("ui.desktop.player.toggle_mute")
+                    : L10n.string("ui.desktop.player.show_volume")
+            )
         }
         .padding(.leading, isExpanded ? 10 : 9)
         .padding(.trailing, 9)
@@ -287,8 +301,8 @@ struct DesktopVolumeControl: View {
         .tint(tint)
         .controlSize(.small)
         .frame(width: 64, height: 18)
-        .accessibilityLabel("音量")
-        .help("音量")
+        .accessibilityLabel("ui.player.volume")
+        .help(L10n.string("ui.player.volume"))
     }
 
     private func setExpandedVolume(_ value: Double) {

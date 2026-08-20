@@ -66,7 +66,7 @@ struct PodcastDetailView: View {
             text: $searchQuery,
             placement:
                 .navigationBarDrawer(displayMode: .always),
-            prompt: Text("在播客节目中搜索")
+            prompt: Text("ui.podcasts.search_prompt")
         )
         .toolbarBackground(.hidden, for: .navigationBar)
         .toolbarColorScheme(
@@ -77,7 +77,7 @@ struct PodcastDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Menu {
-                    Picker("节目顺序", selection: $order) {
+                    Picker("ui.podcasts.episode_order", selection: $order) {
                         ForEach(PodcastProgramOrder.allCases) { item in
                             Text(item.title).tag(item)
                         }
@@ -85,7 +85,7 @@ struct PodcastDetailView: View {
                 } label: {
                     Image(systemName: "arrow.up.arrow.down")
                 }
-                .accessibilityLabel("节目顺序")
+                .accessibilityLabel("ui.podcasts.episode_order")
             }
         }
         .environment(\.colorScheme, interfaceColorScheme)
@@ -128,7 +128,7 @@ struct PodcastDetailView: View {
             }
         }
         .alert(
-            "无法更新订阅",
+            "ui.podcasts.subscription_failed",
             isPresented: Binding(
                 get: { subscriptionError != nil },
                 set: {
@@ -138,11 +138,11 @@ struct PodcastDetailView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 subscriptionError = nil
             }
         } message: {
-            Text(subscriptionError ?? "请稍后重试。")
+            Text(subscriptionError ?? L10n.string("ui.error.try_again_later"))
         }
     }
 
@@ -217,7 +217,7 @@ struct PodcastDetailView: View {
 
     private func toggleSubscription() {
         guard library.isLoggedIn else {
-            subscriptionError = "请先登录网易云音乐后再订阅播客。"
+            subscriptionError = L10n.string("ui.podcasts.login_to_subscribe")
             return
         }
         guard !isSubscribing else { return }

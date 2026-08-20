@@ -9,18 +9,18 @@ enum AppleMusicLyricsMotionPreset: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .appleMusic26:
-            "Apple Music 26"
+            L10n.string("ui.settings.lyrics.motion_preset.apple_music_26")
         case .custom:
-            "自定义"
+            L10n.string("ui.common.custom")
         }
     }
 
     var description: String {
         switch self {
         case .appleMusic26:
-            "使用 iOS 26.6 的字体、间距、颜色、模糊与逐行错峰参数。"
+            L10n.string("ui.settings.lyrics.motion_preset.apple_music_26.mobile_detail")
         case .custom:
-            "使用可编辑的字体、焦点、拖尾、追赶、回弹与排版参数。"
+            L10n.string("ui.settings.lyrics.motion_preset.custom.detail")
         }
     }
 }

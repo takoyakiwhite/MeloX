@@ -23,19 +23,19 @@ struct LyricsContentSettingsView: View {
         Form {
             Section {
                 Toggle(
-                    "显示发音（罗马音）",
+                    "ui.settings.lyrics.content.show_romanization",
                     isOn: $settings.lyricsRomanizationEnabled
                 )
 
                 Toggle(
-                    "显示歌词翻译",
+                    "ui.settings.lyrics.content.show_translation",
                     isOn: $settings.lyricsTranslationEnabled
                 )
 
                 if usesCustomAppleMusicPresentation,
                    settings.lyricsRomanizationEnabled {
                     Picker(
-                        "罗马音显示范围",
+                        "ui.settings.lyrics.content.romanization_display_range",
                         selection:
                             $settings
                                 .lyricsRomanizationDisplayMode
@@ -51,7 +51,7 @@ struct LyricsContentSettingsView: View {
                 if usesCustomAppleMusicPresentation,
                    settings.lyricsTranslationEnabled {
                     Picker(
-                        "翻译显示范围",
+                        "ui.settings.lyrics.content.translation_display_range",
                         selection:
                             $settings
                                 .lyricsTranslationDisplayMode
@@ -64,33 +64,33 @@ struct LyricsContentSettingsView: View {
                     }
                 }
             } header: {
-                Text("翻译与发音")
+                Text("ui.settings.lyrics.content.section.translation_pronunciation")
             } footer: {
-                Text("使用网易云提供的 yromalrc/romalrc 与 ytlrc/tlyric。Apple Music 样式将罗马音作为主歌词下方、按原词位置对齐的副行；翻译位于下一层，保持静态整行显示。")
+                Text("ui.settings.lyrics.content.translation.footer")
             }
 
             if usesCustomAppleMusicPresentation,
                settings.lyricsRomanizationEnabled {
                 Section {
                     valueSlider(
-                        title: "罗马音大小",
+                        title: L10n.string("ui.settings.lyrics.content.romanization_size"),
                         value: $settings.lyricsRomanizationFontScale,
                         range: 0.5...0.8,
                         step: 0.05,
                         valueText:
-                            "\(Int(settings.lyricsRomanizationFontScale * 100))%"
+                            L10n.percent(settings.lyricsRomanizationFontScale)
                     )
 
                     valueSlider(
-                        title: "罗马音亮度",
+                        title: L10n.string("ui.settings.lyrics.content.romanization_brightness"),
                         value: $settings.lyricsRomanizationOpacity,
                         range: 0.4...0.9,
                         step: 0.05,
                         valueText:
-                            "\(Int(settings.lyricsRomanizationOpacity * 100))%"
+                            L10n.percent(settings.lyricsRomanizationOpacity)
                     )
                 } header: {
-                    Text("罗马音样式")
+                    Text("ui.settings.lyrics.content.section.romanization_style")
                 }
             }
 
@@ -98,30 +98,30 @@ struct LyricsContentSettingsView: View {
                settings.lyricsTranslationEnabled {
                 Section {
                     valueSlider(
-                        title: "翻译歌词大小",
+                        title: L10n.string("ui.settings.lyrics.content.translation_size"),
                         value: $settings.lyricsTranslationFontScale,
                         range: 0.5...0.8,
                         step: 0.05,
                         valueText:
-                            "\(Int(settings.lyricsTranslationFontScale * 100))%"
+                            L10n.percent(settings.lyricsTranslationFontScale)
                     )
 
                     valueSlider(
-                        title: "翻译歌词亮度",
+                        title: L10n.string("ui.settings.lyrics.content.translation_brightness"),
                         value: $settings.lyricsTranslationOpacity,
                         range: 0.4...0.9,
                         step: 0.05,
                         valueText:
-                            "\(Int(settings.lyricsTranslationOpacity * 100))%"
+                            L10n.percent(settings.lyricsTranslationOpacity)
                     )
                 } header: {
-                    Text("翻译样式")
+                    Text("ui.settings.lyrics.content.section.translation_style")
                 }
             }
 
             Section {
                 Picker(
-                    "默认歌词来源",
+                    "ui.settings.lyrics.content.default_source",
                     selection: $settings.lyricsSourcePreference
                 ) {
                     ForEach(LyricSourcePreference.allCases) { preference in
@@ -130,57 +130,57 @@ struct LyricsContentSettingsView: View {
                 }
 
                 Toggle(
-                    "AMLL TTML 歌词",
+                    "ui.settings.lyrics.content.amll_source",
                     isOn: $settings.lyricsAMLLSourceEnabled
                 )
 
                 Toggle(
-                    "QQ 音乐歌词补全",
+                    "ui.settings.lyrics.content.qq_source",
                     isOn: $settings.lyricsQQMusicSourceEnabled
                 )
             } header: {
-                Text("歌词来源")
+                Text("ui.settings.lyrics.content.section.source")
             } footer: {
-                Text("自动优选会先加载并显示网易云歌词，等待 AMLL 与 QQ 音乐返回后再按 AMLL TTML、网易云 YRC、QQ QRC、网易云 LRC、QQ LRC 的顺序统一优选。手动选择某个来源后，将仅使用该来源；也可以随时在播放器菜单中切换。")
+                Text("ui.settings.lyrics.content.source.footer")
             }
 
             Section {
                 Toggle(
-                    "双人歌词分列显示",
+                    "ui.settings.lyrics.content.duet_layout",
                     isOn: $settings.lyricsDuetLayoutEnabled
                 )
             } header: {
-                Text("演唱者布局")
+                Text("ui.settings.lyrics.content.section.performer_layout")
             } footer: {
-                Text("根据歌词中的演唱者标记，将不同演唱者分别靠左、靠右显示；合唱保持靠左。")
+                Text("ui.settings.lyrics.content.duet_layout.footer")
             }
 
             Section {
                 Toggle(
-                    "使用官方逐字歌词",
+                    "ui.settings.lyrics.content.official_word_by_word",
                     isOn: $settings.lyricsWordByWord
                 )
 
                 Toggle(
-                    "无 YRC 时启用伪逐字",
+                    "ui.settings.lyrics.content.pseudo_word_by_word",
                     isOn: $settings.lyricsPseudoWordByWord
                 )
             } header: {
-                Text("逐字歌词")
+                Text("ui.settings.lyrics.content.section.word_by_word")
             } footer: {
-                Text("官方逐字歌词使用 YRC 时间轴；伪逐字仅在没有 YRC 时按行时长估算，准确度较低。")
+                Text("ui.settings.lyrics.content.word_by_word.footer")
             }
 
             if usesWordByWordPresentation {
                 if usesAppleMusic26Motion {
                     Section {
-                        LabeledContent("高光渐变", value: "30 磅")
-                        LabeledContent("音节抬升", value: "2 磅")
-                        LabeledContent("辉光半径", value: "5 磅")
-                        LabeledContent("长音最大强调", value: "114%")
+                        LabeledContent(L10n.string("ui.settings.lyrics.content.highlight_gradient"), value: L10n.format("ui.common.points", 30))
+                        LabeledContent(L10n.string("ui.settings.lyrics.content.syllable_lift"), value: L10n.format("ui.common.points", 2))
+                        LabeledContent(L10n.string("ui.settings.lyrics.content.glow_radius"), value: L10n.format("ui.common.points", 5))
+                        LabeledContent(L10n.string("ui.settings.lyrics.content.long_tone_maximum_emphasis"), value: "114%")
 
                         valueSlider(
-                            title: "网易 YRC 长音阈值",
+                            title: L10n.string("ui.settings.lyrics.content.netease_yrc_long_tone_threshold"),
                             value:
                                 $settings
                                     .lyricsLongSyllableDurationThreshold,
@@ -189,19 +189,19 @@ struct LyricsContentSettingsView: View {
                                     .lyricsLongSyllableDurationThresholdRange,
                             step: 0.05,
                             valueText:
-                                "\(settings.lyricsLongSyllableDurationThreshold.formatted(.number.precision(.fractionLength(2)))) 秒"
+                                L10n.format("ui.common.seconds_two_decimals", settings.lyricsLongSyllableDurationThreshold)
                         )
                     } header: {
-                        Text("Apple Music 26 逐字")
+                        Text("ui.settings.lyrics.content.section.apple_music_word_by_word")
                     } footer: {
-                        Text("根据逐字歌词中音节持续的时间识别长音；阈值越高，触发长音效果的音节越少。")
+                        Text("ui.settings.lyrics.content.long_tone_threshold.footer")
                     }
                 }
 
                 if !usesAppleMusic26Motion {
                     Section {
                         Picker(
-                            "抬升方式",
+                            "ui.settings.lyrics.content.lift_mode",
                             selection: $settings.lyricsLiftMode
                         ) {
                             ForEach(LyricsLiftMode.allCases) { mode in
@@ -211,7 +211,7 @@ struct LyricsContentSettingsView: View {
                         .pickerStyle(.segmented)
 
                         valueSlider(
-                            title: "高光渐变宽度",
+                            title: L10n.string("ui.settings.lyrics.content.highlight_gradient_width"),
                             value:
                                 $settings.lyricsHighlightGradientWidth,
                             range:
@@ -219,11 +219,11 @@ struct LyricsContentSettingsView: View {
                                     .lyricsHighlightGradientWidthRange,
                             step: 0.1,
                             valueText:
-                                "\(settings.lyricsHighlightGradientWidth.formatted(.number.precision(.fractionLength(1)))) 个字宽"
+                                L10n.format("ui.common.character_widths", settings.lyricsHighlightGradientWidth)
                         )
 
                         valueSlider(
-                            title: "渐变削减程度",
+                            title: L10n.string("ui.settings.lyrics.content.gradient_reduction"),
                             value:
                                 $settings
                                     .lyricsHighlightGradientReduction,
@@ -237,17 +237,18 @@ struct LyricsContentSettingsView: View {
                                     .percent.precision(
                                         .fractionLength(0)
                                     )
+                                    .locale(L10n.locale)
                                 )
                         )
                     } header: {
-                        Text("高光")
+                        Text("ui.settings.lyrics.content.section.highlight")
                     } footer: {
-                        Text("抬升方式只改变按字或按词分组，不改变高光时间；渐变宽度和削减程度共同控制过渡范围。")
+                        Text("ui.settings.lyrics.content.highlight.footer")
                     }
 
                     Section {
                         Picker(
-                            "长音识别方式",
+                            "ui.settings.lyrics.content.long_tone_detection",
                             selection:
                                 $settings
                                     .lyricsLongSyllableDetectionMode
@@ -261,7 +262,7 @@ struct LyricsContentSettingsView: View {
                         .pickerStyle(.segmented)
 
                         valueSlider(
-                            title: "长音判定阈值",
+                            title: L10n.string("ui.settings.lyrics.content.long_tone_threshold"),
                             value:
                                 $settings
                                     .lyricsLongSyllableDurationThreshold,
@@ -270,11 +271,11 @@ struct LyricsContentSettingsView: View {
                                     .lyricsLongSyllableDurationThresholdRange,
                             step: 0.05,
                             valueText:
-                                "\(settings.lyricsLongSyllableDurationThreshold.formatted(.number.precision(.fractionLength(2)))) 秒"
+                                L10n.format("ui.common.seconds_two_decimals", settings.lyricsLongSyllableDurationThreshold)
                         )
 
                         valueSlider(
-                            title: "长音膨胀大小",
+                            title: L10n.string("ui.settings.lyrics.content.long_tone_expansion"),
                             value:
                                 $settings
                                     .lyricsLongToneExpansionAmount,
@@ -288,24 +289,25 @@ struct LyricsContentSettingsView: View {
                                     .percent.precision(
                                         .fractionLength(0)
                                     )
+                                    .locale(L10n.locale)
                                 )
                         )
 
                         Toggle(
-                            "逐字歌词光效",
+                            "ui.settings.lyrics.content.glow_effect",
                             isOn: $settings.lyricsGlowEnabled
                         )
 
                         if settings.lyricsGlowEnabled {
                             Toggle(
-                                "仅长音显示辉光",
+                                "ui.settings.lyrics.content.glow_long_tones_only",
                                 isOn:
                                     $settings
                                         .lyricsGlowLongSyllablesOnly
                             )
 
                             valueSlider(
-                                title: "逐字光效强度",
+                                title: L10n.string("ui.settings.lyrics.content.glow_intensity"),
                                 value: $settings.lyricsGlowIntensity,
                                 range: 0.4...1.6,
                                 step: 0.1,
@@ -315,18 +317,19 @@ struct LyricsContentSettingsView: View {
                                             .number.precision(
                                                 .fractionLength(1)
                                             )
+                                            .locale(L10n.locale)
                                         )
                             )
                         }
                     } header: {
-                        Text("长音与光效")
+                        Text("ui.settings.lyrics.content.section.long_tone_glow")
                     } footer: {
-                        Text("达到阈值的原文字或词会依次膨胀；罗马音不参与辉光、抬升或长音膨胀，翻译保持静态整行。")
+                        Text("ui.settings.lyrics.content.long_tone_glow.footer")
                     }
                 }
             }
         }
-        .navigationTitle("翻译与逐字")
+        .navigationTitle("ui.settings.lyrics.content.title")
         .navigationBarTitleDisplayMode(.inline)
     }
 

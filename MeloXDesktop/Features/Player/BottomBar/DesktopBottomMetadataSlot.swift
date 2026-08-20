@@ -62,7 +62,11 @@ struct DesktopBottomMetadataSlot: View {
                             .font(.system(size: 12.5, weight: .semibold))
                             .lineLimit(1)
                         Text(
-                            "\(song.artistText) — \(song.album?.name ?? "")"
+                            L10n.joined(
+                                [song.artistText, song.album?.name ?? ""],
+                                separatorKey:
+                                    "ui.common.title_detail_separator"
+                            )
                         )
                         .font(.system(size: 11.5))
                         .foregroundStyle(.secondary)
@@ -153,7 +157,7 @@ struct DesktopBottomMetadataSlot: View {
     private var playerMenu: some View {
         Menu {
             Picker(
-                "歌词来源",
+                "ui.settings.lyrics.content.default_source",
                 selection: Binding(
                     get: { model.settings.lyricsSourcePreference },
                     set: { model.settings.lyricsSourcePreference = $0 }
@@ -166,7 +170,9 @@ struct DesktopBottomMetadataSlot: View {
 
             Divider()
             Button(
-                model.library.contains(song: song) ? "取消喜欢" : "喜欢",
+                model.library.contains(song: song)
+                    ? L10n.string("ui.song.unlike")
+                    : L10n.string("ui.song.like"),
                 systemImage: model.library.contains(song: song)
                     ? "star.fill"
                     : "star"
@@ -174,22 +180,22 @@ struct DesktopBottomMetadataSlot: View {
                 model.library.toggle(song: song)
             }
             if model.settings.isContentFeatureEnabled(.downloads) {
-                Button("下载", systemImage: "arrow.down.circle") {
+                Button("ui.common.download", systemImage: "arrow.down.circle") {
                     model.downloads.start(song, quality: model.settings.quality)
                 }
             }
-            Button("前往当前歌曲", systemImage: "arrow.right.circle") {
+            Button("ui.song.view_information", systemImage: "arrow.right.circle") {
                 model.ui.navigate(to: .song(song.id))
             }
-            Button("歌词", systemImage: "quote.bubble") {
+            Button("ui.common.lyrics", systemImage: "quote.bubble") {
                 model.ui.toggleInspector(.lyrics)
             }
-            Button("播放队列", systemImage: "list.bullet") {
+            Button("ui.player.queue", systemImage: "list.bullet") {
                 model.ui.toggleInspector(.queue)
             }
             DesktopPlaybackQualityMenu(model: model)
             Divider()
-            Button("迷你播放器", systemImage: "pip") {
+            Button("ui.desktop.mini_player", systemImage: "pip") {
                 Task { @MainActor in
                     openWindow(id: "mini-player")
                     await DesktopMiniPlayerWindowCoordinator
@@ -197,19 +203,19 @@ struct DesktopBottomMetadataSlot: View {
                 }
             }
             Button(
-                "全屏正在播放",
+                "ui.desktop.player.fullscreen_now_playing",
                 systemImage: "arrow.up.left.and.arrow.down.right"
             ) {
                 model.ui.isNowPlayingPresented = true
             }
-            Button("桌面歌词", systemImage: "text.quote") {
+            Button("ui.floating_lyrics.title", systemImage: "text.quote") {
                 openWindow(id: "floating-lyrics")
             }
             if let url = URL(
                 string: "https://music.163.com/#/song?id=\(song.id)"
             ) {
                 ShareLink(item: url) {
-                    Label("分享", systemImage: "square.and.arrow.up")
+                    Label("ui.common.share", systemImage: "square.and.arrow.up")
                 }
             }
         } label: {

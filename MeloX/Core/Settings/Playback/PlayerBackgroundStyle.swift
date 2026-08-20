@@ -10,11 +10,11 @@ enum PlayerBackgroundStyle: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .appleMusicBackdrop:
-            "Apple Music"
+            L10n.string("ui.settings.player_background.apple_music")
         case .flowingLight:
-            "流动光影"
+            L10n.string("ui.settings.player_background.flowing_light")
         case .blurredArtwork:
-            "模糊封面"
+            L10n.string("ui.settings.player_background.blurred_artwork")
         }
     }
 }

@@ -8,10 +8,10 @@ struct DesktopBeatNetDebugView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("BeatNet 调试")
+                Text("ui.beatnet.debug.title")
                     .font(.system(size: 24, weight: .bold))
                 Spacer()
-                Button("完成") { dismiss() }
+                Button("ui.common.done") { dismiss() }
                     .keyboardShortcut(.defaultAction)
             }
             .padding(22)
@@ -21,7 +21,7 @@ struct DesktopBeatNetDebugView: View {
             Form {
                 analysisSection
 
-                Section("实时信号") {
+                Section("ui.beatnet.debug.section.realtime") {
                     TimelineView(.periodic(from: .now, by: 0.08)) {
                         context in
                         realtimePanel(
@@ -32,12 +32,12 @@ struct DesktopBeatNetDebugView: View {
                     }
                 }
 
-                Section("模型") {
-                    LabeledContent("模型", value: "BeatNetBDA")
-                    LabeledContent("输入", value: "1 × 1600 × 272 · Float32")
-                    LabeledContent("输出", value: "beat / downbeat")
-                    LabeledContent("音频", value: "22.05 kHz · 单声道")
-                    LabeledContent("计算单元", value: "CPU-only")
+                Section("ui.beatnet.debug.model") {
+                    LabeledContent("ui.beatnet.debug.model", value: L10n.string("ui.beatnet.debug.model_value"))
+                    LabeledContent("ui.beatnet.debug.input", value: "1 × 1600 × 272 · Float32")
+                    LabeledContent("ui.beatnet.debug.output", value: L10n.string("ui.beatnet.debug.output_channels_value"))
+                    LabeledContent("ui.beatnet.debug.audio", value: L10n.string("ui.beatnet.debug.audio_value"))
+                    LabeledContent("ui.beatnet.debug.compute_units", value: L10n.string("ui.beatnet.debug.cpu_only"))
                 }
             }
             .formStyle(.grouped)
@@ -51,22 +51,22 @@ struct DesktopBeatNetDebugView: View {
     }
 
     private var analysisSection: some View {
-        Section("分析") {
+        Section("ui.beatnet.debug.section.analysis") {
             LabeledContent(
-                "歌曲",
-                value: model.player.currentSong?.name ?? "没有正在播放的歌曲"
+                "ui.desktop.beatnet.song",
+                value: model.player.currentSong?.name ?? L10n.string("ui.desktop.player.not_playing")
             )
 
-            LabeledContent("状态") {
+            LabeledContent("ui.desktop.beatnet.status") {
                 analysisStatus
             }
 
             if case .ready(let bpm, let confidence) =
                 model.player.beatAnalysisStatus {
                 LabeledContent(
-                    "结果",
+                    "ui.desktop.beatnet.result",
                     value:
-                        "\(Int(bpm.rounded())) BPM · \(percentage(confidence))"
+                        "\(L10n.integer(Int(bpm.rounded()))) BPM · \(percentage(confidence))"
                 )
             }
 
@@ -77,7 +77,7 @@ struct DesktopBeatNetDebugView: View {
                     .textSelection(.enabled)
             }
 
-            Button("重新分析全曲", systemImage: "arrow.clockwise") {
+            Button("ui.beatnet.debug.reanalyze", systemImage: "arrow.clockwise") {
                 model.player.clearCurrentSongBeatAnalysis()
                 retryGeneration += 1
             }
@@ -92,19 +92,19 @@ struct DesktopBeatNetDebugView: View {
     private var analysisStatus: some View {
         switch model.player.beatAnalysisStatus {
         case .idle:
-            Text("等待分析")
+            Text("ui.beatnet.debug.status.waiting")
                 .foregroundStyle(.secondary)
         case .analyzing:
             HStack(spacing: 7) {
                 ProgressView()
                     .controlSize(.small)
-                Text("正在分析全曲")
+                Text("ui.beatnet.debug.status.analyzing")
             }
         case .ready:
-            Label("已就绪", systemImage: "checkmark.circle.fill")
+            Label("ui.beatnet.debug.status.ready", systemImage: "checkmark.circle.fill")
                 .foregroundStyle(.green)
         case .failed:
-            Label("分析失败", systemImage: "exclamationmark.triangle.fill")
+            Label("ui.beatnet.debug.status.failed", systemImage: "exclamationmark.triangle.fill")
                 .foregroundStyle(.orange)
         }
     }
@@ -115,64 +115,64 @@ struct DesktopBeatNetDebugView: View {
     ) -> some View {
         if let snapshot {
             LabeledContent(
-                "播放位置",
+                "ui.beatnet.debug.playback_position",
                 value: seconds(snapshot.playbackTime)
             )
             LabeledContent(
-                "BPM / 置信度",
+                "ui.desktop.beatnet.bpm_confidence",
                 value:
-                    "\(Int(snapshot.bpm.rounded())) / \(percentage(snapshot.confidence))"
+                    "\(L10n.integer(Int(snapshot.bpm.rounded()))) / \(percentage(snapshot.confidence))"
             )
             LabeledContent(
-                "节拍",
+                "ui.desktop.beatnet.beat",
                 value: snapshot.beatInBar.map {
-                    "第 \($0) 拍"
+                    L10n.format("ui.desktop.beatnet.beat_number", $0)
                 } ?? "—"
             )
             LabeledContent(
-                "Beat / Downbeat",
+                "ui.desktop.beatnet.beat_downbeat",
                 value:
                     "\(activation(snapshot.recentBeatActivation)) / \(activation(snapshot.recentDownbeatActivation))"
             )
             LabeledContent(
-                "Onset",
+                "ui.desktop.beatnet.onset",
                 value: activation(snapshot.normalizedOnsetActivation)
             )
             LabeledContent(
-                "暗角触发",
-                value: snapshot.jointVignetteGateIsActive ? "触发" : "未触发"
+                "ui.desktop.beatnet.vignette_trigger",
+                value: snapshot.jointVignetteGateIsActive
+                    ? L10n.string("ui.desktop.beatnet.triggered")
+                    : L10n.string("ui.desktop.beatnet.not_triggered")
             )
             LabeledContent(
-                "暗角强度",
+                "ui.desktop.beatnet.vignette_intensity",
                 value: activation(snapshot.appliedVignettePulse)
             )
             LabeledContent(
-                "分析帧",
+                "ui.desktop.beatnet.analysis_frame",
                 value: snapshot.frameIndex.map {
-                    "\($0 + 1) / \(snapshot.frameCount)"
-                } ?? "超出分析区间"
+                    "\(L10n.integer($0 + 1)) / \(L10n.integer(snapshot.frameCount))"
+                } ?? L10n.string("ui.beatnet.debug.out_of_range")
             )
         } else {
-            Text("当前还没有可读取的 BeatNet 时间轴。")
+            Text("ui.beatnet.debug.blocked.no_timeline")
                 .foregroundStyle(.secondary)
         }
     }
 
     private func percentage(_ value: Double) -> String {
         value.formatted(
-            .percent.precision(.fractionLength(0))
+            .percent.precision(.fractionLength(0)).locale(L10n.locale)
         )
     }
 
     private func activation(_ value: Double) -> String {
         value.formatted(
-            .number.precision(.fractionLength(3))
+            .number.precision(.fractionLength(3)).locale(L10n.locale)
         )
     }
 
     private func seconds(_ value: TimeInterval) -> String {
-        value.formatted(
-            .number.precision(.fractionLength(2))
-        ) + " s"
+        L10n.format("ui.common.seconds_two_decimals", value)
     }
 }

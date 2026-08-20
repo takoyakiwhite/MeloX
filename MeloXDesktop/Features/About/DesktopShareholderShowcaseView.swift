@@ -25,6 +25,6 @@ struct DesktopShareholderShowcaseView: View {
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("股东，\(name)")
+        .accessibilityLabel(L10n.format("ui.about.shareholder.accessibility", name))
     }
 }

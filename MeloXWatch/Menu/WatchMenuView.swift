@@ -9,19 +9,21 @@ struct WatchMenuView: View {
 
     var body: some View {
         List {
-            Section("播放") {
+            Section("ui.settings.playback.section.playback") {
                 NavigationLink {
                     WatchQueueView()
-                        .navigationTitle("播放队列")
+                        .navigationTitle("ui.player.queue")
                 } label: {
-                    Label("播放队列", systemImage: "list.bullet")
+                    Label("ui.player.queue", systemImage: "list.bullet")
                 }
 
                 Button {
                     coordinator.toggleShuffle()
                 } label: {
                     Label(
-                        coordinator.isShuffled ? "关闭随机播放" : "随机播放",
+                        coordinator.isShuffled
+                            ? L10n.string("ui.player.shuffle_off")
+                            : L10n.string("ui.player.shuffle_on"),
                         systemImage: "shuffle"
                     )
                 }
@@ -38,33 +40,35 @@ struct WatchMenuView: View {
                 }
             }
 
-            Section("发现音乐") {
+            Section("ui.watch.menu.discover") {
                 NavigationLink {
                     WatchSearchView(api: api)
                 } label: {
-                    Label("搜索", systemImage: "magnifyingglass")
+                    Label("ui.navigation.search", systemImage: "magnifyingglass")
                 }
 
                 NavigationLink {
                     WatchDailySongsView(api: api)
                 } label: {
-                    Label("每日推荐", systemImage: "calendar")
+                    Label("ui.home.action.daily_songs", systemImage: "calendar")
                 }
 
                 NavigationLink {
                     WatchPlaylistsView(api: api)
                 } label: {
-                    Label("我的歌单", systemImage: "music.note.list")
+                    Label("ui.watch.playlists.mine", systemImage: "music.note.list")
                 }
             }
 
-            Section("账户与设备") {
+            Section("ui.watch.menu.account_device") {
                 NavigationLink {
                     WatchAccountView(api: api)
                 } label: {
                     Label(
                         account.profile?.nickname
-                            ?? (account.isLoggedIn ? "网易云账号" : "登录"),
+                            ?? (account.isLoggedIn
+                                ? L10n.string("ui.account.netease_account")
+                                : L10n.string("ui.common.login")),
                         systemImage: account.isLoggedIn
                             ? "person.crop.circle.fill"
                             : "person.crop.circle.badge.plus"
@@ -74,14 +78,14 @@ struct WatchMenuView: View {
                 NavigationLink {
                     WatchSettingsView()
                 } label: {
-                    Label("设置", systemImage: "gearshape")
+                    Label("ui.watch.settings.title", systemImage: "gearshape")
                 }
 
                 Button {
                     connectivity.requestSnapshot()
                 } label: {
                     Label(
-                        "导入 iPhone 登录",
+                        "ui.watch.account.import_iphone",
                         systemImage: "arrow.triangle.2.circlepath"
                     )
                 }
@@ -92,9 +96,9 @@ struct WatchMenuView: View {
 
     private var repeatTitle: String {
         switch coordinator.repeatMode {
-        case .off: "循环：关闭"
-        case .all: "循环：列表"
-        case .one: "循环：单曲"
+        case .off: L10n.format("ui.watch.repeat.menu", L10n.string("ui.common.off"))
+        case .all: L10n.format("ui.watch.repeat.menu", L10n.string("ui.watch.repeat.list"))
+        case .one: L10n.format("ui.watch.repeat.menu", L10n.string("ui.watch.repeat.song"))
         }
     }
 }

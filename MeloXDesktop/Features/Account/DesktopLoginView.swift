@@ -10,12 +10,12 @@ struct DesktopLoginView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Button("取消") { dismiss() }
+                Button("ui.common.cancel") { dismiss() }
                 Spacer()
                 VStack(spacing: 2) {
-                    Text("登录网易云音乐")
+                    Text("ui.account.login_netease")
                         .font(.headline)
-                    Text("网页会直接连接 music.163.com")
+                    Text("ui.desktop.login.direct_connection")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

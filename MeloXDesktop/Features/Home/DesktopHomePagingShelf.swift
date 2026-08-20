@@ -72,7 +72,7 @@ struct DesktopHomePagingShelf<Item: Identifiable, Card: View>: View {
                 HStack(spacing: 0) {
                     pageButton(
                         systemImage: "chevron.left",
-                        title: "上一页",
+                        title: L10n.string("ui.desktop.pagination.previous"),
                         isAvailable: canRetreat
                     ) {
                         page(-1, proxy: proxy)
@@ -83,7 +83,7 @@ struct DesktopHomePagingShelf<Item: Identifiable, Card: View>: View {
 
                     pageButton(
                         systemImage: "chevron.right",
-                        title: "下一页",
+                        title: L10n.string("ui.desktop.pagination.next"),
                         isAvailable: canAdvance
                     ) {
                         page(1, proxy: proxy)

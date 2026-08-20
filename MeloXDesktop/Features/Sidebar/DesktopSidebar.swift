@@ -32,7 +32,7 @@ struct DesktopSidebar: View {
                 tab(for: section)
             }
 
-            TabSection("音乐库") {
+            TabSection("ui.navigation.library") {
                 ForEach(librarySections.filter(model.isSectionEnabled)) { section in
                     tab(for: section)
                 }
@@ -89,7 +89,7 @@ struct DesktopSidebar: View {
         }
         if model.settings.isContentFeatureEnabled(.cloudMusic),
            model.cloud.isUploading {
-            return "正在上传音乐…"
+            return L10n.string("ui.cloud.uploading_music")
         }
         if let message = model.ui.contextualLoadingMessage {
             return message
@@ -97,27 +97,27 @@ struct DesktopSidebar: View {
         if model.library.phase == .loading
             || (model.settings.isContentFeatureEnabled(.cloudMusic)
                 && model.cloud.phase == .loading) {
-            return "正在载入云端资料库…"
+            return L10n.string("ui.desktop.sidebar.loading_cloud_library")
         }
         if model.settings.isContentFeatureEnabled(.cloudMusic),
            model.cloud.isLoadingMore {
-            return "正在载入更多云盘歌曲…"
+            return L10n.string("ui.cloud.loading_more")
         }
         if model.library.isLoadingMoreFavoriteSongs {
-            return "正在载入更多收藏歌曲…"
+            return L10n.string("ui.desktop.sidebar.loading_more_favorites")
         }
         if model.settings.isContentFeatureEnabled(.podcasts),
            model.library.isLoadingMoreSubscribedPodcasts {
-            return "正在载入更多订阅播客…"
+            return L10n.string("ui.podcasts.loading_more")
         }
         if model.home.phase == .loading {
-            return "正在载入推荐内容…"
+            return L10n.string("ui.desktop.sidebar.loading_recommendations")
         }
         if model.player.isLoading {
-            return "正在载入歌曲…"
+            return L10n.string("ui.song.loading")
         }
         if model.lyrics.isLoading {
-            return "正在载入歌词…"
+            return L10n.string("ui.desktop.sidebar.loading_lyrics")
         }
         return nil
     }
@@ -151,14 +151,14 @@ struct DesktopSidebarAccountFooter: View {
                     ZStack {
                         Circle()
                             .fill(Color(red: 0.48, green: 0.63, blue: 0.88).gradient)
-                        Text("洛")
+                        Text("ui.desktop.sidebar.fallback_avatar_initial")
                             .font(.system(size: 14, weight: .bold))
                             .foregroundStyle(.white)
                     }
                     .frame(width: 30, height: 30)
                 }
 
-                Text(model.library.profile?.nickname ?? "未登录")
+                Text(model.library.profile?.nickname ?? L10n.string("ui.desktop.sidebar.not_signed_in"))
                     .font(.system(size: 13.5, weight: .semibold))
                     .lineLimit(1)
 

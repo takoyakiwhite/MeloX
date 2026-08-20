@@ -10,18 +10,18 @@ enum AutoMixMode: String, CaseIterable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .smart:
-            "智能混音"
+            L10n.string("ui.settings.automix.mode.smart")
         case .fixed:
-            "固定交叉淡化"
+            L10n.string("ui.settings.automix.mode.fixed")
         }
     }
 
     var description: String {
         switch self {
         case .smart:
-            "在设备上分析整曲的节拍、段落变化、能量与频谱，联合选择前后两首的自然衔接位置。"
+            L10n.string("ui.settings.automix.mode.smart.detail")
         case .fixed:
-            "不分析歌曲，按固定时长重叠播放前后两首歌曲。"
+            L10n.string("ui.settings.automix.mode.fixed.detail")
         }
     }
 }
@@ -34,7 +34,7 @@ enum AutoMixTransitionBars: Int, CaseIterable, Identifiable, Sendable {
     var id: Int { rawValue }
 
     var title: String {
-        "\(rawValue) 小节"
+        L10n.format("ui.settings.automix.bars", rawValue)
     }
 }
 
@@ -48,8 +48,8 @@ enum AutoMixTailCutBars: Int, CaseIterable, Identifiable, Sendable {
 
     var title: String {
         rawValue == 0
-            ? "播放到结尾"
-            : "提前 \(rawValue) 小节"
+            ? L10n.string("ui.settings.automix.tail.play_to_end")
+            : L10n.format("ui.settings.automix.tail.cut_bars", rawValue)
     }
 }
 
@@ -63,22 +63,22 @@ nonisolated enum AutoMixFadeCurve: String, CaseIterable, Identifiable, Sendable 
     var title: String {
         switch self {
         case .equalPower:
-            "等功率"
+            L10n.string("ui.settings.automix.curve.equal_power")
         case .smooth:
-            "平滑"
+            L10n.string("ui.settings.automix.curve.smooth")
         case .linear:
-            "线性"
+            L10n.string("ui.settings.automix.curve.linear")
         }
     }
 
     var description: String {
         switch self {
         case .equalPower:
-            "让交叉淡化中段保持较稳定的听感响度，适合大多数歌曲。"
+            L10n.string("ui.settings.automix.curve.equal_power.detail")
         case .smooth:
-            "开头和结尾变化更缓和，适合舒缓歌曲。"
+            L10n.string("ui.settings.automix.curve.smooth.detail")
         case .linear:
-            "音量按固定速度变化，效果直接。"
+            L10n.string("ui.settings.automix.curve.linear.detail")
         }
     }
 }
@@ -93,22 +93,22 @@ enum AutoMixFallbackBehavior: String, CaseIterable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .crossfade:
-            "固定交叉淡化"
+            L10n.string("ui.settings.automix.fallback.crossfade")
         case .shortCrossfade:
-            "短交叉淡化"
+            L10n.string("ui.settings.automix.fallback.short_crossfade")
         case .normal:
-            "普通切歌"
+            L10n.string("ui.settings.automix.fallback.normal")
         }
     }
 
     var description: String {
         switch self {
         case .crossfade:
-            "分析失败或置信度不足时，仍按设定时长重叠播放，并遵守上一首的提前结束位置。"
+            L10n.string("ui.settings.automix.fallback.crossfade.detail")
         case .shortCrossfade:
-            "分析失败时只进行 3 秒重叠，并遵守上一首的提前结束位置。"
+            L10n.string("ui.settings.automix.fallback.short_crossfade.detail")
         case .normal:
-            "分析失败时等待当前歌曲结束，再开始下一首。"
+            L10n.string("ui.settings.automix.fallback.normal.detail")
         }
     }
 }

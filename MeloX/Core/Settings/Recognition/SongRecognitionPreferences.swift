@@ -20,26 +20,26 @@ enum SongRecognitionDuration: Int, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .quick:
-            "3 秒"
+            L10n.format("ui.common.seconds", 3)
         case .balanced:
-            "6 秒"
+            L10n.format("ui.common.seconds", 6)
         case .extended:
-            "9 秒"
+            L10n.format("ui.common.seconds", 9)
         case .continuous:
-            "持续识别"
+            L10n.string("ui.settings.recognition.duration.continuous")
         }
     }
 
     var detail: String {
         switch self {
         case .quick:
-            "更快"
+            L10n.string("ui.settings.recognition.duration.quick.detail")
         case .balanced:
-            "推荐"
+            L10n.string("ui.common.recommended")
         case .extended:
-            "嘈杂环境"
+            L10n.string("ui.settings.recognition.duration.extended.detail")
         case .continuous:
-            "始终不停"
+            L10n.string("ui.settings.recognition.duration.continuous.detail")
         }
     }
 }

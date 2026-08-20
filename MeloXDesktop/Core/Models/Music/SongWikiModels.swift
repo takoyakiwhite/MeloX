@@ -43,7 +43,7 @@ struct SongWiki {
                     creative.creativeType?.lowercased() ?? ""
                 let title =
                     creative.uiElement?.mainTitle?.title?.nonempty
-                    ?? "百科资料"
+                    ?? L10n.string("ui.song.wiki.information")
 
                 switch creativeType {
                 case "songtag", "songbiztag":
@@ -87,7 +87,7 @@ struct SongWiki {
                         ?? []
                     let fallback = creative.resources.isEmpty
                         ? []
-                        : ["\(creative.resources.count) 个"]
+                        : [L10n.format("ui.song.wiki.resource_count", creative.resources.count)]
                     if let value = (values + fallback).first {
                         decodedAttributes.append(
                             SongWikiAttribute(
@@ -124,7 +124,11 @@ struct SongWiki {
                                 SongWikiAttribute(
                                     id: creativeID,
                                     title: title,
-                                    value: values.joined(separator: "、")
+                                    value: L10n.joined(
+                                        values,
+                                        separatorKey:
+                                            "ui.common.compact_list_separator"
+                                    )
                                 )
                             )
                         }
@@ -162,7 +166,7 @@ struct SongWiki {
                 }
                 return SongWikiMemoryItem(
                     id: "first-listen-\(index)",
-                    title: "第一次听",
+                    title: L10n.string("ui.song.wiki.first_listen"),
                     value: date
                 )
 
@@ -173,10 +177,20 @@ struct SongWiki {
                 }
                 var values: [String] = []
                 if let playCount = totalPlay.playCount {
-                    values.append("\(playCount.formatted()) 次")
+                    values.append(
+                        L10n.format(
+                            "ui.song.wiki.play_count_value",
+                            playCount.formatted(.number.locale(L10n.locale))
+                        )
+                    )
                 }
                 if let duration = totalPlay.duration, duration > 0 {
-                    values.append("\(duration.formatted()) 分钟")
+                    values.append(
+                        L10n.format(
+                            "ui.song.wiki.duration_minutes_value",
+                            duration.formatted(.number.locale(L10n.locale))
+                        )
+                    )
                 }
                 if let text = totalPlay.text?.nonempty {
                     values.append(text)
@@ -184,8 +198,11 @@ struct SongWiki {
                 guard !values.isEmpty else { return nil }
                 return SongWikiMemoryItem(
                     id: "total-play-\(index)",
-                    title: "累计播放",
-                    value: values.joined(separator: " · ")
+                    title: L10n.string("ui.song.wiki.total_play"),
+                    value: L10n.joined(
+                        values,
+                        separatorKey: "ui.common.metadata_separator"
+                    )
                 )
 
             default:
@@ -225,7 +242,10 @@ struct SongWiki {
             title: title,
             subtitle: subtitleValues.isEmpty
                 ? nil
-                : subtitleValues.joined(separator: " · "),
+                : L10n.joined(
+                    subtitleValues,
+                    separatorKey: "ui.common.metadata_separator"
+                ),
             body: body.nonempty
         )
     }
@@ -254,7 +274,11 @@ struct SongWiki {
                 artist:
                     resource.uiElement?.subTitles
                         .compactMap(\.title?.nonempty)
-                        .joined(separator: " / ")
+                        .joined(
+                            separator: L10n.string(
+                                "ui.common.artist_separator"
+                            )
+                        )
                         .nonempty,
                 note:
                     resource.uiElement?

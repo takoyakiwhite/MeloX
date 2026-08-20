@@ -26,13 +26,13 @@ struct ShareholderShowcaseView: View {
                 .accessibilityHidden(true)
         }
         .accessibilityElement(children: .ignore)
-        .accessibilityLabel("股东，\(name)")
+        .accessibilityLabel(L10n.format("ui.about.shareholder.accessibility", name))
     }
 }
 
-#Preview("股东展示") {
+#Preview("Shareholder Showcase") {
     Form {
-        Section("股东") {
+        Section("ui.settings.about.shareholders") {
             ShareholderShowcaseView(name: "J1 Champ1on")
         }
     }

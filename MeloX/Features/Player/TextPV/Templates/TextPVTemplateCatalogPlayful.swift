@@ -102,7 +102,7 @@ extension TextPVTemplateCatalog {
         postFX: TextPVPostFX(zoom: 0.65, tilt: -0.52, hueShift: -10)
     )
 
-    static let kawaiPixel = TextPVTemplate(
+    static var kawaiPixel: TextPVTemplate { TextPVTemplate(
         style: .kawaiPixel,
         palette: TextPVPalette(
             background: "#fef0f5",
@@ -121,18 +121,27 @@ extension TextPVTemplateCatalog {
             ]),
             TextPVEffect(.desktopIcon, layer: .decoration, [
                 "x": 30, "y": 30, "size": 64, "iconType": "paint",
-                "label": "Paint.exe", "labelColor": "#5a3a5a",
+                "label": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.paint_file")
+                ),
+                "labelColor": "#5a3a5a",
             ]),
             TextPVEffect(.desktopIcon, layer: .decoration, [
                 "x": 30, "y": 120, "size": 64, "iconType": "notes",
-                "label": "Notes", "labelColor": "#5a3a5a",
+                "label": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.notes")
+                ),
+                "labelColor": "#5a3a5a",
             ]),
             pixelWindow([
                 "x": 0.22, "y": 0.18, "anchorX": 0.5, "anchorY": 0.5,
                 "width": 320, "height": 260, "bgColor": "#ffffff",
                 "borderColor": "#ffb3d9", "borderWidth": 4,
                 "titleBgColor": "#ffb3d9", "titleColor": "#ffffff",
-                "title": "Pixel Paint", "titleBarHeight": 28,
+                "title": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.pixel_paint")
+                ),
+                "titleBarHeight": 28,
                 "icon": "heart", "iconColor": "#ffb3d9", "iconSize": 70,
                 "alpha": 0.95,
             ]),
@@ -141,7 +150,10 @@ extension TextPVTemplateCatalog {
                 "width": 280, "height": 180, "bgColor": "#f0f8ff",
                 "borderColor": "#b3e5fc", "borderWidth": 4,
                 "titleBgColor": "#b3e5fc", "titleColor": "#ffffff",
-                "title": "Welcome!!", "titleBarHeight": 28,
+                "title": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.welcome")
+                ),
+                "titleBarHeight": 28,
                 "icon": "paint", "iconColor": "#b3e5fc", "iconSize": 50,
                 "alpha": 0.92,
             ]),
@@ -150,8 +162,13 @@ extension TextPVTemplateCatalog {
                 "width": 260, "height": 160, "bgColor": "#fff5f8",
                 "borderColor": "#ffc0e0", "borderWidth": 4,
                 "titleBgColor": "#ffc0e0", "titleColor": "#ffffff",
-                "title": "Messages ♡", "titleBarHeight": 28,
-                "content": "You have 3 new\nmessages! (◕‿◕)",
+                "title": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.messages")
+                ),
+                "titleBarHeight": 28,
+                "content": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.messages_content")
+                ),
                 "contentColor": "#5a3a5a", "alpha": 0.90,
             ]),
             pixelWindow([
@@ -159,8 +176,13 @@ extension TextPVTemplateCatalog {
                 "width": 300, "height": 200, "bgColor": "#f5f0ff",
                 "borderColor": "#c8b3ff", "borderWidth": 4,
                 "titleBgColor": "#c8b3ff", "titleColor": "#ffffff",
-                "title": "Music Player", "titleBarHeight": 28,
-                "content": "♪ Now Playing...\n\n▶ Track 01\n━━━━━━━━━━ 2:34",
+                "title": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.music_player")
+                ),
+                "titleBarHeight": 28,
+                "content": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.now_playing_content")
+                ),
                 "contentColor": "#5a3a5a", "alpha": 0.93,
             ]),
             pixelWindow([
@@ -168,8 +190,13 @@ extension TextPVTemplateCatalog {
                 "width": 240, "height": 150, "bgColor": "#f0fff4",
                 "borderColor": "#c8f7dc", "borderWidth": 4,
                 "titleBgColor": "#c8f7dc", "titleColor": "#ffffff",
-                "title": "Calendar", "titleBarHeight": 28,
-                "content": "📅 Today:\nMarch 14, 2026\nSaturday ☆",
+                "title": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.calendar")
+                ),
+                "titleBarHeight": 28,
+                "content": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.calendar_content")
+                ),
                 "contentColor": "#5a3a5a", "alpha": 0.91,
             ]),
             pixelWindow([
@@ -177,8 +204,13 @@ extension TextPVTemplateCatalog {
                 "width": 340, "height": 240, "bgColor": "#fffef0",
                 "borderColor": "#ffb3d9", "borderWidth": 4,
                 "titleBgColor": "#ffb3d9", "titleColor": "#ffffff",
-                "title": "Note.txt", "titleBarHeight": 28,
-                "content": "1. Buy milk\n2. Call mom\n3. Practice drawing\n4. Be cute!",
+                "title": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.note_file")
+                ),
+                "titleBarHeight": 28,
+                "content": .string(
+                    L10n.string("ui.text_pv.generated.kawaii.note_content")
+                ),
                 "contentColor": "#5a3a5a", "alpha": 0.95,
             ]),
             TextPVEffect(.scatteredShapes, layer: .decoration, [
@@ -204,9 +236,9 @@ extension TextPVTemplateCatalog {
         bpm: 120,
         animationSpeed: 1,
         backgroundOpacity: 1
-    )
+    ) }
 
-    static let crimeScene = TextPVTemplate(
+    static var crimeScene: TextPVTemplate { TextPVTemplate(
         style: .crimeScene,
         palette: TextPVPalette(
             background: "#0a0a0a",
@@ -231,14 +263,17 @@ extension TextPVTemplateCatalog {
             TextPVEffect(.crimeTape, layer: .decoration, [
                 "count": 6, "tapeColor": "#f5c800", "textColor": "#000000",
                 "tapeWidth": 52, "speed": 70,
-                "text": "POLICE LINE DO NOT CROSS", "angleRange": 0.22,
+                "text": .string(
+                    L10n.string("ui.text_pv.generated.crime_tape")
+                ),
+                "angleRange": 0.22,
             ]),
             TextPVEffect(.vignette, layer: .overlay, [
                 "color": "#000000", "alpha": 0.72, "radius": 0.65,
             ]),
         ],
         animationSpeed: 2.5
-    )
+    ) }
 
     static let haruhikage = TextPVTemplate(
         style: .haruhikage,

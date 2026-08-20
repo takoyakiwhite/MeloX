@@ -24,7 +24,7 @@ struct ExploreView: View {
 
     init(
         showsNavigationTitle: Bool = true,
-        navigationTitle: String = "发现"
+        navigationTitle: String = L10n.string("ui.navigation.discover")
     ) {
         self.showsNavigationTitle = showsNavigationTitle
         self.navigationTitle = navigationTitle
@@ -67,7 +67,7 @@ struct ExploreView: View {
         if playlists.isEmpty {
             switch phase {
             case .loading:
-                ProgressView("正在发现好音乐")
+                ProgressView("ui.explore.loading")
                     .frame(maxWidth: .infinity, minHeight: 320)
             case .failed(let message):
                 ConnectionUnavailableView(message: message) {
@@ -75,7 +75,7 @@ struct ExploreView: View {
                 }
                 .frame(maxWidth: .infinity, minHeight: 320)
             case .loaded:
-                ContentUnavailableView("暂无歌单", systemImage: "music.note.list")
+                ContentUnavailableView("ui.playlists.empty", systemImage: "music.note.list")
                     .frame(maxWidth: .infinity, minHeight: 320)
             }
         } else {
@@ -94,7 +94,7 @@ struct ExploreView: View {
 
                     Spacer()
 
-                    Text("\(playlists.count) 个歌单")
+                    Text(L10n.format("ui.common.playlist_count", playlists.count))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -122,20 +122,20 @@ struct ExploreView: View {
 
     private var featuredBadge: String {
         switch category {
-        case "推荐歌单": "今日推荐"
-        case "排行榜": "热门榜单"
-        case "精品歌单": "编辑精选"
-        default: category
+        case "推荐歌单": L10n.string("ui.explore.badge.today")
+        case "排行榜": L10n.string("ui.explore.badge.popular_toplists")
+        case "精品歌单": L10n.string("ui.explore.badge.editors_choice")
+        default: localizedPlaylistCategory(category)
         }
     }
 
     private var collectionTitle: String {
         switch category {
-        case "推荐歌单": "更多推荐"
-        case "排行榜": "全部榜单"
-        case "精品歌单": "更多精品"
-        case "全部": "热门歌单"
-        default: "\(category)歌单"
+        case "推荐歌单": L10n.string("ui.explore.more_recommendations")
+        case "排行榜": L10n.string("ui.toplists.all")
+        case "精品歌单": L10n.string("ui.explore.more_featured")
+        case "全部": L10n.string("ui.explore.popular_playlists")
+        default: L10n.format("ui.explore.category_playlists", localizedPlaylistCategory(category))
         }
     }
 

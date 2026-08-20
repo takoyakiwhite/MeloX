@@ -121,7 +121,7 @@ struct DesktopNowPlayingProgress: View {
             onEditingChanged: setScrubbing
         )
         .controlSize(.large)
-        .accessibilityLabel("播放进度")
+        .accessibilityLabel("ui.desktop.player.playback_progress")
         .accessibilityValue(
             "\(format(elapsedSecond)) / \(format(totalSecond))"
         )

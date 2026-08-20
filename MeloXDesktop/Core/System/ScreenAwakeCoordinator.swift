@@ -29,7 +29,7 @@ final class ScreenAwakeCoordinator {
         } else if activity == nil {
             activity = ProcessInfo.processInfo.beginActivity(
                 options: [.idleDisplaySleepDisabled, .userInitiated],
-                reason: "MeloX 正在显示正在播放界面"
+                reason: L10n.string("ui.desktop.screen_awake.reason")
             )
         }
     }

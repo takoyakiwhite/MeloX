@@ -60,13 +60,13 @@ nonisolated enum WatchStreamingQuality:
 
     var title: String {
         switch self {
-        case .standard: "标准"
-        case .high: "高品质"
-        case .lossless: "无损"
-        case .hiResolution: "Hi-Res"
-        case .highDefinitionSurround: "高清环绕声"
-        case .immersiveSurround: "沉浸环绕声"
-        case .ultraClearMaster: "超清母带"
+        case .standard: L10n.string("ui.settings.audio_quality.standard")
+        case .high: L10n.string("ui.settings.audio_quality.high")
+        case .lossless: L10n.string("ui.settings.audio_quality.lossless")
+        case .hiResolution: L10n.string("ui.settings.audio_quality.hi_res")
+        case .highDefinitionSurround: L10n.string("ui.settings.audio_quality.hd_surround")
+        case .immersiveSurround: L10n.string("ui.settings.audio_quality.immersive_surround")
+        case .ultraClearMaster: L10n.string("ui.settings.audio_quality.master")
         }
     }
 
@@ -148,8 +148,8 @@ enum WatchPreviousButtonBehavior: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .restartAfterFiveSeconds: "超过 5 秒回到开头"
-        case .alwaysPrevious: "始终播放上一首"
+        case .restartAfterFiveSeconds: L10n.string("ui.watch.playback.previous.restart")
+        case .alwaysPrevious: L10n.string("ui.watch.playback.previous.always")
         }
     }
 }
@@ -162,8 +162,8 @@ enum WatchLyricsRefreshRate: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .smooth: "流畅"
-        case .powerSaving: "省电"
+        case .smooth: L10n.string("ui.watch.lyrics.refresh.smooth")
+        case .powerSaving: L10n.string("ui.watch.lyrics.refresh.power_saving")
         }
     }
 
@@ -188,15 +188,15 @@ enum WatchLyricTimingMode:
 
     var liftTitle: String {
         switch self {
-        case .word: "按词抬升"
-        case .character: "按字抬升"
+        case .word: L10n.string("ui.settings.lyrics.lift.word")
+        case .character: L10n.string("ui.settings.lyrics.lift.character")
         }
     }
 
     var detectionTitle: String {
         switch self {
-        case .word: "按词识别"
-        case .character: "按字识别"
+        case .word: L10n.string("ui.settings.lyrics.long_syllable.word")
+        case .character: L10n.string("ui.settings.lyrics.long_syllable.character")
         }
     }
 }

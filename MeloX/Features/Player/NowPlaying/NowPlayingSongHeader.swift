@@ -168,7 +168,7 @@ struct NowPlayingLandscapeSongHeader: View {
                     .contentShape(.circle)
                 }
                 .buttonStyle(.plain)
-                .accessibilityLabel("打开全屏天际歌词")
+                .accessibilityLabel("ui.settings.skyline.title")
             }
 
             NowPlayingSongActions(song: song)

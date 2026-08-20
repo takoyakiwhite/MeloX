@@ -18,17 +18,17 @@ enum DesktopSection: String, CaseIterable, Identifiable, Hashable {
 
     var title: String {
         switch self {
-        case .search: "搜索"
-        case .home: "主页"
-        case .discovery: "新发现"
-        case .radio: "广播"
-        case .recent: "最近播放"
-        case .songs: "收藏歌曲"
-        case .playlists: "收藏歌单"
-        case .podcasts: "订阅播客"
-        case .downloads: "下载"
-        case .cloud: "云盘"
-        case .messages: "消息"
+        case .search: L10n.string("ui.navigation.search")
+        case .home: L10n.string("ui.navigation.home")
+        case .discovery: L10n.string("ui.navigation.explore")
+        case .radio: L10n.string("ui.navigation.podcasts")
+        case .recent: L10n.string("ui.navigation.library.history")
+        case .songs: L10n.string("ui.navigation.library.liked_songs")
+        case .playlists: L10n.string("ui.navigation.library.liked_playlists")
+        case .podcasts: L10n.string("ui.navigation.library.podcasts")
+        case .downloads: L10n.string("ui.navigation.downloads")
+        case .cloud: L10n.string("ui.navigation.cloud")
+        case .messages: L10n.string("ui.messages.private.title")
         }
     }
 

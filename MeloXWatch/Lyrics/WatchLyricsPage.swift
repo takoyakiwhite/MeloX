@@ -51,14 +51,16 @@ struct WatchLyricsPage: View {
             if !isActive {
                 Color.black
             } else if lyricsStore.isLoading {
-                ProgressView("正在载入歌词")
+                ProgressView("ui.watch.lyrics.loading")
             } else if lyricsStore.lyrics.isEmpty {
                 ContentUnavailableView(
-                    "暂无歌词",
+                    "ui.watch.lyrics.empty.title",
                     systemImage: "quote.bubble",
                     description: Text(
                         lyricsStore.errorMessage
-                            ?? "开始播放歌曲后会在这里显示歌词。"
+                            ?? L10n.string(
+                                "ui.watch.lyrics.empty.description"
+                            )
                     )
                 )
             } else {

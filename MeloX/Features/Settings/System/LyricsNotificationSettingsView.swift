@@ -28,7 +28,7 @@ struct LyricsNotificationSettingsView: View {
 
         Form {
             Section {
-                LabeledContent("通知权限") {
+                LabeledContent("ui.settings.lyrics_notification.permission") {
                     Label(
                         permissionStatus.title,
                         systemImage:
@@ -43,35 +43,35 @@ struct LyricsNotificationSettingsView: View {
 
                 if permissionStatus == .denied {
                     Button(
-                        "打开系统通知设置",
+                        "ui.settings.lyrics_notification.open_settings",
                         systemImage: "gear"
                     ) {
                         openNotificationSettings()
                     }
                 }
             } header: {
-                Text("权限")
+                Text("ui.settings.lyrics_notification.permission.section")
             } footer: {
-                Text("MeloX 只申请横幅通知权限，不申请提示音权限。")
+                Text("ui.settings.lyrics_notification.permission.footer")
             }
 
             Section {
-                LabeledContent("标题格式") {
+                LabeledContent("ui.settings.system_lyrics.title_format") {
                     formatField(
-                        "标题格式",
+                        L10n.string("ui.settings.system_lyrics.title_format"),
                         text: $preferences.titleFormat
                     )
                 }
 
                 Toggle(
-                    "显示副标题",
+                    "ui.settings.lyrics_notification.show_subtitle",
                     isOn: $preferences.showsSubtitle
                 )
 
                 if preferences.showsSubtitle {
-                    LabeledContent("副标题格式") {
+                    LabeledContent("ui.settings.system_lyrics.subtitle_format") {
                         formatField(
-                            "副标题格式",
+                            L10n.string("ui.settings.system_lyrics.subtitle_format"),
                             text:
                                 $preferences.subtitleFormat
                         )
@@ -79,12 +79,12 @@ struct LyricsNotificationSettingsView: View {
                 }
 
                 Toggle(
-                    "显示歌曲封面",
+                    "ui.settings.lyrics_notification.show_artwork",
                     isOn: $preferences.showsArtwork
                 )
 
                 Picker(
-                    "正文内容",
+                    "ui.settings.lyrics_notification.body_content",
                     selection:
                         $preferences.supplementaryContent
                 ) {
@@ -97,29 +97,29 @@ struct LyricsNotificationSettingsView: View {
                 }
 
                 Toggle(
-                    "无歌词时显示歌曲信息",
+                    "ui.settings.lyrics_notification.fallback_song_info",
                     isOn:
                         $preferences
                             .showsTrackInfoWhenLyricsUnavailable
                 )
             } header: {
-                Text("通知内容")
+                Text("ui.settings.lyrics_notification.content.section")
             } footer: {
                 VStack(alignment: .leading, spacing: 6) {
-                    Text("标题与副标题支持 {歌词}、{歌名}、{作者} 占位符；翻译或下一句不可用时会自动省略。")
-                    Text("系统仍会显示 MeloX 应用图标；歌曲封面将作为通知图片附件，加载失败时自动使用纯文字通知。")
+                    Text("ui.settings.lyrics_notification.content.format_footer")
+                    Text("ui.settings.lyrics_notification.content.artwork_footer")
                 }
             }
 
             Section {
                 Toggle(
-                    "在 MeloX 前台弹出",
+                    "ui.settings.lyrics_notification.show_foreground",
                     isOn:
                         $preferences.showsInForeground
                 )
 
                 Toggle(
-                    "在后台播放时弹出",
+                    "ui.settings.lyrics_notification.show_background",
                     isOn:
                         $preferences.showsInBackground
                 )
@@ -127,31 +127,31 @@ struct LyricsNotificationSettingsView: View {
                 if !preferences.showsInForeground
                     && !preferences.showsInBackground {
                     Label(
-                        "当前不会在任何场景显示通知歌词",
+                        "ui.settings.lyrics_notification.no_scene.warning",
                         systemImage:
                             "exclamationmark.triangle.fill"
                     )
                     .foregroundStyle(.orange)
                 }
             } header: {
-                Text("显示场景")
+                Text("ui.settings.lyrics_notification.scene.section")
             }
 
             Section {
                 Toggle(
-                    "暂停时撤回通知",
+                    "ui.settings.lyrics_notification.dismiss_on_pause",
                     isOn:
                         $preferences.removesWhenPaused
                 )
             } header: {
-                Text("通知行为")
+                Text("ui.settings.lyrics_notification.behavior.section")
             } footer: {
-                Text("每次歌词更新都会先撤回上一条，再发布新的静音横幅；通知中心始终只保留最新歌词。")
+                Text("ui.settings.lyrics_notification.behavior.footer")
             }
 
             Section {
                 Button(
-                    "发送测试通知",
+                    "ui.settings.lyrics_notification.send_test",
                     systemImage: "bell.badge"
                 ) {
                     presentPreview()
@@ -165,11 +165,11 @@ struct LyricsNotificationSettingsView: View {
                     Text(error)
                         .foregroundStyle(.red)
                 } else {
-                    Text("测试通知使用当前歌曲与歌词；没有正在播放的歌曲时会使用示例内容。")
+                    Text("ui.settings.lyrics_notification.test.footer")
                 }
             }
         }
-        .navigationTitle("通知歌词")
+        .navigationTitle("ui.settings.lyrics_notification.title")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await notifications.refreshAuthorizationStatus()
@@ -259,15 +259,15 @@ private extension LyricsNotificationAuthorizationStatus {
     var title: String {
         switch self {
         case .notDetermined:
-            "尚未请求"
+            L10n.string("ui.settings.notification_status.not_determined")
         case .denied:
-            "系统已关闭"
+            L10n.string("ui.settings.notification_status.denied")
         case .authorized:
-            "已允许"
+            L10n.string("ui.settings.notification_status.authorized")
         case .provisional:
-            "临时允许"
+            L10n.string("ui.settings.notification_status.provisional")
         case .ephemeral:
-            "本次允许"
+            L10n.string("ui.settings.notification_status.ephemeral")
         }
     }
 

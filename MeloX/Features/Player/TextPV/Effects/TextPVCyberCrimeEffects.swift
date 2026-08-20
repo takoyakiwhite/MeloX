@@ -36,7 +36,7 @@ extension TextPVEffectPainter {
             }
             context.stroke(lines, with: .color(data.opacity(alpha * 0.75)), lineWidth: 1)
             drawText(
-                "MON_0\(index + 1) // LIVE",
+                L10n.format("ui.text_pv.generated.monitor_live", index + 1),
                 in: &context,
                 at: CGPoint(x: rect.minX + 6, y: rect.minY + 5),
                 color: data,
@@ -181,7 +181,10 @@ extension TextPVEffectPainter {
         let textColor = color("textColor", in: config, default: "#000000")
         let tapeWidth = config.number("tapeWidth", default: 52)
         let speed = config.number("speed", default: 70)
-        let label = config.string("text", default: "POLICE LINE DO NOT CROSS")
+        let label = config.string(
+            "text",
+            default: L10n.string("ui.text_pv.generated.crime_tape")
+        )
         let angleRange = config.number("angleRange", default: 0.22)
         let travel = (frame.animatedTime * speed).truncatingRemainder(dividingBy: 260)
         for index in 0..<count {

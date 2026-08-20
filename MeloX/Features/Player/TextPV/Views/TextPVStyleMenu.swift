@@ -26,9 +26,9 @@ struct TextPVStyleMenu: View {
                 }
             }
         } label: {
-            Label("文字PV", systemImage: LyricsStyle.textPV.systemImage)
+            Label("ui.settings.lyrics.style.text_pv", systemImage: LyricsStyle.textPV.systemImage)
         }
-        .accessibilityLabel("文字PV风格")
+        .accessibilityLabel("ui.text_pv.style")
         .accessibilityValue(settings.textPV.style.title)
     }
 
@@ -50,9 +50,9 @@ private enum TextPVStyleMenuGroup: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .foundation: "基础构成"
-        case .dramatic: "氛围与故障"
-        case .themed: "主题与像素"
+        case .foundation: L10n.string("ui.text_pv.section.foundation")
+        case .dramatic: L10n.string("ui.text_pv.section.dramatic")
+        case .themed: L10n.string("ui.text_pv.section.themed")
         }
     }
 

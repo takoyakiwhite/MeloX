@@ -7,9 +7,9 @@ enum LyricSource: String, Hashable, Sendable {
 
     var title: String {
         switch self {
-        case .amll: "AMLL"
-        case .netease: "网易云音乐"
-        case .qqMusic: "QQ 音乐"
+        case .amll: L10n.string("ui.lyrics.source.amll")
+        case .netease: L10n.string("ui.lyrics.source.netease")
+        case .qqMusic: L10n.string("ui.lyrics.source.qq_music")
         }
     }
 }
@@ -24,10 +24,10 @@ enum LyricSourcePreference: String, CaseIterable, Identifiable, Hashable, Sendab
 
     var title: String {
         switch self {
-        case .automatic: "自动优选"
-        case .amll: "AMLL TTML"
-        case .netease: "网易云音乐"
-        case .qqMusic: "QQ 音乐"
+        case .automatic: L10n.string("ui.lyrics.source.automatic")
+        case .amll: L10n.string("ui.lyrics.source.amll_ttml")
+        case .netease: L10n.string("ui.lyrics.source.netease")
+        case .qqMusic: L10n.string("ui.lyrics.source.qq_music")
         }
     }
 
@@ -97,9 +97,9 @@ enum LyricSourceError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            "歌词服务返回了无法识别的数据。"
+            L10n.string("ui.error.lyrics.invalid_response")
         case .noLyrics:
-            "当前歌曲暂无滚动歌词。"
+            L10n.string("ui.error.lyrics.unavailable")
         }
     }
 }

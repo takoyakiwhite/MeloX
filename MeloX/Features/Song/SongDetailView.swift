@@ -20,7 +20,7 @@ struct SongDetailView: View {
             informationSection
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("歌曲详情")
+        .navigationTitle("ui.song.detail.title")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItemGroup(placement: .primaryAction) {
@@ -30,16 +30,16 @@ struct SongDetailView: View {
                             Button {
                                 downloads.cancel(songID: song.id)
                             } label: {
-                                Label("取消下载", systemImage: "xmark.circle")
+                                Label("ui.downloads.cancel", systemImage: "xmark.circle")
                             }
                         } else if downloads.contains(songID: song.id) {
                             Button(role: .destructive) {
                                 downloads.remove(songID: song.id)
                             } label: {
-                                Label("删除下载", systemImage: "trash")
+                                Label("ui.downloads.delete", systemImage: "trash")
                             }
                         } else {
-                            Section("选择下载音质") {
+                            Section("ui.downloads.select_quality") {
                                 ForEach(MusicQuality.allCases) { quality in
                                     Button(quality.title) {
                                         downloads.start(song, quality: quality)
@@ -56,8 +56,8 @@ struct SongDetailView: View {
                     }
                     .accessibilityLabel(
                         downloads.contains(songID: song.id)
-                            ? "已下载"
-                            : "下载"
+                            ? L10n.string("ui.downloads.downloaded")
+                            : L10n.string("ui.common.download")
                     )
                 }
 
@@ -66,14 +66,14 @@ struct SongDetailView: View {
                 } label: {
                     Image(systemName: "bubble.left.and.bubble.right")
                 }
-                .accessibilityLabel("查看评论")
+                .accessibilityLabel("ui.comments.view")
 
                 Menu {
                     NeteaseShareMenuContent(resource: .song(song))
                 } label: {
                     Image(systemName: "square.and.arrow.up")
                 }
-                .accessibilityLabel("分享歌曲")
+                .accessibilityLabel("ui.song.share")
             }
         }
         .sheet(item: $presentedSheet) { sheet in
@@ -88,17 +88,17 @@ struct SongDetailView: View {
             await loadSongDetails()
         }
         .alert(
-            "收藏失败",
+            "ui.error.favorite_failed",
             isPresented: Binding(
                 get: { library.errorMessage != nil },
                 set: { if !$0 { library.clearError() } }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 library.clearError()
             }
         } message: {
-            Text(library.errorMessage ?? "未知错误")
+            Text(library.errorMessage ?? L10n.string("ui.common.unknown_error"))
         }
     }
 
@@ -115,7 +115,13 @@ struct SongDetailView: View {
                             .lineLimit(2)
 
                         if !song.aliases.isEmpty {
-                            Text(song.aliases.joined(separator: " / "))
+                            Text(
+                                L10n.joined(
+                                    song.aliases,
+                                    separatorKey:
+                                        "ui.common.artist_separator"
+                                )
+                            )
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                                 .lineLimit(2)
@@ -132,7 +138,7 @@ struct SongDetailView: View {
                     Button {
                         Task { await player.play(song, in: [song]) }
                     } label: {
-                        Text("播放")
+                        Text("ui.common.play")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -141,7 +147,9 @@ struct SongDetailView: View {
                         library.toggle(song: song)
                     } label: {
                         Label(
-                            library.contains(song: song) ? "已收藏" : "收藏",
+                            library.contains(song: song)
+                                ? L10n.string("ui.common.favorited")
+                                : L10n.string("ui.common.favorite"),
                             systemImage: library.contains(song: song) ? "heart.fill" : "heart"
                         )
                     }
@@ -153,29 +161,29 @@ struct SongDetailView: View {
     }
 
     private var informationSection: some View {
-        Section("歌曲资料") {
+        Section("ui.song.information") {
             Button {
                 presentedSheet = .songWiki(song)
             } label: {
-                Label("歌曲百科", systemImage: "book.pages")
+                Label("ui.song.wiki.title", systemImage: "book.pages")
             }
 
             ForEach(song.artists) { artist in
                 NavigationLink(value: MusicRoute.artist(artist.id)) {
-                    LabeledContent("歌手", value: artist.name)
+                    LabeledContent(L10n.string("ui.common.artist"), value: artist.name)
                 }
                 .musicMatchedTransitionSource(for: MusicRoute.artist(artist.id))
             }
 
             if let album = song.album {
                 NavigationLink(value: MusicRoute.album(album)) {
-                    LabeledContent("专辑", value: album.name)
+                    LabeledContent(L10n.string("ui.common.album"), value: album.name)
                 }
                 .musicMatchedTransitionSource(for: MusicRoute.album(album))
             }
 
             if let publishTime = song.publishTime ?? song.album?.publishTime {
-                LabeledContent("发行日期") {
+                LabeledContent("ui.song.release_date") {
                     Text(
                         Date(timeIntervalSince1970: publishTime / 1_000),
                         format: .dateTime.year().month().day()

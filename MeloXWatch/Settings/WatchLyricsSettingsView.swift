@@ -43,134 +43,131 @@ struct WatchLyricsSettingsView: View {
 
     var body: some View {
         Form {
-            Section("内容") {
-                Toggle("逐字高亮", isOn: $wordByWord)
-                Toggle("显示翻译", isOn: $showsTranslation)
-                Toggle("显示罗马音", isOn: $showsRomanization)
+            Section("ui.desktop.lyrics.page.content") {
+                Toggle("ui.watch.lyrics.word_highlight", isOn: $wordByWord)
+                Toggle("ui.settings.floating_lyrics.show_translation", isOn: $showsTranslation)
+                Toggle("ui.settings.lyrics.content.show_romanization", isOn: $showsRomanization)
 
                 LabeledContent(
-                    "注音大小",
+                    "ui.settings.lyrics.content.romanization_size",
                     value: romanizationFontScale.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $romanizationFontScale, in: 0.45...0.85)
                     .disabled(!showsRomanization)
-                    .accessibilityLabel("注音大小")
+                    .accessibilityLabel("ui.settings.lyrics.content.romanization_size")
 
                 LabeledContent(
-                    "注音亮度",
+                    "ui.settings.lyrics.content.romanization_brightness",
                     value: romanizationOpacity.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $romanizationOpacity, in: 0.4...1)
                     .disabled(!showsRomanization)
-                    .accessibilityLabel("注音亮度")
+                    .accessibilityLabel("ui.settings.lyrics.content.romanization_brightness")
             }
 
             Section {
-                Picker("逐字动效", selection: $refreshRateRawValue) {
+                Picker("ui.watch.lyrics.word_animation", selection: $refreshRateRawValue) {
                     ForEach(WatchLyricsRefreshRate.allCases) { rate in
                         Text(rate.title).tag(rate.rawValue)
                     }
                 }
             } header: {
-                Text("刷新率")
+                Text("ui.settings.lyrics.animation.refresh_rate")
             } footer: {
-                Text("“流畅”使用最高 60 帧连续进度，“省电”限制为 30 帧。")
+                Text("ui.watch.lyrics.refresh.footer")
             }
 
-            Section("辉光") {
-                Toggle("歌词辉光", isOn: $lyricGlow)
+            Section("ui.watch.lyrics.glow") {
+                Toggle("ui.settings.lyrics.content.glow_effect", isOn: $lyricGlow)
 
                 LabeledContent(
-                    "辉光强度",
+                    "ui.settings.lyrics.content.glow_intensity",
                     value: glowIntensity.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $glowIntensity, in: 0...1.5)
                     .disabled(!lyricGlow)
-                    .accessibilityLabel("辉光强度")
+                    .accessibilityLabel("ui.settings.lyrics.content.glow_intensity")
             }
 
-            Section("渐进模糊") {
+            Section("ui.watch.lyrics.progressive_blur") {
                 LabeledContent(
-                    "模糊强度",
+                    "ui.settings.lyrics.appearance.base_blur",
                     value: blurIntensity.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $blurIntensity, in: 0...1.5)
-                    .accessibilityLabel("模糊强度")
+                    .accessibilityLabel("ui.settings.lyrics.appearance.base_blur")
 
                 LabeledContent(
-                    "距离增幅",
+                    "ui.settings.lyrics.appearance.distance_blur_scale",
                     value: distanceBlurScale.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $distanceBlurScale, in: 0...1.5)
-                    .accessibilityLabel("距离模糊增幅")
+                    .accessibilityLabel("ui.settings.lyrics.appearance.distance_blur_scale")
 
                 LabeledContent(
-                    "非焦点变暗",
+                    "ui.settings.lyrics.appearance.unfocused_dimming",
                     value: dimAmount.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $dimAmount, in: 0...1)
-                    .accessibilityLabel("非焦点歌词变暗")
+                    .accessibilityLabel("ui.settings.lyrics.appearance.unfocused_dimming")
 
                 Toggle(
-                    "浏览时统一变暗",
+                    "ui.settings.lyrics.appearance.uniform_dimming_browsing",
                     isOn: $usesUniformBrowsingDimming
                 )
             }
 
-            Section("时序与焦点") {
+            Section("ui.watch.lyrics.timing_focus") {
                 LabeledContent(
-                    "歌词提前",
-                    value:
-                        advanceTime.formatted(
-                            .number.precision(.fractionLength(2))
-                        )
-                        + " 秒"
+                    "ui.settings.lyrics.interaction.advance_time",
+                    value: L10n.format("ui.common.seconds_two_decimals", advanceTime)
                 )
                 Slider(value: $advanceTime, in: -0.5...0.8, step: 0.05)
-                    .accessibilityLabel("歌词提前时间")
+                    .accessibilityLabel("ui.settings.lyrics.interaction.advance_time")
 
                 LabeledContent(
-                    "当前行缩放",
+                    "ui.settings.lyrics.appearance.current_line_scale",
                     value: currentLineScale.formatted(
-                        .number.precision(.fractionLength(2))
+                        .number.precision(.fractionLength(2)).locale(L10n.locale)
                     )
                 )
                 Slider(value: $currentLineScale, in: 1...1.15)
-                    .accessibilityLabel("当前行缩放")
+                    .accessibilityLabel("ui.settings.lyrics.appearance.current_line_scale")
 
                 LabeledContent(
-                    "焦点位置",
-                    value:
-                        "顶部 "
-                        + focusPosition.formatted(
-                            .percent.precision(.fractionLength(0))
+                    "ui.settings.lyrics.appearance.focus_vertical_position",
+                    value: L10n.format(
+                        "ui.watch.lyrics.focus_from_top",
+                        focusPosition.formatted(
+                            .percent.precision(.fractionLength(0)).locale(L10n.locale)
                         )
+                    )
                 )
                 Slider(value: $focusPosition, in: 0.12...0.5)
-                    .accessibilityLabel("歌词焦点垂直位置")
+                    .accessibilityLabel("ui.settings.lyrics.appearance.focus_vertical_position")
             }
 
-            Section("逐字动态") {
-                Picker("抬升方式", selection: $liftModeRawValue) {
+            Section("ui.watch.lyrics.word_motion") {
+                Picker("ui.settings.lyrics.content.lift_mode", selection: $liftModeRawValue) {
                     ForEach(WatchLyricTimingMode.allCases) { mode in
                         Text(mode.liftTitle).tag(mode.rawValue)
                     }
                 }
 
                 Picker(
-                    "长音识别",
+                    "ui.settings.lyrics.content.long_tone_detection",
                     selection: $longToneDetectionModeRawValue
                 ) {
                     ForEach(WatchLyricTimingMode.allCases) { mode in
@@ -179,24 +176,23 @@ struct WatchLyricsSettingsView: View {
                 }
 
                 LabeledContent(
-                    "长音阈值",
-                    value:
-                        longToneDurationThreshold.formatted(
-                            .number.precision(.fractionLength(2))
-                        )
-                        + " 秒"
+                    "ui.settings.lyrics.content.long_tone_threshold",
+                    value: L10n.format(
+                        "ui.common.seconds_two_decimals",
+                        longToneDurationThreshold
+                    )
                 )
                 Slider(
                     value: $longToneDurationThreshold,
                     in: 0.3...1.5,
                     step: 0.05
                 )
-                .accessibilityLabel("长音判定阈值")
+                .accessibilityLabel("ui.settings.lyrics.content.long_tone_threshold")
 
                 LabeledContent(
-                    "膨胀大小",
+                    "ui.settings.lyrics.content.long_tone_expansion",
                     value: longToneExpansionAmount.formatted(
-                        .percent.precision(.fractionLength(0))
+                        .percent.precision(.fractionLength(0)).locale(L10n.locale)
                     )
                 )
                 Slider(
@@ -204,9 +200,9 @@ struct WatchLyricsSettingsView: View {
                     in: 0...0.15,
                     step: 0.01
                 )
-                .accessibilityLabel("长音膨胀大小")
+                .accessibilityLabel("ui.settings.lyrics.content.long_tone_expansion")
             }
         }
-        .navigationTitle("歌词动效")
+        .navigationTitle("ui.watch.settings.lyrics")
     }
 }

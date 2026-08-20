@@ -13,7 +13,9 @@ struct LibraryHistoryView: View {
                     Task { await player.playAll(displayedSongs) }
                 } label: {
                     Label(
-                        isSearching ? "播放搜索结果" : "播放全部",
+                        isSearching
+                            ? L10n.string("ui.common.play_search_results")
+                            : L10n.string("ui.common.play_all"),
                         systemImage: "play.fill"
                     )
                 }
@@ -40,10 +42,10 @@ struct LibraryHistoryView: View {
                     )
                 } else {
                     ContentUnavailableView(
-                        "还没有播放记录",
+                        "ui.library.no_history",
                         systemImage: "clock",
                         description: Text(
-                            "网易云音乐中的最近播放会显示在这里。"
+                            "ui.library.no_history.message"
                         )
                     )
                 }

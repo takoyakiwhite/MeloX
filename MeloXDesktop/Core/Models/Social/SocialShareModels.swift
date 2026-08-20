@@ -34,11 +34,11 @@ enum NeteaseShareResource: Hashable, Identifiable {
     var kindTitle: String {
         switch self {
         case .song:
-            "歌曲"
+            L10n.string("ui.common.song")
         case .playlist:
-            "歌单"
+            L10n.string("ui.common.playlist")
         case .album:
-            "专辑"
+            L10n.string("ui.common.album")
         }
     }
 
@@ -141,7 +141,7 @@ struct NeteaseMessageContact: Decodable, Hashable, Identifiable {
         nickname = try container.decodeIfPresent(
             String.self,
             forKey: .nickname
-        ) ?? "网易云用户"
+        ) ?? L10n.string("ui.metadata.netease_user")
         avatarURLString = try container.decodeIfPresent(
             String.self,
             forKey: .avatarURLString
@@ -187,9 +187,9 @@ enum NeteaseSocialError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noRecipient:
-            "请至少选择一位收件人。"
+            L10n.string("ui.error.share.recipient_required")
         case .unsupportedTimelineResource:
-            "网易云音乐暂不支持将此类型的内容转发到动态。"
+            L10n.string("ui.error.share.unsupported_timeline_resource")
         }
     }
 }

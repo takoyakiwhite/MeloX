@@ -11,8 +11,8 @@ struct LyricsSettingsView: View {
                 } label: {
                     Label {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("外观与排版")
-                            Text("呈现方案、前奏/间奏、字体、焦点和模糊")
+                            Text("ui.settings.lyrics.appearance.title")
+                            Text("ui.settings.lyrics.appearance.subtitle")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -26,8 +26,8 @@ struct LyricsSettingsView: View {
                 } label: {
                     Label {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("翻译与逐字")
-                            Text("翻译、YRC、伪逐字、高光与长音")
+                            Text("ui.settings.lyrics.content.title")
+                            Text("ui.settings.lyrics.content.subtitle")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -41,8 +41,8 @@ struct LyricsSettingsView: View {
                 } label: {
                     Label {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("交互与同步")
-                            Text("跳转、自动跟随、提前量和界面隐藏")
+                            Text("ui.settings.lyrics.interaction.title")
+                            Text("ui.settings.lyrics.interaction.subtitle")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -56,8 +56,8 @@ struct LyricsSettingsView: View {
                 } label: {
                     Label {
                         VStack(alignment: .leading, spacing: 3) {
-                            Text("动画与性能")
-                            Text("时间轴刷新、拖尾、追赶和回弹")
+                            Text("ui.settings.lyrics.animation.title")
+                            Text("ui.settings.lyrics.animation.subtitle")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -66,12 +66,17 @@ struct LyricsSettingsView: View {
                     }
                 }
             } header: {
-                Text("竖屏歌词")
+                Text("ui.settings.lyrics.section.portrait")
             } footer: {
-                Text("当前使用“\(settings.lyricsStyle.title)”样式。全屏天际歌词和悬浮窗歌词可在设置总览中单独调整。")
+                Text(
+                    L10n.format(
+                        "ui.settings.lyrics.footer",
+                        settings.lyricsStyle.title
+                    )
+                )
             }
         }
-        .navigationTitle("歌词")
+        .navigationTitle("ui.settings.lyrics.title")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

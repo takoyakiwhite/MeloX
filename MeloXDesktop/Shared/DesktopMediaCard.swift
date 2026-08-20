@@ -64,7 +64,7 @@ struct DesktopMediaCard: View {
                     }
                     .buttonStyle(.plain)
                     .padding(10)
-                    .help("播放\(title)")
+                    .help(L10n.format("ui.common.play_named", title))
                     .transition(.scale.combined(with: .opacity))
                 }
             }
@@ -170,34 +170,9 @@ struct DesktopHeroCard: View {
 }
 
 private func desktopPlayCountText(_ count: Int) -> String {
-    switch count {
-    case 100_000_000...:
-        return compactDesktopCount(
-            Double(count) / 100_000_000,
-            suffix: "亿"
-        )
-    case 10_000...:
-        return compactDesktopCount(
-            Double(count) / 10_000,
-            suffix: "万"
-        )
-    default:
-        return count.formatted()
-    }
-}
-
-private func compactDesktopCount(
-    _ value: Double,
-    suffix: String
-) -> String {
-    let valueText = if value >= 10 || value.rounded() == value {
-        String(Int(value.rounded()))
-    } else {
-        value.formatted(
-            .number.precision(.fractionLength(1))
-        )
-    }
-    return valueText + suffix
+    count.formatted(
+        .number.notation(.compactName).locale(L10n.locale)
+    )
 }
 
 struct DesktopSectionHeader: View {

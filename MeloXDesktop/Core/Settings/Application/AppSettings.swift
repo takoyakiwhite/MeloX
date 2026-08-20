@@ -21,14 +21,30 @@ final class AppSettings {
     static let defaultStartsHeartModeOnLaunch = false
     static let defaultRecognizesClipboardLinksOnLaunch = false
     static let defaultSystemNowPlayingLyricsEnabled = true
-    static let defaultSystemNowPlayingLyricsTitleFormat = "{歌词}"
-    static let defaultSystemNowPlayingLyricsSubtitleFormat =
-        "{歌名} · {作者}"
+    static var defaultSystemNowPlayingLyricsTitleFormat: String {
+        L10n.string("ui.lyrics.format.token.lyrics")
+    }
+    static var defaultSystemNowPlayingLyricsSubtitleFormat: String {
+        L10n.format(
+            "ui.lyrics.format.default.title_artist",
+            L10n.string("ui.lyrics.format.token.title"),
+            L10n.string("ui.lyrics.format.token.artist")
+        )
+    }
     static let defaultLyricsLiveActivityEnabled = false
-    static let defaultLyricsLiveActivityTitleFormat = "{歌词}"
-    static let defaultLyricsLiveActivitySubtitleFormat =
-        "{歌名} · {作者}"
-    static let defaultLyricsLiveActivityCompactFormat = "{歌词}"
+    static var defaultLyricsLiveActivityTitleFormat: String {
+        L10n.string("ui.lyrics.format.token.lyrics")
+    }
+    static var defaultLyricsLiveActivitySubtitleFormat: String {
+        L10n.format(
+            "ui.lyrics.format.default.title_artist",
+            L10n.string("ui.lyrics.format.token.title"),
+            L10n.string("ui.lyrics.format.token.artist")
+        )
+    }
+    static var defaultLyricsLiveActivityCompactFormat: String {
+        L10n.string("ui.lyrics.format.token.lyrics")
+    }
     static let defaultLyricsLiveActivityShowsArtwork = true
     static let defaultLyricsLiveActivityShowsNextLyric = true
     static let defaultLyricsLiveActivityShowsProgress = true
@@ -140,6 +156,7 @@ final class AppSettings {
             "lyricsLiveActivityScrollSpeed"
         static let lyricsLiveActivityScrollPause =
             "lyricsLiveActivityScrollPause"
+        static let appLanguage = AppLanguage.storageKey
         static let appearance = "appAppearance"
         static let defaultLaunchTab = "defaultLaunchTab"
         static let restoresLastSelectedTab = "restoresLastSelectedTab"
@@ -419,6 +436,8 @@ final class AppSettings {
             )
         }
     }
+
+    private(set) var appLanguage: AppLanguage
 
     var appearance: AppAppearance {
         didSet {
@@ -1292,6 +1311,11 @@ final class AppSettings {
         hasCompletedOnboarding = defaults.bool(
             forKey: Key.hasCompletedOnboarding
         )
+        let storedAppLanguage = AppLanguage(
+            rawValue: defaults.string(forKey: Key.appLanguage) ?? ""
+        ) ?? .system
+        appLanguage = storedAppLanguage
+        L10n.activate(storedAppLanguage)
         cookie = defaults.string(forKey: Key.cookie) ?? ""
         quality = MusicQuality(rawValue: defaults.string(forKey: Key.quality) ?? "") ?? .high
         playerVolumeControlMode = PlayerVolumeControlMode(
@@ -1850,6 +1874,13 @@ final class AppSettings {
             rawValue: defaults.string(forKey: Key.automaticCacheQuality) ?? ""
         ) ?? .high
         normalizeNavigationSelections()
+    }
+
+    func setAppLanguage(_ language: AppLanguage) {
+        guard appLanguage != language else { return }
+        L10n.activate(language)
+        defaults.set(language.rawValue, forKey: Key.appLanguage)
+        appLanguage = language
     }
 
     private func normalizeNavigationSelections() {

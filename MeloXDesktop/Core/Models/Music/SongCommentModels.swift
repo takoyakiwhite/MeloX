@@ -18,7 +18,8 @@ struct SongCommentUser: Decodable, Hashable, Identifiable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decodeIfPresent(Int.self, forKey: .id) ?? 0
-        nickname = try container.decodeIfPresent(String.self, forKey: .nickname) ?? "网易云音乐用户"
+        nickname = try container.decodeIfPresent(String.self, forKey: .nickname)
+            ?? L10n.string("ui.metadata.netease_user")
         avatarURLString = try container.decodeIfPresent(String.self, forKey: .avatarURLString)
     }
 }
@@ -34,7 +35,8 @@ struct SongCommentReply: Decodable, Hashable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         user = try container.decodeIfPresent(SongCommentUser.self, forKey: .user)
-        content = try container.decodeIfPresent(String.self, forKey: .content) ?? "该评论已删除"
+        content = try container.decodeIfPresent(String.self, forKey: .content)
+            ?? L10n.string("ui.comments.deleted")
     }
 }
 

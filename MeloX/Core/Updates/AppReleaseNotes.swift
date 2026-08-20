@@ -4,7 +4,7 @@ struct AppReleaseNotes: Equatable, Identifiable, Sendable {
     let version: String
     let sourceRevision: String
     let previousVersion: String?
-    let entries: [String]
+    let localizedEntries: [String: [String]]
 
     var id: String {
         "\(version)-\(sourceRevision)"
@@ -18,6 +18,15 @@ struct AppReleaseNotes: Equatable, Identifiable, Sendable {
         guard let previousVersion else { return nil }
         return AppVersion.displayName(for: previousVersion)
     }
+
+    var entries: [String] {
+        let languageCode = L10n.locale.language.languageCode?.identifier
+        let localeKey = languageCode == "zh" ? "zh-Hans" : "en"
+        return localizedEntries[localeKey]
+            ?? localizedEntries["en"]
+            ?? localizedEntries["zh-Hans"]
+            ?? []
+    }
 }
 
 enum AppReleaseNotesLoader {
@@ -26,38 +35,17 @@ enum AppReleaseNotesLoader {
             forResource: "ReleaseNotes",
             withExtension: "json"
         ),
-        let markdownURL = bundle.url(
-            forResource: "ReleaseNotes",
-            withExtension: "md"
-        ),
         let metadataData = try? Data(contentsOf: metadataURL),
         let metadata = try? JSONDecoder().decode(
             AppReleaseNotesMetadata.self,
             from: metadataData
         ),
-        let markdown = try? String(
-            contentsOf: markdownURL,
-            encoding: .utf8
-        ),
-        metadata.schemaVersion == 2,
+        metadata.schemaVersion == 3,
+        metadata.localizedEntries["zh-Hans"]?.isEmpty == false,
+        metadata.localizedEntries["en"]?.isEmpty == false,
+        metadata.localizedEntries["zh-Hans"]?.count
+            == metadata.localizedEntries["en"]?.count,
         !metadata.version.isEmpty else {
-            return nil
-        }
-
-        let entries = markdown
-            .split(whereSeparator: \.isNewline)
-            .compactMap { line -> String? in
-                let normalizedLine = String(line).trimmingCharacters(
-                    in: .whitespaces
-                )
-                guard normalizedLine.hasPrefix("- ") else {
-                    return nil
-                }
-                let entry = String(normalizedLine.dropFirst(2))
-                    .trimmingCharacters(in: .whitespaces)
-                return entry.isEmpty ? nil : entry
-            }
-        guard !entries.isEmpty else {
             return nil
         }
 
@@ -65,7 +53,7 @@ enum AppReleaseNotesLoader {
             version: metadata.version,
             sourceRevision: metadata.sourceRevision,
             previousVersion: metadata.previousVersion,
-            entries: entries
+            localizedEntries: metadata.localizedEntries
         )
     }
 }
@@ -75,4 +63,5 @@ private struct AppReleaseNotesMetadata: Decodable {
     let version: String
     let sourceRevision: String
     let previousVersion: String?
+    let localizedEntries: [String: [String]]
 }

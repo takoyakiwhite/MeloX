@@ -11,12 +11,12 @@ struct DesktopNowPlayingWindowControls: View {
     private var content: some View {
         HStack(spacing: 9) {
             chromeButton(
-                "退出播放器",
+                "ui.desktop.player.exit_player",
                 systemImage: "xmark",
                 action: close
             )
             chromeButton(
-                "打开迷你播放器",
+                "ui.desktop.player.open_mini_player",
                 systemImage: "pip.exit",
                 action: openMiniPlayer
             )

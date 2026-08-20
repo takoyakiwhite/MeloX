@@ -15,7 +15,7 @@ extension NeteaseAPI {
             responseCode: response.code,
             message: message?.isEmpty == false
                 ? message
-                : "无法载入歌曲百科。"
+                : L10n.string("ui.error.song_wiki.load_failed")
         )
         guard let payload = response.data else {
             throw APIError.invalidResponse

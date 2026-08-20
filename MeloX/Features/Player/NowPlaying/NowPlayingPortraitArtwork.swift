@@ -32,7 +32,7 @@ struct NowPlayingPortraitArtwork: View {
             value: player.isPlaying
         )
         .accessibilityElement()
-        .accessibilityLabel("\(song.name)的封面")
+        .accessibilityLabel(L10n.format("ui.song.artwork_accessibility", song.name))
         .task(id: shouldBounce) {
             await animateBounce()
         }

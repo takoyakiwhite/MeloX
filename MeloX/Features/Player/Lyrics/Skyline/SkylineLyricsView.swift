@@ -55,7 +55,7 @@ struct SkylineLyricsView: View {
             .onTapGesture {
                 toggleControls()
             }
-            .accessibilityAction(named: "返回普通歌词") {
+            .accessibilityAction(named: L10n.string("ui.lyrics.return_standard")) {
                 onExit()
             }
         }
@@ -172,13 +172,13 @@ struct SkylineLyricsView: View {
     private var unavailableContent: some View {
         if let errorMessage {
             ContentUnavailableView(
-                "暂无歌词",
+                "ui.lyrics.empty",
                 systemImage: "quote.bubble",
                 description: Text(errorMessage)
             )
             .foregroundStyle(.white)
         } else {
-            ProgressView("正在载入歌词")
+            ProgressView("ui.lyrics.loading")
                 .tint(.white)
                 .foregroundStyle(.white)
         }
@@ -199,7 +199,7 @@ struct SkylineLyricsView: View {
                             .contentShape(.circle)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityLabel("返回普通歌词")
+                    .accessibilityLabel("ui.lyrics.return_standard")
                 }
 
                 Spacer()

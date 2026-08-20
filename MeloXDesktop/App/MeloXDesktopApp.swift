@@ -15,6 +15,7 @@ struct MeloXDesktopApp: App {
             DesktopRootView()
                 .environment(model)
                 .environment(model.screenAwakeCoordinator)
+                .environment(\.locale, model.settings.appLanguage.locale)
                 .preferredColorScheme(
                     model.settings.appearance.preferredColorScheme
                 )
@@ -31,9 +32,10 @@ struct MeloXDesktopApp: App {
             DesktopCommands(model: model)
         }
 
-        Window("迷你播放器", id: "mini-player") {
+        Window("ui.desktop.mini_player", id: "mini-player") {
             DesktopMiniPlayerWindow()
                 .environment(model)
+                .environment(\.locale, model.settings.appLanguage.locale)
                 .preferredColorScheme(model.settings.appearance.preferredColorScheme)
         }
         .windowStyle(.plain)
@@ -41,9 +43,10 @@ struct MeloXDesktopApp: App {
         .windowBackgroundDragBehavior(.disabled)
         .defaultSize(width: 320, height: 145)
 
-        Window("桌面歌词", id: "floating-lyrics") {
+        Window("ui.floating_lyrics.title", id: "floating-lyrics") {
             DesktopFloatingLyricsWindow()
                 .environment(model)
+                .environment(\.locale, model.settings.appLanguage.locale)
                 .preferredColorScheme(model.settings.appearance.preferredColorScheme)
         }
         .windowStyle(.plain)
@@ -55,8 +58,9 @@ struct MeloXDesktopApp: App {
             height: DesktopFloatingLyricsWindowMetrics.defaultHeight
         )
 
-        Window("关于 MeloX", id: "about") {
+        Window("ui.desktop.commands.about_melox", id: "about") {
             DesktopAboutView()
+                .environment(\.locale, model.settings.appLanguage.locale)
                 .preferredColorScheme(model.settings.appearance.preferredColorScheme)
         }
         .windowStyle(.hiddenTitleBar)
@@ -65,10 +69,11 @@ struct MeloXDesktopApp: App {
         .defaultSize(width: 600, height: 320)
         .defaultPosition(.center)
 
-        Window("版权声明", id: "licenses") {
+        Window("ui.legal.projects_licenses.title", id: "licenses") {
             NavigationStack {
                 DesktopProjectLicensesView()
             }
+            .environment(\.locale, model.settings.appLanguage.locale)
             .preferredColorScheme(model.settings.appearance.preferredColorScheme)
             .frame(width: 680, height: 680)
         }
@@ -78,6 +83,7 @@ struct MeloXDesktopApp: App {
         Settings {
             DesktopSettingsView()
                 .environment(model)
+                .environment(\.locale, model.settings.appLanguage.locale)
                 .preferredColorScheme(model.settings.appearance.preferredColorScheme)
         }
         .windowResizability(.contentSize)

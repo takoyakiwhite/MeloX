@@ -216,10 +216,8 @@ struct HomeRecommendationFallbackLoader {
         result[.tailoredRecommendation] =
             HomeRecommendationFallback(
                 title: likedSong.map {
-                    "根据“\($0.name)”为你推荐"
-                } ?? HomeRecommendationSlot
-                    .tailoredRecommendation
-                    .fallbackTitle,
+                    .tailoredForSong($0.name)
+                } ?? .standard,
                 content: .songs(tailored)
             )
         result[.charts] = fallback(
@@ -229,10 +227,8 @@ struct HomeRecommendationFallbackLoader {
         result[.personalPlaylists] =
             HomeRecommendationFallback(
                 title: profile.map {
-                    "\($0.nickname)的歌单"
-                } ?? HomeRecommendationSlot
-                    .personalPlaylists
-                    .fallbackTitle,
+                    .userPlaylists($0.nickname)
+                } ?? .standard,
                 content: .playlists(
                     Array(ownedPlaylists.prefix(12))
                 )
@@ -244,16 +240,14 @@ struct HomeRecommendationFallbackLoader {
         result[.radarPlaylists] =
             HomeRecommendationFallback(
                 title: profile.map {
-                    "\($0.nickname)的雷达歌单"
-                } ?? HomeRecommendationSlot
-                    .radarPlaylists
-                    .fallbackTitle,
+                    .userRadar($0.nickname)
+                } ?? .standard,
                 content: .playlists(
                     Array(radarPlaylists.prefix(12))
                 )
             )
         result[.regionalHits] = HomeRecommendationFallback(
-            title: "\(region.title)最近的热门歌曲",
+            title: .regionalHits(region),
             content: .songs(trending.regional)
         )
         result[.likedSongRoaming] = fallback(
@@ -276,7 +270,7 @@ struct HomeRecommendationFallbackLoader {
         content: HomeRecommendationContent
     ) -> HomeRecommendationFallback {
         HomeRecommendationFallback(
-            title: slot.fallbackTitle,
+            title: .standard,
             content: content
         )
     }

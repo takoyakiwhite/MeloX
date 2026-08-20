@@ -17,7 +17,7 @@ nonisolated struct PodcastHost: Decodable, Hashable, Identifiable {
 
     init(
         id: Int = 0,
-        nickname: String = "网易云主播",
+        nickname: String = L10n.string("ui.metadata.netease_host"),
         avatarURLString: String? = nil
     ) {
         self.id = id
@@ -31,7 +31,7 @@ nonisolated struct PodcastHost: Decodable, Hashable, Identifiable {
         nickname = try container.decodeIfPresent(
             String.self,
             forKey: .nickname
-        ) ?? "网易云主播"
+        ) ?? L10n.string("ui.metadata.netease_host")
         avatarURLString = try container.decodeIfPresent(
             String.self,
             forKey: .avatarURLString
@@ -118,7 +118,7 @@ nonisolated struct Podcast: Decodable, Hashable, Identifiable {
         name = try container.decodeIfPresent(
             String.self,
             forKey: .name
-        ) ?? "未知播客"
+        ) ?? L10n.string("ui.metadata.unknown_podcast")
         picURLString = try container.decodeIfPresent(
             String.self,
             forKey: .picURLString
@@ -184,6 +184,31 @@ struct PodcastCategory: Decodable, Hashable, Identifiable {
         makeArtworkURL(from: picURLString, dimension: 192)
     }
 
+    var localizedName: String {
+        let key: String
+        switch name {
+        case "创作翻唱": key = "ui.podcasts.category.covers"
+        case "3D电子", "电音": key = "ui.podcasts.category.electronic"
+        case "情感": key = "ui.podcasts.category.emotions"
+        case "音乐播客": key = "ui.podcasts.category.music"
+        case "有声书": key = "ui.podcasts.category.audiobooks"
+        case "脱口秀": key = "ui.podcasts.category.talk_shows"
+        case "创意播客": key = "ui.podcasts.category.creative"
+        case "知识": key = "ui.podcasts.category.knowledge"
+        case "二次元": key = "ui.podcasts.category.anime"
+        case "明星专区": key = "ui.podcasts.category.celebrities"
+        case "生活": key = "ui.podcasts.category.lifestyle"
+        case "亲子": key = "ui.podcasts.category.parenting"
+        case "资讯": key = "ui.podcasts.category.news"
+        case "广播剧": key = "ui.podcasts.category.audio_drama"
+        case "故事": key = "ui.podcasts.category.stories"
+        case "人文历史": key = "ui.podcasts.category.humanities_history"
+        case "其他": key = "ui.podcasts.category.other"
+        default: return name
+        }
+        return L10n.string(key)
+    }
+
     enum CodingKeys: String, CodingKey {
         case id, name
         case picURLString = "pic96x96Url"
@@ -206,7 +231,7 @@ struct PodcastCategory: Decodable, Hashable, Identifiable {
         name = try container.decodeIfPresent(
             String.self,
             forKey: .name
-        ) ?? "播客"
+        ) ?? L10n.string("ui.common.podcast")
         picURLString =
             try container.decodeIfPresent(
                 String.self,
@@ -245,7 +270,7 @@ struct PodcastProgramRadio: Decodable, Hashable {
         name = try container.decodeIfPresent(
             String.self,
             forKey: .name
-        ) ?? "未知播客"
+        ) ?? L10n.string("ui.metadata.unknown_podcast")
         picURLString = try container.decodeIfPresent(
             String.self,
             forKey: .picURLString
@@ -294,7 +319,7 @@ struct PodcastProgram: Decodable, Hashable, Identifiable {
             picURL: coverURLString ?? radio.picURLString,
             artists: [artist],
             publishTime: createTime.map { Double($0) },
-            type: "播客",
+            type: L10n.string("ui.common.podcast"),
             albumDescription: programDescription
         )
         let metadata = PodcastPlaybackMetadata(
@@ -354,7 +379,7 @@ struct PodcastProgram: Decodable, Hashable, Identifiable {
         name = try container.decodeIfPresent(
             String.self,
             forKey: .name
-        ) ?? "未知节目"
+        ) ?? L10n.string("ui.metadata.unknown_program")
         coverURLString = try container.decodeIfPresent(
             String.self,
             forKey: .coverURLString
@@ -393,7 +418,10 @@ struct PodcastProgram: Decodable, Hashable, Identifiable {
         radio = try container.decodeIfPresent(
             PodcastProgramRadio.self,
             forKey: .radio
-        ) ?? PodcastProgramRadio(id: 0, name: "未知播客")
+        ) ?? PodcastProgramRadio(
+            id: 0,
+            name: L10n.string("ui.metadata.unknown_podcast")
+        )
         host = try container.decodeIfPresent(
             PodcastHost.self,
             forKey: .host
@@ -449,8 +477,8 @@ enum PodcastProgramOrder: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .newest: "最新优先"
-        case .oldest: "最早优先"
+        case .newest: L10n.string("ui.podcast.sort.newest")
+        case .oldest: L10n.string("ui.podcast.sort.oldest")
         }
     }
 

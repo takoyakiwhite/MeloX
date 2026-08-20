@@ -16,22 +16,22 @@ nonisolated enum LyricsInterludePresentationMode:
     var title: String {
         switch self {
         case .hidden:
-            "关闭"
+            L10n.string("ui.common.off")
         case .preciseTiming:
-            "仅精确时间轴"
+            L10n.string("ui.settings.lyrics.interlude.precise")
         case .automatic:
-            "自动（含 LRC 推断）"
+            L10n.string("ui.settings.lyrics.interlude.automatic")
         }
     }
 
     var description: String {
         switch self {
         case .hidden:
-            "不插入前奏或间奏焦点。"
+            L10n.string("ui.settings.lyrics.interlude.hidden.detail")
         case .preciseTiming:
-            "只根据 YRC 的音节结束时间识别演奏空档。"
+            L10n.string("ui.settings.lyrics.interlude.precise.detail")
         case .automatic:
-            "优先使用 YRC 精确时间；普通 LRC 则根据文字长度估算本句演唱结束时间。"
+            L10n.string("ui.settings.lyrics.interlude.automatic.detail")
         }
     }
 

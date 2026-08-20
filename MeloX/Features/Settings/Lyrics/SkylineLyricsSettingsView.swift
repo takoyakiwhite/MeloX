@@ -10,14 +10,14 @@ struct SkylineLyricsSettingsView: View {
 
         Form {
             Section {
-                Toggle("屏幕常亮", isOn: $preferences.keepsScreenAwake)
+                Toggle("ui.settings.skyline.keep_screen_awake", isOn: $preferences.keepsScreenAwake)
             } footer: {
-                Text("仅在全屏天际歌词可见时阻止屏幕自动锁定。")
+                Text("ui.settings.skyline.keep_screen_awake.footer")
             }
 
             Section {
                 valueSlider(
-                    title: "当前歌词字号",
+                    title: L10n.string("ui.settings.skyline.current_font_size"),
                     value: $preferences.currentLyricFontSize,
                     range: 36...84,
                     step: 1,
@@ -25,7 +25,7 @@ struct SkylineLyricsSettingsView: View {
                 )
 
                 valueSlider(
-                    title: "逐字歌词最大缩放",
+                    title: L10n.string("ui.settings.skyline.maximum_word_scale"),
                     value: $preferences.currentLyricMaximumScale,
                     range: 1...1.2,
                     step: 0.01,
@@ -33,21 +33,21 @@ struct SkylineLyricsSettingsView: View {
                 )
 
                 valueSlider(
-                    title: "中央显示宽度",
+                    title: L10n.string("ui.settings.skyline.center_width"),
                     value: $preferences.currentLyricsWidth,
                     range: 0.4...0.82,
                     step: 0.02,
                     valueText: percentValue(preferences.currentLyricsWidth)
                 )
             } header: {
-                Text("当前歌词")
+                Text("ui.settings.skyline.section.current_lyric")
             } footer: {
-                Text("逐字歌词会随演唱进度持续放大，并在整句唱完时达到最大缩放。")
+                Text("ui.settings.skyline.current_lyric.footer")
             }
 
             Section {
                 valueSlider(
-                    title: "下一句字号",
+                    title: L10n.string("ui.settings.skyline.next_font_size"),
                     value: $preferences.nextLyricFontSize,
                     range: 14...44,
                     step: 1,
@@ -55,7 +55,7 @@ struct SkylineLyricsSettingsView: View {
                 )
 
                 valueSlider(
-                    title: "下一句亮度",
+                    title: L10n.string("ui.settings.skyline.next_brightness"),
                     value: $preferences.nextLyricOpacity,
                     range: 0.2...0.8,
                     step: 0.05,
@@ -63,21 +63,21 @@ struct SkylineLyricsSettingsView: View {
                 )
 
                 valueSlider(
-                    title: "中央歌词间距",
+                    title: L10n.string("ui.settings.skyline.center_spacing"),
                     value: $preferences.currentLyricsSpacing,
                     range: 4...36,
                     step: 1,
                     valueText: pointValue(preferences.currentLyricsSpacing)
                 )
             } header: {
-                Text("下一句歌词")
+                Text("ui.settings.skyline.section.next_lyric")
             } footer: {
-                Text("歌曲没有下一句时，当前歌词仍会保持屏幕居中。")
+                Text("ui.settings.skyline.next_lyric.footer")
             }
 
             Section {
                 valueSlider(
-                    title: "背景字号",
+                    title: L10n.string("ui.settings.skyline.ambient_font_size"),
                     value: $preferences.ambientFontSize,
                     range: 24...72,
                     step: 1,
@@ -85,13 +85,13 @@ struct SkylineLyricsSettingsView: View {
                 )
 
                 Picker(
-                    "单组最大字数",
+                    "ui.settings.skyline.maximum_characters_per_group",
                     selection: $preferences.ambientMaximumCharacters
                 ) {
-                    Text("1 个字").tag(1)
-                    Text("2 个字").tag(2)
-                    Text("3 个字").tag(3)
-                    Text("4 个字").tag(4)
+                    Text(L10n.format("ui.common.characters", 1)).tag(1)
+                    Text(L10n.format("ui.common.characters", 2)).tag(2)
+                    Text(L10n.format("ui.common.characters", 3)).tag(3)
+                    Text(L10n.format("ui.common.characters", 4)).tag(4)
                 }
 
                 Stepper(
@@ -99,13 +99,13 @@ struct SkylineLyricsSettingsView: View {
                     in: 4...24
                 ) {
                     LabeledContent(
-                        "同屏文字上限",
-                        value: "\(preferences.ambientMaximumVisibleTexts) 组"
+                        L10n.string("ui.settings.skyline.visible_text_limit"),
+                        value: L10n.format("ui.common.groups", preferences.ambientMaximumVisibleTexts)
                     )
                 }
 
                 valueSlider(
-                    title: "背景字亮度",
+                    title: L10n.string("ui.settings.skyline.ambient_brightness"),
                     value: $preferences.ambientOpacity,
                     range: 0.4...1.8,
                     step: 0.1,
@@ -113,50 +113,53 @@ struct SkylineLyricsSettingsView: View {
                 )
 
                 valueSlider(
-                    title: "背景字模糊",
+                    title: L10n.string("ui.settings.skyline.ambient_blur"),
                     value: $preferences.ambientBlur,
                     range: 0...2,
                     step: 0.1,
                     valueText: scaleValue(preferences.ambientBlur)
                 )
             } header: {
-                Text("背景歌词")
+                Text("ui.settings.skyline.section.ambient_lyrics")
             } footer: {
-                Text("长歌词片段会按最大字数自动分组；已有文字会持续放大、变模糊，足够大后消失；超过同屏上限时优先移除最早出现的文字。")
+                Text("ui.settings.skyline.ambient_lyrics.footer")
             }
 
             Section {
                 valueSlider(
-                    title: "最大倾斜角度",
+                    title: L10n.string("ui.settings.skyline.maximum_tilt"),
                     value: $preferences.ambientMaximumTilt,
                     range: 0...20,
                     step: 1,
-                    valueText: "\(Int(preferences.ambientMaximumTilt))°"
+                    valueText:
+                        Int(preferences.ambientMaximumTilt).formatted(
+                            .number.locale(L10n.locale)
+                        ) + "°"
                 )
 
                 valueSlider(
-                    title: "漂移幅度",
+                    title: L10n.string("ui.settings.skyline.drift_amount"),
                     value: $preferences.ambientDrift,
                     range: 0...2,
                     step: 0.1,
                     valueText: scaleValue(preferences.ambientDrift)
                 )
             } header: {
-                Text("背景动态")
+                Text("ui.settings.skyline.section.ambient_motion")
             } footer: {
-                Text("每组背景字会出现在完全随机的位置，并在最大角度内随机倾斜；系统开启“减弱动态效果”时，背景漂移会自动停用。")
+                Text("ui.settings.skyline.ambient_motion.footer")
             }
 
             Section {
-                Button("恢复全屏天际歌词默认设置", role: .destructive) {
+                Button("ui.settings.skyline.reset", role: .destructive) {
                     showsResetConfirmation = true
                 }
             }
         }
-        .navigationTitle("全屏天际歌词")
+        .navigationTitle("ui.settings.skyline.title")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("恢复全屏天际歌词默认设置？", isPresented: $showsResetConfirmation) {
-            Button("恢复默认设置", role: .destructive) {
+        .confirmationDialog("ui.settings.skyline.reset.confirmation", isPresented: $showsResetConfirmation) {
+            Button("ui.common.restore_defaults", role: .destructive) {
                 preferences.reset()
             }
         }
@@ -178,14 +181,18 @@ struct SkylineLyricsSettingsView: View {
     }
 
     private func pointValue(_ value: Double) -> String {
-        "\(Int(value)) 磅"
+        L10n.format("ui.common.points", Int(value))
     }
 
     private func percentValue(_ value: Double) -> String {
-        "\(Int((value * 100).rounded()))%"
+        value.formatted(
+            .percent.precision(.fractionLength(0)).locale(L10n.locale)
+        )
     }
 
     private func scaleValue(_ value: Double) -> String {
-        value.formatted(.number.precision(.fractionLength(1))) + "×"
+        value.formatted(
+            .number.precision(.fractionLength(1)).locale(L10n.locale)
+        ) + "×"
     }
 }

@@ -35,16 +35,16 @@ struct ListenTogetherAppCoordinationModifier: ViewModifier {
                 listenTogether.playerQueueDidChange()
             }
             .alert(
-                "一起听",
+                "ui.listen_together.title",
                 isPresented: noticePresented
             ) {
-                Button("好", role: .cancel) {
+                Button("ui.common.ok", role: .cancel) {
                     listenTogether.dismissNotice()
                 }
             } message: {
                 Text(
                     listenTogether.noticeMessage
-                        ?? "一起听状态已更新。"
+                        ?? L10n.string("ui.listen_together.status_updated")
                 )
             }
     }

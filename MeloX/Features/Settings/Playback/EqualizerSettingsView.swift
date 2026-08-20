@@ -10,17 +10,17 @@ struct EqualizerSettingsView: View {
     var body: some View {
         Form {
             Section {
-                Toggle("图形均衡器", isOn: enabledBinding)
+                Toggle("ui.settings.equalizer.enabled", isOn: enabledBinding)
             } footer: {
                 Text(
                     AppFeatureAvailability.downloads
-                        ? "实时作用于网络播放与已下载歌曲；关闭后将绕过全部均衡处理。"
-                        : "实时作用于歌曲播放；关闭后将绕过全部均衡处理。"
+                        ? L10n.string("ui.settings.equalizer.enabled.footer.downloads")
+                        : L10n.string("ui.settings.equalizer.enabled.footer")
                 )
             }
 
             Section {
-                Picker("预设", selection: presetBinding) {
+                Picker("ui.settings.equalizer.preset", selection: presetBinding) {
                     if settings.equalizer.selectedPreset == .custom {
                         Text(AudioEqualizerPreset.custom.title)
                             .tag(AudioEqualizerPreset.custom)
@@ -36,15 +36,15 @@ struct EqualizerSettingsView: View {
                 }
 
                 valueSlider(
-                    title: "前置放大",
+                    title: L10n.string("ui.settings.equalizer.preamp"),
                     value: preampBinding,
                     range: AudioEqualizerPreferences.preampRange,
                     valueText: decibelText(settings.equalizer.preamp)
                 )
             } header: {
-                Text("预设与增益")
+                Text("ui.settings.equalizer.gain.section")
             } footer: {
-                Text("提升多个频段时可降低前置放大，为瞬态峰值保留余量并减少削波失真。")
+                Text("ui.settings.equalizer.gain.footer")
             }
             .disabled(!settings.equalizer.isEnabled)
 
@@ -64,17 +64,17 @@ struct EqualizerSettingsView: View {
                         )
                 }
             } header: {
-                Text("10 段图形均衡器")
+                Text("ui.settings.equalizer.bands.section")
             } footer: {
-                Text("中心频率按倍频程排列，每段可调 ±12 dB；手动修改后会自动保存为自定义预设。")
+                Text("ui.settings.equalizer.bands.footer")
             }
             .disabled(!settings.equalizer.isEnabled)
         }
-        .navigationTitle("均衡器")
+        .navigationTitle("ui.settings.equalizer.title")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button("恢复默认") {
+                Button("ui.common.restore_defaults") {
                     settings.equalizer.resetCurve()
                 }
             }
@@ -217,11 +217,13 @@ struct EqualizerSettingsView: View {
         .frame(width: width, height: height)
         .controlSize(.small)
         .contentShape(.rect)
-        .accessibilityLabel("\(band.title) 频段")
+        .accessibilityLabel(
+            L10n.format("ui.settings.equalizer.band.accessibility", band.title)
+        )
         .accessibilityValue(
             decibelText(settings.equalizer.gain(for: band))
         )
-        .accessibilityHint("上下调整频段增益")
+        .accessibilityHint("ui.settings.equalizer.band.hint")
     }
 
     private var enabledBinding: Binding<Bool> {
@@ -272,11 +274,18 @@ struct EqualizerSettingsView: View {
 
     private func decibelText(_ value: Double) -> String {
         let normalizedValue = abs(value) < 0.05 ? 0 : value
-        guard normalizedValue != 0 else { return "0.0 dB" }
+        guard normalizedValue != 0 else {
+            return normalizedValue.formatted(
+                .number
+                    .precision(.fractionLength(1))
+                    .locale(L10n.locale)
+            ) + " dB"
+        }
         return normalizedValue.formatted(
             .number
                 .sign(strategy: .always())
                 .precision(.fractionLength(1))
+                .locale(L10n.locale)
         ) + " dB"
     }
 }

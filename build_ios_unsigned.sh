@@ -39,7 +39,7 @@ case "$BUILD_VARIANT" in
     TEMPORARY_WATCH_INFO_RELATIVE="build/$(basename "$TEMPORARY_WATCH_INFO")"
 
     if [[ -e "$TEMPORARY_PROJECT" || -e "$TEMPORARY_WATCH_INFO" ]]; then
-      echo "临时构建输入已存在，拒绝覆盖"
+      echo "Temporary build input already exists; refusing to overwrite / 临时构建输入已存在，拒绝覆盖"
       exit 1
     fi
 
@@ -67,13 +67,13 @@ case "$BUILD_VARIANT" in
     EXPECTED_WATCH_BUNDLE_ID="azki.moye.MeloX.watchkitapp"
     ;;
   *)
-    echo "未知的 MELOX_BUILD_BUNDLE_VARIANT：${BUILD_VARIANT}"
-    echo "可用值：legacy、testflight"
+    echo "Unknown MELOX_BUILD_BUNDLE_VARIANT / 未知构建变体：${BUILD_VARIANT}"
+    echo "Available values / 可用值：legacy, testflight"
     exit 1
     ;;
 esac
 
-echo "========== 构建 iOS Release（${BUILD_VARIANT}）=========="
+echo "========== Build iOS Release / 构建 iOS Release（${BUILD_VARIANT}）=========="
 
 xcodebuild clean build \
   -project "$PROJECT" \
@@ -94,12 +94,12 @@ xcodebuild clean build \
 APP_PATH="$(find "$DERIVED_DATA/Build/Products/Release-iphoneos" -maxdepth 2 -name "$APP_NAME.app" -type d -print -quit)"
 
 if [[ -z "$APP_PATH" ]]; then
-  echo "找不到 iOS 构建产物：$APP_NAME.app"
+  echo "iOS build artifact not found / 找不到 iOS 构建产物：$APP_NAME.app"
   exit 1
 fi
 
 if [[ ! -f "$APP_PATH/ReleaseNotes.json" || ! -f "$APP_PATH/ReleaseNotes.md" ]]; then
-  echo "构建产物中缺少更新日志元数据或 Markdown"
+  echo "Release-note metadata or Markdown is missing / 构建产物中缺少更新日志元数据或 Markdown"
   exit 1
 fi
 
@@ -113,15 +113,15 @@ assert_bundle_identifier() {
   local actual_bundle_id
 
   if [[ ! -f "$bundle_path/Info.plist" ]]; then
-    echo "找不到 $product_name 的 Info.plist：$bundle_path"
+    echo "$product_name Info.plist not found / 找不到 Info.plist：$bundle_path"
     exit 1
   fi
 
   actual_bundle_id="$(/usr/libexec/PlistBuddy -c 'Print :CFBundleIdentifier' "$bundle_path/Info.plist")"
   if [[ "$actual_bundle_id" != "$expected_bundle_id" ]]; then
-    echo "$product_name Bundle ID 不符合 $BUILD_VARIANT 构建要求"
-    echo "期望：$expected_bundle_id"
-    echo "实际：$actual_bundle_id"
+    echo "$product_name Bundle ID does not match $BUILD_VARIANT requirements / Bundle ID 不符合构建要求"
+    echo "Expected / 期望：$expected_bundle_id"
+    echo "Actual / 实际：$actual_bundle_id"
     exit 1
   fi
 }
@@ -137,9 +137,9 @@ if [[ "$BUILD_VARIANT" == "legacy" ]]; then
       "$WATCH_PATH/Info.plist"
   )"
   if [[ "$WATCH_COMPANION_BUNDLE_ID" != "$EXPECTED_APP_BUNDLE_ID" ]]; then
-    echo "Watch Companion Bundle ID 不符合 legacy 构建要求"
-    echo "期望：$EXPECTED_APP_BUNDLE_ID"
-    echo "实际：$WATCH_COMPANION_BUNDLE_ID"
+    echo "Watch Companion Bundle ID does not match legacy requirements / Bundle ID 不符合 legacy 构建要求"
+    echo "Expected / 期望：$EXPECTED_APP_BUNDLE_ID"
+    echo "Actual / 实际：$WATCH_COMPANION_BUNDLE_ID"
     exit 1
   fi
 fi
@@ -147,18 +147,18 @@ fi
 ditto --norsrc "$APP_PATH/ReleaseNotes.json" "$RELEASE_NOTES_PATH"
 ditto --norsrc "$APP_PATH/ReleaseNotes.md" "$RELEASE_NOTES_MARKDOWN_PATH"
 
-echo "========== 生成未签名 IPA =========="
+echo "========== Create unsigned IPA / 生成未签名 IPA =========="
 
 mkdir -p "$STAGING/Payload"
 ditto --norsrc "$APP_PATH" "$STAGING/Payload/$APP_NAME.app"
 ditto -c -k --norsrc --keepParent "$STAGING/Payload" "$IPA_PATH"
 
 if [[ ! -f "$IPA_PATH" ]]; then
-  echo "生成未签名 IPA 失败"
+  echo "Failed to create unsigned IPA / 生成未签名 IPA 失败"
   exit 1
 fi
 
 unzip -tq "$IPA_PATH"
 ls -lh "$IPA_PATH"
 
-echo "已生成：$IPA_PATH"
+echo "Generated / 已生成：$IPA_PATH"

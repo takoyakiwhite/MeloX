@@ -31,7 +31,7 @@ struct ReleaseNotesView: View {
                     Text("MeloX \(displayVersion)")
                         .font(.title2.bold())
 
-                    Text("当前版本更新日志")
+                    Text("ui.release_notes.current_version")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -47,19 +47,16 @@ struct ReleaseNotesView: View {
                     }
                 } else {
                     ContentUnavailableView(
-                        "暂无更新内容",
+                        "ui.release_notes.empty.title",
                         systemImage: "doc.text.magnifyingglass",
                         description: Text(emptyStateDescription)
                     )
                 }
             } header: {
-                Text("更新内容")
+                Text("ui.release_notes.section.changes")
             } footer: {
                 if let previousVersion = releaseNotes?.displayPreviousVersion {
-                    Text(
-                        "版本范围：MeloX \(previousVersion) 至 "
-                            + "MeloX \(displayVersion)"
-                    )
+                    Text(L10n.format("ui.release_notes.version_range", previousVersion, displayVersion))
                 }
             }
 
@@ -70,8 +67,8 @@ struct ReleaseNotesView: View {
                     HStack {
                         Label(
                             hasResetPlayerSettings
-                                ? "已恢复作者推荐设置"
-                                : "恢复作者推荐的播放器设置",
+                                ? L10n.string("ui.release_notes.reset.completed")
+                                : L10n.string("ui.release_notes.reset.action"),
                             systemImage: hasResetPlayerSettings
                                 ? "checkmark.circle"
                                 : "arrow.counterclockwise"
@@ -88,26 +85,23 @@ struct ReleaseNotesView: View {
                     isResettingSettings || hasResetPlayerSettings
                 )
                 .confirmationDialog(
-                    "恢复作者推荐的播放器设置？",
+                    "ui.release_notes.reset.confirmation",
                     isPresented: $showsResetConfirmation,
                     titleVisibility: .visible
                 ) {
-                    Button("恢复并体验", role: .destructive) {
+                    Button("ui.release_notes.reset.confirm", role: .destructive) {
                         resetPlayerSettings()
                     }
-                    Button("取消", role: .cancel) {}
+                    Button("ui.common.cancel", role: .cancel) {}
                 } message: {
-                    Text(
-                        "这会永久覆盖并丢失你原先自定义的播放器设置，"
-                            + "恢复为作者当前的推荐调教。"
-                    )
+                    Text("ui.release_notes.reset.confirmation_message")
                 }
             } header: {
-                Text("体验优化后的调教")
+                Text("ui.release_notes.section.tuning")
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
                     Label(
-                        "这会恢复作者当前推荐的播放器参数，并覆盖、丢失你原先的自定义设置。",
+                        "ui.release_notes.reset.warning",
                         systemImage: "exclamationmark.triangle.fill"
                     )
                     .foregroundStyle(.orange)
@@ -118,7 +112,7 @@ struct ReleaseNotesView: View {
                 }
             }
         }
-        .navigationTitle("更新日志")
+        .navigationTitle("ui.release_notes.title")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -130,24 +124,25 @@ struct ReleaseNotesView: View {
     private var visibleEntries: [String] {
         let entries = releaseNotes?.entries ?? []
         guard !AppFeatureAvailability.downloads else { return entries }
-        return entries.filter { !$0.contains("下载") }
+        let downloadTerms = L10n.values("ui.release_notes.download_terms")
+            .flatMap { $0.split(separator: "|").map(String.init) }
+        return entries.filter { entry in
+            !downloadTerms.contains { entry.localizedCaseInsensitiveContains($0) }
+        }
     }
 
     private var resetScopeDescription: String {
         if AppFeatureAvailability.downloads {
-            return "重置范围包含播放器、歌词、均衡器、全屏天际歌词、"
-                + "悬浮歌词与文字 PV；账号、下载、歌单和播放记录"
-                + "不会受到影响。"
+            return L10n.string("ui.release_notes.reset.scope.downloads")
         }
-        return "重置范围包含播放器、歌词、均衡器、全屏天际歌词、"
-            + "悬浮歌词与文字 PV；账号、歌单和播放记录不会受到影响。"
+        return L10n.string("ui.release_notes.reset.scope")
     }
 
     private var emptyStateDescription: String {
         if releaseNotes == nil {
-            return "此构建未包含有效的更新日志。"
+            return L10n.string("ui.release_notes.empty.invalid_build")
         }
-        return "本次没有需要公开展示的更新内容。"
+        return L10n.string("ui.release_notes.empty.no_public_changes")
     }
 
     private func resetPlayerSettings() {

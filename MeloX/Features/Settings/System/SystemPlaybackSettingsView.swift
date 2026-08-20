@@ -17,23 +17,23 @@ struct SystemPlaybackSettingsView: View {
         Form {
             Section {
                 Toggle(
-                    "在系统播放信息中显示歌词",
+                    "ui.settings.system_lyrics.enabled",
                     isOn: $settings.systemNowPlayingLyricsEnabled
                 )
 
                 if settings.systemNowPlayingLyricsEnabled {
-                    LabeledContent("主标题格式") {
+                    LabeledContent("ui.settings.system_lyrics.title_format") {
                         formatField(
-                            "主标题格式",
+                            L10n.string("ui.settings.system_lyrics.title_format"),
                             text:
                                 $settings
                                     .systemNowPlayingLyricsTitleFormat
                         )
                     }
 
-                    LabeledContent("副标题格式") {
+                    LabeledContent("ui.settings.system_lyrics.subtitle_format") {
                         formatField(
-                            "副标题格式",
+                            L10n.string("ui.settings.system_lyrics.subtitle_format"),
                             text:
                                 $settings
                                     .systemNowPlayingLyricsSubtitleFormat
@@ -41,14 +41,14 @@ struct SystemPlaybackSettingsView: View {
                     }
                 }
             } header: {
-                Text("系统播放信息")
+                Text("ui.settings.system_lyrics.now_playing.section")
             } footer: {
-                Text("控制中心和锁定屏幕会使用当前歌词更新播放信息；关闭后恢复标准歌名与作者。")
+                Text("ui.settings.system_lyrics.now_playing.footer")
             }
 
             Section {
                 Toggle(
-                    "通知歌词",
+                    "ui.settings.lyrics_notification.title",
                     isOn: lyricsNotificationEnabledBinding
                 )
                 .disabled(
@@ -60,7 +60,7 @@ struct SystemPlaybackSettingsView: View {
                         LyricsNotificationSettingsView()
                     } label: {
                         Label(
-                            "通知歌词设置",
+                            "ui.settings.lyrics_notification.settings",
                             systemImage: "bell.badge"
                         )
                     }
@@ -68,21 +68,21 @@ struct SystemPlaybackSettingsView: View {
                     if notifications.authorizationStatus
                         == .denied {
                         Label(
-                            "系统通知权限已关闭",
+                            "ui.settings.lyrics_notification.permission_disabled",
                             systemImage: "bell.slash.fill"
                         )
                         .foregroundStyle(.red)
                     }
                 }
             } header: {
-                Text("通知歌词")
+                Text("ui.settings.lyrics_notification.title")
             } footer: {
-                Text("歌词更新时撤回上一条通知并弹出新的静音横幅；可分别控制前台与后台显示。")
+                Text("ui.settings.lyrics_notification.summary")
             }
 
             Section {
                 Toggle(
-                    "实时活动歌词（实验性）",
+                    "ui.settings.live_activity.enabled_experimental",
                     isOn: $settings.lyricsLiveActivityEnabled
                 )
 
@@ -91,33 +91,33 @@ struct SystemPlaybackSettingsView: View {
                         LyricsLiveActivitySettingsView()
                     } label: {
                         Label(
-                            "实时活动显示设置",
+                            "ui.settings.live_activity.settings",
                             systemImage: "waveform.and.magnifyingglass"
                         )
                     }
                 }
             } header: {
-                Text("实时活动")
+                Text("ui.settings.live_activity.section")
             } footer: {
                 VStack(alignment: .leading, spacing: 8) {
                     Label(
-                        "实验性功能，当前版本仍不稳定。",
+                        "ui.settings.live_activity.warning.title",
                         systemImage: "exclamationmark.triangle.fill"
                     )
                     .foregroundStyle(.orange)
 
-                    Text("可能出现歌词更新延迟、显示异常，或被系统提前结束；它与系统播放信息可以独立开启。")
+                    Text("ui.settings.live_activity.warning.system_footer")
                 }
             }
 
             Section {
-                Text("文字格式支持 {歌词}、{歌名}、{作者} 占位符；留空时会自动使用默认格式。")
+                Text("ui.settings.lyrics_format.footer")
                     .foregroundStyle(.secondary)
             } header: {
-                Text("格式说明")
+                Text("ui.settings.lyrics_format.section")
             }
         }
-        .navigationTitle("系统歌词显示")
+        .navigationTitle("ui.settings.catalog.system_lyrics.title")
         .navigationBarTitleDisplayMode(.inline)
         .task {
             await notifications.refreshAuthorizationStatus()
@@ -135,16 +135,16 @@ struct SystemPlaybackSettingsView: View {
             player.applyLyricsLiveActivityPreference()
         }
         .alert(
-            "无法开启通知歌词",
+            "ui.settings.lyrics_notification.enable_failed.title",
             isPresented:
                 $showsNotificationPermissionAlert
         ) {
-            Button("打开系统设置") {
+            Button("ui.common.open_system_settings") {
                 openNotificationSettings()
             }
-            Button("取消", role: .cancel) {}
+            Button("ui.common.cancel", role: .cancel) {}
         } message: {
-            Text("请先在系统设置中允许 MeloX 显示通知。通知歌词始终不会播放提示音。")
+            Text("ui.settings.lyrics_notification.permission_required")
         }
     }
 

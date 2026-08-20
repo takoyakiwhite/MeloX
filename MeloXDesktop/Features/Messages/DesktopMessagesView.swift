@@ -13,11 +13,11 @@ struct DesktopMessagesView: View {
         Group {
             if !model.library.isLoggedIn {
                 ContentUnavailableView {
-                    Label("需要登录", systemImage: "bubble.left.and.bubble.right")
+                    Label("ui.account.login_required", systemImage: "bubble.left.and.bubble.right")
                 } description: {
-                    Text("登录网易云音乐后可以读取和发送私信。")
+                    Text("ui.desktop.messages.login_message")
                 } actions: {
-                    Button("登录") { model.ui.sheet = .login }
+                    Button("ui.common.login") { model.ui.sheet = .login }
                         .buttonStyle(.borderedProminent)
                 }
             } else {
@@ -30,16 +30,16 @@ struct DesktopMessagesView: View {
                             .id(selectedContact.id)
                     } else {
                         ContentUnavailableView(
-                            "选择一段对话",
+                            "ui.desktop.messages.select_conversation",
                             systemImage: "bubble.left.and.bubble.right",
-                            description: Text("你和网易云好友的私信会显示在这里。")
+                            description: Text("ui.desktop.messages.select_conversation.message")
                         )
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     }
                 }
             }
         }
-        .navigationTitle("私信")
+        .navigationTitle("ui.messages.private.title")
         .toolbar {
             if !model.ui.isNowPlayingPresented {
                 ToolbarItemGroup {
@@ -48,7 +48,7 @@ struct DesktopMessagesView: View {
                     } label: {
                         Image(systemName: "arrow.clockwise")
                     }
-                    .help("刷新私信")
+                    .help(L10n.string("ui.desktop.messages.refresh"))
                     .disabled(!model.library.isLoggedIn)
 
                     Button {
@@ -56,7 +56,7 @@ struct DesktopMessagesView: View {
                     } label: {
                         Image(systemName: "square.and.pencil")
                     }
-                    .help("发起私信")
+                    .help(L10n.string("ui.messages.start_private_message"))
                     .disabled(!model.library.isLoggedIn)
                 }
             }
@@ -73,10 +73,10 @@ struct DesktopMessagesView: View {
     private var conversationList: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("对话")
+                Text("ui.desktop.messages.conversations")
                     .font(.title2.bold())
                 Spacer()
-                Text(conversations.count.formatted())
+                Text(conversations.count.formatted(.number.locale(L10n.locale)))
                     .foregroundStyle(.secondary)
             }
             .padding(18)
@@ -114,7 +114,7 @@ struct DesktopMessagesView: View {
                                         .lineLimit(1)
                                     Spacer()
                                     if conversation.unreadCount > 0 {
-                                        Text(conversation.unreadCount.formatted())
+                        Text(conversation.unreadCount.formatted(.number.locale(L10n.locale)))
                                             .font(.caption2.bold())
                                             .foregroundStyle(.white)
                                             .padding(.horizontal, 6)
@@ -141,20 +141,20 @@ struct DesktopMessagesView: View {
                 case .loading where conversations.isEmpty:
                     Color.clear
                         .desktopLoadingStatus(
-                            "正在读取私信…",
+                            L10n.string("ui.messages.loading_private_messages"),
                             isPresented: true
                         )
                 case .failed(let message) where conversations.isEmpty:
                     ContentUnavailableView(
-                        "无法读取私信",
+                        "ui.desktop.messages.load_failed",
                         systemImage: "wifi.exclamationmark",
                         description: Text(message)
                     )
                 case .loaded where conversations.isEmpty:
                     ContentUnavailableView(
-                        "暂无私信",
+                        "ui.messages.empty",
                         systemImage: "bubble.left.and.bubble.right",
-                        description: Text("收到和发起的会话会显示在这里。")
+                        description: Text("ui.messages.empty.message")
                     )
                 default:
                     EmptyView()
@@ -190,9 +190,13 @@ struct DesktopMessagesView: View {
     private func messageTime(_ milliseconds: Int64) -> String {
         let date = Date(timeIntervalSince1970: TimeInterval(milliseconds) / 1_000)
         if Calendar.current.isDateInToday(date) {
-            return date.formatted(date: .omitted, time: .shortened)
+            return date.formatted(
+                Date.FormatStyle(date: .omitted, time: .shortened).locale(L10n.locale)
+            )
         }
-        return date.formatted(date: .abbreviated, time: .omitted)
+        return date.formatted(
+            Date.FormatStyle(date: .abbreviated, time: .omitted).locale(L10n.locale)
+        )
     }
 }
 
@@ -250,12 +254,12 @@ private struct DesktopConversationPane: View {
                     case .loading where messages.isEmpty:
                         Color.clear
                             .desktopLoadingStatus(
-                                "正在读取对话…",
+                                L10n.string("ui.desktop.messages.loading_conversation"),
                                 isPresented: true
                             )
                     case .failed(let message) where messages.isEmpty:
                         ContentUnavailableView(
-                            "无法读取对话",
+                            "ui.desktop.messages.conversation_failed",
                             systemImage: "wifi.exclamationmark",
                             description: Text(message)
                         )
@@ -268,7 +272,11 @@ private struct DesktopConversationPane: View {
             Divider()
 
             HStack(alignment: .bottom, spacing: 10) {
-                TextField("发私信给 \(contact.displayName)", text: $draft, axis: .vertical)
+                TextField(
+                    L10n.format("ui.desktop.messages.input_to", contact.displayName),
+                    text: $draft,
+                    axis: .vertical
+                )
                     .textFieldStyle(.plain)
                     .lineLimit(1...5)
                     .padding(10)
@@ -321,7 +329,13 @@ private struct DesktopConversationPane: View {
                     Text(message.payload.text)
                         .textSelection(.enabled)
                 }
-                Text(Date(timeIntervalSince1970: TimeInterval(message.time) / 1_000).formatted(date: .omitted, time: .shortened))
+                Text(
+                    Date(timeIntervalSince1970: TimeInterval(message.time) / 1_000)
+                        .formatted(
+                            Date.FormatStyle(date: .omitted, time: .shortened)
+                                .locale(L10n.locale)
+                        )
+                )
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             }
@@ -390,14 +404,14 @@ private struct DesktopNewMessageSheet: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("发起私信")
+                Text("ui.messages.start_private_message")
                     .font(.title2.bold())
                 Spacer()
-                Button("完成") { dismiss() }
+                Button("ui.common.done") { dismiss() }
             }
             .padding(20)
 
-            TextField("搜索关注的人", text: $query)
+            TextField("ui.messages.search_following", text: $query)
                 .textFieldStyle(.roundedBorder)
                 .padding(.horizontal, 20)
                 .padding(.bottom, 12)
@@ -427,7 +441,7 @@ private struct DesktopNewMessageSheet: View {
         }
         .frame(width: 480, height: 600)
         .task {
-            let loadingMessage = "正在读取联系人…"
+            let loadingMessage = L10n.string("ui.messages.loading_contacts")
             model.ui.setPresentedLoadingMessage(loadingMessage)
             defer {
                 model.ui.clearPresentedLoadingMessage(

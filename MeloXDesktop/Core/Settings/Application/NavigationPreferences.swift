@@ -19,19 +19,19 @@ enum AppTab: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .home: "首页"
-        case .recommended: "推荐"
-        case .music: "音乐"
-        case .podcasts: "播客"
-        case .explore: "发现"
-        case .library: "音乐库"
-        case .librarySongs: "收藏歌曲"
-        case .libraryPlaylists: "收藏歌单"
-        case .libraryPodcasts: "订阅播客"
-        case .libraryDownloads: "下载"
-        case .libraryCloud: "云盘"
-        case .libraryHistory: "最近播放"
-        case .search: "搜索"
+        case .home: L10n.string("ui.navigation.home")
+        case .recommended: L10n.string("ui.navigation.recommended")
+        case .music: L10n.string("ui.navigation.music")
+        case .podcasts: L10n.string("ui.navigation.podcasts")
+        case .explore: L10n.string("ui.navigation.explore")
+        case .library: L10n.string("ui.navigation.library")
+        case .librarySongs: L10n.string("ui.navigation.library.liked_songs")
+        case .libraryPlaylists: L10n.string("ui.navigation.library.liked_playlists")
+        case .libraryPodcasts: L10n.string("ui.navigation.library.subscribed_podcasts")
+        case .libraryDownloads: L10n.string("ui.navigation.downloads")
+        case .libraryCloud: L10n.string("ui.navigation.cloud")
+        case .libraryHistory: L10n.string("ui.navigation.recently_played")
+        case .search: L10n.string("ui.navigation.search")
         }
     }
 
@@ -160,9 +160,9 @@ enum AppPagePlacement: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .home: "首页"
-        case .tabBar: "底部标签栏"
-        case .library: "音乐库"
+        case .home: L10n.string("ui.navigation.home")
+        case .tabBar: L10n.string("ui.settings.navigation.placement.tab_bar")
+        case .library: L10n.string("ui.navigation.library")
         }
     }
 }
@@ -185,12 +185,12 @@ enum LibraryPage: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .songs: "歌曲"
-        case .playlists: "歌单"
-        case .podcasts: "播客"
-        case .downloads: "下载"
-        case .cloud: "云盘"
-        case .history: "历史"
+        case .songs: L10n.string("ui.common.songs")
+        case .playlists: L10n.string("ui.common.playlists")
+        case .podcasts: L10n.string("ui.navigation.podcasts")
+        case .downloads: L10n.string("ui.navigation.downloads")
+        case .cloud: L10n.string("ui.navigation.cloud")
+        case .history: L10n.string("ui.common.history")
         }
     }
 
@@ -207,12 +207,12 @@ enum LibraryPage: String, CaseIterable, Identifiable {
 
     var settingsTitle: String {
         switch self {
-        case .songs: "歌曲（收藏）"
-        case .playlists: "歌单（收藏）"
-        case .podcasts: "播客（收藏）"
-        case .downloads: "下载"
-        case .cloud: "云盘"
-        case .history: "最近播放"
+        case .songs: L10n.string("ui.settings.navigation.page.liked_songs")
+        case .playlists: L10n.string("ui.settings.navigation.page.liked_playlists")
+        case .podcasts: L10n.string("ui.settings.navigation.page.subscribed_podcasts")
+        case .downloads: L10n.string("ui.navigation.downloads")
+        case .cloud: L10n.string("ui.navigation.cloud")
+        case .history: L10n.string("ui.navigation.recently_played")
         }
     }
 

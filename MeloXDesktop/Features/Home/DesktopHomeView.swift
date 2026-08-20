@@ -65,7 +65,7 @@ struct DesktopHomeView: View {
 
             ScrollView {
                 LazyVStack(alignment: .leading, spacing: 32) {
-                    Text("主页")
+                    Text("ui.navigation.home")
                         .font(.system(size: 46, weight: .bold))
 
                     DesktopHomeQuickActionsView(
@@ -84,7 +84,7 @@ struct DesktopHomeView: View {
                         .listeningHistory
                     ), !recentSongs.isEmpty {
                         songCardSection(
-                            title: "最近播放",
+                            title: L10n.string("ui.navigation.library.history"),
                             songs: Array(recentSongs.prefix(8)),
                             layout: mediaLayout,
                             trailingOverlayInset: reservedTrailingWidth
@@ -115,7 +115,7 @@ struct DesktopHomeView: View {
 
                     if case .failed(let message) = model.home.phase {
                         ContentUnavailableView(
-                            "无法载入主页",
+                            "ui.error.home.load_failed",
                             systemImage: "wifi.exclamationmark",
                             description: Text(message)
                         )
@@ -137,7 +137,7 @@ struct DesktopHomeView: View {
         trailingOverlayInset: CGFloat
     ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
-            DesktopSectionHeader(title: "推荐歌单")
+            DesktopSectionHeader(title: L10n.string("ui.home.section.recommended_playlists"))
 
             if model.home.recommendedPlaylists.isEmpty {
                 if model.home.phase == .loading {
@@ -155,7 +155,7 @@ struct DesktopHomeView: View {
                     DesktopHeroCard(
                         title: playlist.name,
                         subtitle: playlist.creator?.nickname,
-                        eyebrow: playlist.copywriter ?? "专属推荐",
+                        eyebrow: playlist.copywriter ?? L10n.string("ui.home.section.tailored"),
                         artworkURL: playlist.artworkURL,
                         playCount: playlist.playCount,
                         showsPlayCount: model.settings.showPlayCount
@@ -207,8 +207,8 @@ struct DesktopHomeView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             DesktopSectionHeader(
-                title: "为你推荐",
-                trailingTitle: "查看全部"
+                title: L10n.string("ui.home.section.tailored"),
+                trailingTitle: L10n.string("ui.common.view_all")
             ) {
                 model.ui.selection = .playlists
             }
@@ -238,8 +238,8 @@ struct DesktopHomeView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             DesktopSectionHeader(
-                title: "新专辑",
-                trailingTitle: "查看全部"
+                title: L10n.string("ui.albums.new.title"),
+                trailingTitle: L10n.string("ui.common.view_all")
             ) {
                 model.ui.selection = .discovery
             }
@@ -267,8 +267,8 @@ struct DesktopHomeView: View {
     ) -> some View {
         VStack(alignment: .leading, spacing: 14) {
             DesktopSectionHeader(
-                title: "推荐播客",
-                trailingTitle: "广播"
+                title: L10n.string("ui.home.section.podcast_recommendations"),
+                trailingTitle: L10n.string("ui.navigation.podcasts")
             ) {
                 model.ui.selection = .radio
             }

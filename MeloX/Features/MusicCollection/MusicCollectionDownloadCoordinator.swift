@@ -217,6 +217,6 @@ private enum MusicCollectionDownloadPreparationError: LocalizedError {
     case noAvailableSongs
 
     var errorDescription: String? {
-        "当前列表中没有可下载的歌曲。"
+        L10n.string("ui.downloads.no_downloadable_songs")
     }
 }

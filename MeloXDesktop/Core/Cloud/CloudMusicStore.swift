@@ -47,9 +47,11 @@ final class CloudMusicStore {
 
     var quotaDescription: String? {
         guard maxSize > 0 else { return nil }
-        let formatter = ByteCountFormatter()
-        formatter.countStyle = .file
-        return "已使用 \(formatter.string(fromByteCount: usedSize))，共 \(formatter.string(fromByteCount: maxSize))"
+        return L10n.format(
+            "ui.cloud.storage_usage",
+            L10n.byteCount(usedSize),
+            L10n.byteCount(maxSize)
+        )
     }
 
     func refresh(force: Bool = false) async {
@@ -172,7 +174,7 @@ final class CloudMusicStore {
         } catch is CancellationError {
             return
         } catch {
-            errorMessage = "上传失败：\(error.localizedDescription)"
+            errorMessage = L10n.format("ui.error.cloud.upload_failed", error.localizedDescription)
         }
     }
 
@@ -189,7 +191,7 @@ final class CloudMusicStore {
         } catch is CancellationError {
             return
         } catch {
-            errorMessage = "删除失败：\(error.localizedDescription)"
+            errorMessage = L10n.format("ui.error.cloud.delete_failed", error.localizedDescription)
         }
     }
 
@@ -198,7 +200,7 @@ final class CloudMusicStore {
     }
 
     func reportImportError(_ error: Error) {
-        errorMessage = "无法读取所选文件：\(error.localizedDescription)"
+        errorMessage = L10n.format("ui.error.cloud.read_file_failed", error.localizedDescription)
     }
 
     func clearError() {

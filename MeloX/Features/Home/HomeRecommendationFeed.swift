@@ -30,16 +30,43 @@ enum HomeRecommendationContent {
 }
 
 struct HomeRecommendationFallback {
-    let title: String
+    let title: HomeRecommendationTitle
     let content: HomeRecommendationContent
+}
+
+enum HomeRecommendationTitle {
+    case standard
+    case tailoredForSong(String)
+    case userPlaylists(String)
+    case userRadar(String)
+    case regionalHits(HomeMusicRegion)
+
+    func localized(for slot: HomeRecommendationSlot) -> String {
+        switch self {
+        case .standard:
+            slot.fallbackTitle
+        case .tailoredForSong(let songName):
+            L10n.format("ui.home.section.tailored_for_song", songName)
+        case .userPlaylists(let nickname):
+            L10n.format("ui.home.section.user_playlists", nickname)
+        case .userRadar(let nickname):
+            L10n.format("ui.home.section.user_radar", nickname)
+        case .regionalHits(let region):
+            L10n.format(
+                "ui.home.section.region_recent_hits",
+                region.title
+            )
+        }
+    }
 }
 
 struct HomeRecommendationSection: Identifiable {
     let slot: HomeRecommendationSlot
-    let title: String
+    private let titleSource: HomeRecommendationTitle
     let content: HomeRecommendationContent
 
     var id: HomeRecommendationSlot { slot }
+    var title: String { titleSource.localized(for: slot) }
 
     init?(
         slot: HomeRecommendationSlot,
@@ -50,7 +77,7 @@ struct HomeRecommendationSection: Identifiable {
             return nil
         }
         self.slot = slot
-        title = slot.title(for: block)
+        titleSource = .standard
         self.content = content
     }
 
@@ -60,7 +87,7 @@ struct HomeRecommendationSection: Identifiable {
     ) {
         guard !fallback.content.isEmpty else { return nil }
         self.slot = slot
-        title = fallback.title
+        titleSource = fallback.title
         content = fallback.content
     }
 }
@@ -82,53 +109,28 @@ enum HomeRecommendationSlot: Int, CaseIterable, Identifiable {
     var fallbackTitle: String {
         switch self {
         case .recommendedPlaylists:
-            "推荐歌单"
+            L10n.string("ui.home.section.recommended_playlists")
         case .recentlyTrending:
-            "近期云村热播"
+            L10n.string("ui.home.section.recently_trending")
         case .tailoredRecommendation:
-            "根据你的喜好为你推荐"
+            L10n.string("ui.home.section.tailored")
         case .charts:
-            "排行榜"
+            L10n.string("ui.home.section.charts")
         case .personalPlaylists:
-            "你的歌单"
+            L10n.string("ui.home.section.your_playlists")
         case .radarPlaylists:
-            "你的雷达歌单"
+            L10n.string("ui.home.section.your_radar")
         case .regionalHits:
-            "你所在地区最近的热门歌曲"
+            L10n.string("ui.home.section.regional_hits")
         case .likedSongRoaming:
-            "从你喜欢的歌开始漫游"
+            L10n.string("ui.home.section.liked_song_roaming")
         case .likedSongRecommendations:
-            "根据你喜爱的歌曲推荐"
+            L10n.string("ui.home.section.liked_song_recommendations")
         case .listenedPodcastRecommendations:
-            "根据你听过的热门节目推荐"
+            L10n.string("ui.home.section.podcast_recommendations")
         }
     }
 
-    func title(for block: HomePageBlock) -> String {
-        guard let sectionTitle = block.sectionTitle else {
-            return fallbackTitle
-        }
-        switch self {
-        case .tailoredRecommendation,
-             .personalPlaylists,
-             .radarPlaylists,
-             .regionalHits:
-            return sectionTitle
-        case .recommendedPlaylists:
-            return sectionTitle == "推荐歌单"
-                ? sectionTitle
-                : fallbackTitle
-        case .recentlyTrending:
-            return sectionTitle.contains("近期云村热播")
-                ? sectionTitle
-                : fallbackTitle
-        case .charts,
-             .likedSongRoaming,
-             .likedSongRecommendations,
-             .listenedPodcastRecommendations:
-            return fallbackTitle
-        }
-    }
 }
 
 struct HomeRecommendationFeed {

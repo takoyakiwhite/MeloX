@@ -15,7 +15,7 @@ private struct DesktopSystemCommands: Commands {
 
     var body: some Commands {
         CommandGroup(replacing: .appInfo) {
-            Button("关于 MeloX") { openWindow(id: "about") }
+            Button("ui.desktop.commands.about_melox") { openWindow(id: "about") }
         }
 
         CommandGroup(replacing: .systemServices) {}
@@ -32,20 +32,22 @@ private struct DesktopPlaybackCommands: Commands {
     @Environment(\.openWindow) private var openWindow
 
     var body: some Commands {
-        CommandMenu("控制") {
-            Button(model.player.isPlaying ? "暂停" : "播放") {
+        CommandMenu("ui.desktop.commands.controls") {
+            Button(model.player.isPlaying ? L10n.string("ui.player.pause") : L10n.string("ui.common.play")) {
                 model.player.togglePlayback()
             }
-            .keyboardShortcut(.space, modifiers: [])
+            .keyboardShortcut(
+                DesktopPlaybackKeyboardShortcuts.togglePlayback
+            )
             .disabled(model.player.currentSong == nil)
 
-            Button("上一首") {
+            Button("ui.player.previous") {
                 Task { await model.player.previous() }
             }
             .keyboardShortcut(.leftArrow, modifiers: .command)
             .disabled(model.player.currentSong == nil)
 
-            Button("下一首") {
+            Button("ui.player.next") {
                 Task { await model.player.next() }
             }
             .keyboardShortcut(.rightArrow, modifiers: .command)
@@ -55,21 +57,21 @@ private struct DesktopPlaybackCommands: Commands {
 
             Divider()
 
-            Button("随机播放") { model.player.toggleShuffle() }
+            Button("ui.player.shuffle") { model.player.toggleShuffle() }
                 .keyboardShortcut("s", modifiers: [.command, .option])
-            Button("切换循环模式") { model.player.cycleRepeatMode() }
+            Button("ui.desktop.commands.cycle_repeat") { model.player.cycleRepeatMode() }
                 .keyboardShortcut("r", modifiers: [.command, .option])
 
             Divider()
 
-            Button("显示歌词") { model.ui.toggleInspector(.lyrics) }
+            Button("ui.desktop.commands.show_lyrics") { model.ui.toggleInspector(.lyrics) }
                 .keyboardShortcut("l", modifiers: [.command, .shift])
-            Button("显示播放队列") { model.ui.toggleInspector(.queue) }
+            Button("ui.desktop.commands.show_queue") { model.ui.toggleInspector(.queue) }
                 .keyboardShortcut("q", modifiers: [.command, .shift])
-            Button("正在播放") { model.ui.isNowPlayingPresented = true }
-            Button("迷你播放器") { openWindow(id: "mini-player") }
+            Button("ui.player.now_playing") { model.ui.isNowPlayingPresented = true }
+            Button("ui.desktop.mini_player") { openWindow(id: "mini-player") }
                 .keyboardShortcut("m", modifiers: [.command, .shift])
-            Button("桌面歌词") { openWindow(id: "floating-lyrics") }
+            Button("ui.floating_lyrics.title") { openWindow(id: "floating-lyrics") }
         }
     }
 }
@@ -78,15 +80,15 @@ private struct DesktopNavigationCommands: Commands {
     let model: DesktopAppModel
 
     var body: some Commands {
-        CommandMenu("导航") {
-            Button("搜索") { model.ui.selection = .search }
+        CommandMenu("ui.desktop.commands.navigation") {
+            Button("ui.navigation.search") { model.ui.selection = .search }
                 .keyboardShortcut("f", modifiers: .command)
-            Button("主页") { model.ui.selection = .home }
+            Button("ui.navigation.home") { model.ui.selection = .home }
                 .keyboardShortcut("1", modifiers: .command)
-            Button("新发现") { model.ui.selection = .discovery }
+            Button("ui.navigation.explore") { model.ui.selection = .discovery }
                 .keyboardShortcut("2", modifiers: .command)
             if model.isSectionEnabled(.radio) {
-                Button("广播") { model.ui.selection = .radio }
+                Button("ui.navigation.podcasts") { model.ui.selection = .radio }
                     .keyboardShortcut("3", modifiers: .command)
             }
         }

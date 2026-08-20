@@ -21,13 +21,13 @@ nonisolated enum MusicQuality:
 
     var title: String {
         switch self {
-        case .standard: "标准"
-        case .high: "高品质"
-        case .lossless: "无损"
-        case .hiResolution: "Hi-Res"
-        case .highDefinitionSurround: "高清环绕声"
-        case .immersiveSurround: "沉浸环绕声"
-        case .ultraClearMaster: "超清母带"
+        case .standard: L10n.string("ui.settings.audio_quality.standard")
+        case .high: L10n.string("ui.settings.audio_quality.high")
+        case .lossless: L10n.string("ui.settings.audio_quality.lossless")
+        case .hiResolution: L10n.string("ui.settings.audio_quality.hi_res")
+        case .highDefinitionSurround: L10n.string("ui.settings.audio_quality.hd_surround")
+        case .immersiveSurround: L10n.string("ui.settings.audio_quality.immersive_surround")
+        case .ultraClearMaster: L10n.string("ui.settings.audio_quality.master")
         }
     }
 

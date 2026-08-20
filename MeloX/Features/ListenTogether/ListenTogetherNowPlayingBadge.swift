@@ -10,7 +10,7 @@ struct ListenTogetherNowPlayingBadge: View {
             Button {
                 showsMembers = true
             } label: {
-                Label("一起听", systemImage: "person.2.fill")
+                Label("ui.listen_together.title", systemImage: "person.2.fill")
                     .font(.caption2.weight(.semibold))
                     .lineLimit(1)
                     .padding(.horizontal, 8)
@@ -20,8 +20,13 @@ struct ListenTogetherNowPlayingBadge: View {
             }
             .buttonStyle(.plain)
             .fixedSize()
-            .accessibilityLabel("一起听，\(room.users.count) 位成员")
-            .accessibilityHint("轻点查看房间成员")
+            .accessibilityLabel(
+                L10n.format(
+                    "ui.listen_together.member_count_accessibility",
+                    room.users.count
+                )
+            )
+            .accessibilityHint("ui.listen_together.view_members_hint")
             .popover(isPresented: $showsMembers) {
                 ListenTogetherMembersView()
                     .presentationCompactAdaptation(.sheet)

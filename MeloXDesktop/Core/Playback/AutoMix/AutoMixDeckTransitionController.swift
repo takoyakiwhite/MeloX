@@ -8,7 +8,7 @@ enum AutoMixPreparationError: LocalizedError {
         switch self {
         case .itemFailed(let error):
             error?.localizedDescription
-                ?? "下一首歌曲预载失败。"
+                ?? L10n.string("ui.error.automix.preload_failed")
         }
     }
 }

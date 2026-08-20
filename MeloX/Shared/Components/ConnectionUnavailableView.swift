@@ -6,11 +6,11 @@ struct ConnectionUnavailableView: View {
 
     var body: some View {
         ContentUnavailableView {
-            Label("无法载入音乐内容", systemImage: "wifi.exclamationmark")
+            Label("ui.error.music_content_load_failed", systemImage: "wifi.exclamationmark")
         } description: {
             Text(message)
         } actions: {
-            Button("重试", action: retry)
+            Button("ui.common.retry", action: retry)
         }
     }
 }

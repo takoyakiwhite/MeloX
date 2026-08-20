@@ -12,14 +12,14 @@ struct NowPlayingLyricsLanguageButton: View {
         Menu {
             if hasRomanizations {
                 Toggle(
-                    "显示发音（罗马音）",
+                    "ui.settings.lyrics.content.show_romanization",
                     isOn: $settings.lyricsRomanizationEnabled
                 )
 
                 if supportsEditableAnnotationRange,
                    settings.lyricsRomanizationEnabled {
                     Picker(
-                        "罗马音显示范围",
+                        "ui.settings.lyrics.content.romanization_display_range",
                         selection:
                             $settings.lyricsRomanizationDisplayMode
                     ) {
@@ -35,14 +35,14 @@ struct NowPlayingLyricsLanguageButton: View {
 
             if hasTranslations {
                 Toggle(
-                    "显示翻译",
+                    "ui.lyrics.show_translation",
                     isOn: $settings.lyricsTranslationEnabled
                 )
 
                 if supportsEditableAnnotationRange,
                    settings.lyricsTranslationEnabled {
                     Picker(
-                        "翻译显示范围",
+                        "ui.settings.lyrics.content.translation_display_range",
                         selection:
                             $settings.lyricsTranslationDisplayMode
                     ) {
@@ -72,7 +72,7 @@ struct NowPlayingLyricsLanguageButton: View {
                 .contentShape(.circle)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("翻译与发音")
+        .accessibilityLabel("ui.settings.lyrics.content.section.translation_pronunciation")
         .accessibilityValue(accessibilityValue)
         .accessibilityHint(accessibilityHint)
     }
@@ -95,39 +95,45 @@ struct NowPlayingLyricsLanguageButton: View {
     private var accessibilityValue: String {
         var enabledAnnotations: [String] = []
         if hasRomanizations && settings.lyricsRomanizationEnabled {
-            enabledAnnotations.append("罗马音")
+            enabledAnnotations.append(L10n.string("ui.lyrics.romanization"))
         }
         if hasTranslations && settings.lyricsTranslationEnabled {
-            enabledAnnotations.append("翻译")
+            enabledAnnotations.append(L10n.string("ui.lyrics.translation"))
         }
         guard !enabledAnnotations.isEmpty else {
-            return "标注已隐藏"
+            return L10n.string("ui.lyrics.annotations_hidden")
         }
 
         if usesAppleMusic26Presentation {
-            return enabledAnnotations.joined(separator: "、")
+            return enabledAnnotations.joined(separator: L10n.string("ui.common.list_separator"))
         }
         guard supportsEditableAnnotationRange else {
-            return enabledAnnotations.joined(separator: "、")
+            return enabledAnnotations.joined(separator: L10n.string("ui.common.list_separator"))
         }
         let scopes: [String] = [
             hasRomanizations && settings.lyricsRomanizationEnabled
-                ? "罗马音\(settings.lyricsRomanizationDisplayMode.title)"
+                ? L10n.format(
+                    "ui.lyrics.romanization_scope",
+                    settings.lyricsRomanizationDisplayMode.title
+                )
                 : nil,
             hasTranslations && settings.lyricsTranslationEnabled
-                ? "翻译\(settings.lyricsTranslationDisplayMode.title)"
+                ? L10n.format(
+                    "ui.lyrics.translation_scope",
+                    settings.lyricsTranslationDisplayMode.title
+                )
                 : nil,
         ].compactMap { $0 }
-        return scopes.joined(separator: "，")
+        return scopes.joined(separator: L10n.string("ui.common.list_separator"))
     }
 
     private var accessibilityHint: String {
         if usesAppleMusic26Presentation {
-            return "选择是否显示罗马音和翻译"
+            return L10n.string("ui.lyrics.annotation_hint")
         }
         if supportsEditableAnnotationRange {
-            return "选择是否显示罗马音、翻译及标注范围"
+            return L10n.string("ui.lyrics.annotation_range_hint")
         }
-        return "选择是否显示罗马音和翻译"
+        return L10n.string("ui.lyrics.annotation_hint")
     }
 }

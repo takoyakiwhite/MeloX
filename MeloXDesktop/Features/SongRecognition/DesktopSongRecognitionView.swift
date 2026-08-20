@@ -10,15 +10,15 @@ struct DesktopSongRecognitionView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("听歌识曲")
+                Text("ui.recognition.title")
                     .font(.system(size: 28, weight: .bold))
                 Spacer()
                 if showsRestartButton {
-                    Button("重新识别", systemImage: "arrow.clockwise") {
+                    Button("ui.recognition.restart", systemImage: "arrow.clockwise") {
                         startRecognition()
                     }
                 }
-                Button("完成") { dismiss() }
+                Button("ui.common.done") { dismiss() }
             }
             .padding(24)
 
@@ -29,11 +29,17 @@ struct DesktopSongRecognitionView: View {
                 case .ready:
                     readyView
                 case .requestingPermission:
-                    progressView("正在准备麦克风", detail: "首次使用时，请允许 MeloX 访问麦克风。")
+                    progressView(
+                        L10n.string("ui.recognition.preparing_microphone"),
+                        detail: L10n.string("ui.recognition.microphone_permission_message")
+                    )
                 case .listening:
                     listeningView
                 case .matching:
-                    progressView("正在识别", detail: "正在本机生成音频指纹，并通过网易云原始接口查询曲库。")
+                    progressView(
+                        L10n.string("ui.recognition.matching"),
+                        detail: L10n.string("ui.recognition.matching_message")
+                    )
                 case .results:
                     resultList
                 case .noMatch:
@@ -56,23 +62,29 @@ struct DesktopSongRecognitionView: View {
                 .symbolRenderingMode(.hierarchical)
                 .foregroundStyle(.red)
             VStack(spacing: 8) {
-                Text("识别身边正在播放的音乐")
+                Text("ui.desktop.recognition.ready.title")
                     .font(.title.bold())
                 Text(readyDescription)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
                     .frame(maxWidth: 470)
             }
-            Picker("识别时长", selection: settingsDuration) {
+            Picker("ui.settings.content.recognition_duration", selection: settingsDuration) {
                 ForEach(SongRecognitionDuration.allCases) { duration in
-                    Text("\(duration.title) · \(duration.detail)").tag(duration)
+                    Text(
+                        L10n.joined(
+                            [duration.title, duration.detail],
+                            separatorKey: "ui.common.metadata_separator"
+                        )
+                    )
+                    .tag(duration)
                 }
             }
             .pickerStyle(.segmented)
             .labelsHidden()
             .frame(maxWidth: 540)
 
-            Button("开始识别", systemImage: "mic.fill") {
+            Button("ui.recognition.start", systemImage: "mic.fill") {
                 startRecognition()
             }
             .buttonStyle(.borderedProminent)
@@ -96,14 +108,23 @@ struct DesktopSongRecognitionView: View {
                         options: .repeating.speed(1.2),
                         isActive: !reduceMotion
                     )
-                Text(recognition.isContinuous ? "正在持续识别" : "正在聆听")
+                Text(
+                    recognition.isContinuous
+                        ? L10n.string("ui.recognition.continuous")
+                        : L10n.string("ui.recognition.listening")
+                )
                     .font(.title.bold())
-                Text("让 Mac 靠近声源并尽量减少环境噪声。")
+                Text("ui.desktop.recognition.listening_message")
                     .foregroundStyle(.secondary)
                 Spacer()
             }
 
-            Button(recognition.isContinuous ? "停止识别" : "取消", role: .cancel) {
+            Button(
+                recognition.isContinuous
+                    ? L10n.string("ui.recognition.stop")
+                    : L10n.string("ui.common.cancel"),
+                role: .cancel
+            ) {
                 if recognition.isContinuous {
                     recognition.stopContinuousRecognition()
                 } else {
@@ -119,10 +140,10 @@ struct DesktopSongRecognitionView: View {
         ScrollView {
             LazyVStack(alignment: .leading, spacing: 0) {
                 HStack {
-                    Text("识别结果")
+                    Text("ui.recognition.results")
                         .font(.title2.bold())
                     Spacer()
-                    Text("\(recognition.results.count) 首")
+                    Text(L10n.format("ui.common.song_count", recognition.results.count))
                         .foregroundStyle(.secondary)
                 }
                 .padding(.bottom, 12)
@@ -138,7 +159,16 @@ struct DesktopSongRecognitionView: View {
                                 Text(result.song.name)
                                     .font(.headline)
                                     .lineLimit(1)
-                                Text("\(result.song.artistText) — \(result.song.album?.name ?? "")")
+                                Text(
+                                    L10n.joined(
+                                        [
+                                            result.song.artistText,
+                                            result.song.album?.name ?? "",
+                                        ],
+                                        separatorKey:
+                                            "ui.common.title_detail_separator"
+                                    )
+                                )
                                     .foregroundStyle(.secondary)
                                     .lineLimit(1)
                             }
@@ -166,30 +196,30 @@ struct DesktopSongRecognitionView: View {
 
     private var noMatchView: some View {
         ContentUnavailableView {
-            Label("没有识别到歌曲", systemImage: "questionmark.circle")
+            Label("ui.recognition.no_match", systemImage: "questionmark.circle")
         } description: {
-            Text("请靠近声源、减少环境噪声，或延长识别时长后重试。")
+            Text("ui.recognition.no_match_message")
         } actions: {
-            Button("再试一次", systemImage: "arrow.clockwise") { startRecognition() }
+            Button("ui.recognition.try_again", systemImage: "arrow.clockwise") { startRecognition() }
                 .buttonStyle(.borderedProminent)
         }
     }
 
     private func failureView(_ failure: SongRecognitionFailure) -> some View {
         ContentUnavailableView {
-            Label("无法完成识别", systemImage: "exclamationmark.triangle")
+            Label("ui.recognition.failed", systemImage: "exclamationmark.triangle")
         } description: {
             Text(failure.message)
         } actions: {
             if failure.opensSystemSettings {
-                Button("打开麦克风设置", systemImage: "gear") {
+                Button("ui.desktop.recognition.open_microphone_settings", systemImage: "gear") {
                     if let url = URL(string: "x-apple.systempreferences:com.apple.preference.security?Privacy_Microphone") {
                         NSWorkspace.shared.open(url)
                     }
                 }
                 .buttonStyle(.borderedProminent)
             }
-            Button("重试", systemImage: "arrow.clockwise") { startRecognition() }
+            Button("ui.common.retry", systemImage: "arrow.clockwise") { startRecognition() }
                 .buttonStyle(.bordered)
         }
     }
@@ -201,7 +231,7 @@ struct DesktopSongRecognitionView: View {
             Text(detail)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-            Button("取消", role: .cancel) { recognition.cancel() }
+            Button("ui.common.cancel", role: .cancel) { recognition.cancel() }
         }
         .padding(36)
     }
@@ -223,9 +253,9 @@ struct DesktopSongRecognitionView: View {
     private var readyDescription: String {
         let duration = model.settings.songRecognition.duration
         if duration.isContinuous {
-            return "MeloX 会持续聆听并不断展示新结果，直到你手动停止；原始录音不会上传。"
+            return L10n.string("ui.desktop.recognition.ready.continuous")
         }
-        return "MeloX 最长聆听 \(duration.title)，只会向网易云音乐发送设备端生成的音频指纹。"
+        return L10n.format("ui.desktop.recognition.ready.limited", duration.title)
     }
 
     private func startRecognition() {

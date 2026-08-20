@@ -1,11 +1,13 @@
 # MeloX
 
+[简体中文](README.md) | [English](README.en.md)
+
 [![License](https://img.shields.io/github/license/youshen2/MeloX)](https://github.com/youshen2/MeloX/blob/master/LICENSE)
 [![Download](https://img.shields.io/github/v/release/youshen2/MeloX)](https://github.com/youshen2/MeloX/releases)
 [![stars](https://img.shields.io/github/stars/youshen2/MeloX)](https://github.com/youshen2/MeloX/stargazers)
 
 <p align="center">
-  使用原生 SwiftUI 构建的第三方网易云音乐播放器
+  面向 iPhone、iPad、Mac 与 Apple Watch，使用原生 SwiftUI 构建的第三方网易云音乐播放器
 </p>
 
 [![官网](https://img.shields.io/badge/MeloX-访问官网-red?style=for-the-badge&logo=music&logoColor=red)](https://melox.luoxe.cn)
@@ -29,6 +31,23 @@
 下载后请于24小时内删除。
 
 ## 应用截图
+
+### MeloX Desktop（macOS）
+
+MeloX Desktop 使用为 Mac 原生设计的侧边栏、多栏内容区与常驻底部播放器，在更大的横向空间中同时呈现浏览、歌词和播放队列。沉浸式播放器支持封面、逐字歌词、播放控制与音量调节，并可在歌词和队列侧栏间切换；也可以留在首页直接并排查看同步歌词。
+
+桌面端还提供自动续播队列、适配宽屏的歌单详情，以及消息、音乐云盘、下载与设置入口。官网提供经过 Developer ID 签名和 Apple 公证的 Apple Silicon 与 Intel DMG；GitHub Releases 中则提供对应架构的未签名 CI 构建。更多信息与下载方式见 [MeloX 官网](https://melox.luoxe.cn/)。
+
+<p align="center">
+  <img src="https://melox.luoxe.cn/mac/home.png" alt="MeloX Desktop 首页" width="48%">
+  <img src="https://melox.luoxe.cn/mac/immersive-player.png" alt="MeloX Desktop 沉浸式播放器" width="48%">
+  <br>
+  <img src="https://melox.luoxe.cn/mac/lyrics-pane.png" alt="MeloX Desktop 歌词侧栏" width="48%">
+  <img src="https://melox.luoxe.cn/mac/queue.png" alt="MeloX Desktop 播放队列" width="48%">
+  <br>
+  <img src="https://melox.luoxe.cn/mac/playlist.png" alt="MeloX Desktop 歌单详情" width="48%">
+  <img src="https://melox.luoxe.cn/mac/account.png" alt="MeloX Desktop 账号页面" width="48%">
+</p>
 
 ### 基础页面
 
@@ -262,6 +281,13 @@ MeloX 将相关内容移植为原生 SwiftUI，并根据歌词播放进度实时
 
 - iPhone 原生界面
 - iPad 原生界面
+- Mac 原生侧边栏与多栏界面
+- Mac 常驻底部播放器
+- Mac 沉浸式播放器
+- Mac 歌词与播放队列侧栏
+- Mac 桌面歌词与迷你播放器
+- Mac 键盘与系统媒体控制
+- Apple Silicon 与 Intel 原生构建
 - 浅色与深色主题
 - 自定义首页
 - 自定义标签栏
@@ -297,6 +323,7 @@ MeloX 使用固定 32 秒窗口、FP16 计算精度的 Core ML ML Program；模�
 
 - Xcode 26.6 或更高版本
 - iOS / iPadOS 26.0 或更高版本
+- macOS 15.0 或更高版本
 - watchOS 10.0 或更高版本（手表端仍在开发中）
 - Swift 5
 - 用真机运行时，需要可用于代码签名的 Apple Developer 账号
@@ -316,9 +343,9 @@ MeloX 使用固定 32 秒窗口、FP16 计算精度的 Core ML ML Program；模�
    open MeloX.xcodeproj
    ```
 
-3. 选择 `MeloX` Target，在 Signing & Capabilities 中设置自己的开发团队；如有需要，同时更换为唯一的 Bundle Identifier。
+3. 移动端选择 `MeloX` Target，桌面端选择 `MeloX Desktop` Target；在 Signing & Capabilities 中设置自己的开发团队，如有需要，同时更换为唯一的 Bundle Identifier。
 
-4. 选择兼容的 iPhone、iPad 或模拟器，然后构建运行。
+4. 选择兼容的 iPhone、iPad、Mac 或模拟器，然后构建运行。
 
 无需部署额外的后端服务，也无需配置第三方 API 地址。
 
@@ -348,6 +375,12 @@ MeloX 使用固定 32 秒窗口、FP16 计算精度的 Core ML ML Program；模�
 │   │   └── Media/            # 封面、媒体卡片与歌曲行
 │   ├── Resources/            # 字体、Core ML 模型与许可证
 │   └── Assets.xcassets/      # 应用图标、强调色与图片资源
+├── MeloXDesktop/             # Mac 原生桌面应用
+│   ├── App/                  # 桌面窗口、命令与导航
+│   ├── Core/                 # 桌面端业务状态、播放与存储
+│   ├── Features/             # 桌面首页、详情、播放器与设置
+│   └── Shared/               # 桌面媒体卡片与通用视图
+├── MeloXLocalization/        # iOS、macOS 与 watchOS 共用的语义本地化接口
 └── MeloXWatch/               # Apple Watch 独立应用（开发中）
     ├── Playback/             # 手表端播放器、播放队列与状态恢复
     ├── Player/               # 正在播放页、实时队列与播放模式控制
@@ -361,6 +394,7 @@ MeloX 使用固定 32 秒窗口、FP16 计算精度的 Core ML ML Program；模�
 - 试听、完整播放、音质和地区可用性取决于网易云音乐账号、版权与服务端策略。
 - MeloX 不以绕过付费、版权或地区限制为目标。
 - Apple Watch 版本仍在开发中，暂不保证功能完整性和数据兼容性。
+- GitHub Releases 中的 macOS DMG 为未签名 CI 构建；需要 Developer ID 签名与 Apple 公证版本时，请从官网下载。
 
 ## 股东
 

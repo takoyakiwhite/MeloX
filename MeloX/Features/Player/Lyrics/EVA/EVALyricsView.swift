@@ -26,7 +26,7 @@ struct EVALyricsView: View {
     private var emptyState: some View {
         if let errorMessage {
             ContentUnavailableView(
-                "暂无歌词",
+                "ui.lyrics.empty",
                 systemImage: "rectangle.split.3x1.fill",
                 description: Text(errorMessage)
             )
@@ -38,7 +38,7 @@ struct EVALyricsView: View {
                 onToggleInterface?()
             }
         } else {
-            ProgressView("正在载入歌词")
+            ProgressView("ui.lyrics.loading")
                 .tint(.white)
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -76,11 +76,11 @@ struct EVALyricsView: View {
                             includingTranslation: settings.lyricsTranslationEnabled
                         )
                     )
-                    .accessibilityValue("当前播放，EVA 标题卡")
+                    .accessibilityValue("ui.lyrics.eva_current_title_card")
                     .accessibilityHint(
                         settings.lyricsTapToSeek
-                            ? "双击从这句歌词重新播放"
-                            : "歌词跳转已在设置中关闭"
+                            ? L10n.string("ui.lyrics.double_tap_seek_hint")
+                            : L10n.string("ui.lyrics.seek_disabled_hint")
                     )
                     .accessibilityAddTraits(settings.lyricsTapToSeek ? .isButton : [])
                     .accessibilityAction {
@@ -101,7 +101,7 @@ struct EVALyricsView: View {
                         .accessibilityHint(
                             settings.lyricsTapToSeek
                                 ? footer.accessibilityHint
-                                : "歌词跳转已在设置中关闭"
+                                : L10n.string("ui.lyrics.seek_disabled_hint")
                         )
                         .accessibilityAddTraits(settings.lyricsTapToSeek ? .isButton : [])
                         .accessibilityAction {
@@ -152,23 +152,23 @@ struct EVALyricsView: View {
         if settings.lyricsTranslationEnabled,
            let translation = currentLine.translation {
             return EVAFooterContent(
-                eyebrow: "TRANSLATION",
+                eyebrow: L10n.string("ui.lyrics.eva.translation_eyebrow"),
                 text: translation,
                 line: currentLine,
                 isTranslation: true,
-                accessibilityValue: "当前歌词翻译",
-                accessibilityHint: "双击从当前歌词重新播放"
+                accessibilityValue: L10n.string("ui.lyrics.current_translation"),
+                accessibilityHint: L10n.string("ui.lyrics.double_tap_current_seek_hint")
             )
         }
 
         guard let nextLine else { return nil }
         return EVAFooterContent(
-            eyebrow: "UP NEXT",
+            eyebrow: L10n.string("ui.lyrics.eva.up_next_eyebrow"),
             text: nextLine.text,
             line: nextLine,
             isTranslation: false,
-            accessibilityValue: "下一句歌词",
-            accessibilityHint: "双击跳转到下一句歌词"
+            accessibilityValue: L10n.string("ui.lyrics.next"),
+            accessibilityHint: L10n.string("ui.lyrics.double_tap_next_seek_hint")
         )
     }
 
@@ -210,7 +210,13 @@ private struct EVAFooterLyric: View {
             .minimumScaleFactor(0.58)
             .allowsTightening(true)
             .shadow(color: EVATheme.glow.opacity(0.72), radius: 7)
-            .accessibilityLabel("\(eyebrow)，\(text)")
+            .accessibilityLabel(
+                L10n.format(
+                    "ui.accessibility.lyric_eyebrow_and_text",
+                    eyebrow,
+                    text
+                )
+            )
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 }

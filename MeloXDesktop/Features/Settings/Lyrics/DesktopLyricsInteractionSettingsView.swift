@@ -10,50 +10,48 @@ struct DesktopLyricsInteractionSettingsView: View {
             Form {
                 Section {
                     Toggle(
-                        "单击歌词跳转",
+                        "ui.settings.lyrics.interaction.tap_to_seek",
                         isOn: $settings.lyricsTapToSeek
                     )
                     Toggle(
-                        "浏览后恢复跟随",
+                        "ui.settings.lyrics.interaction.auto_follow",
                         isOn: $settings.lyricsAutoFollow
                     )
 
                     if settings.lyricsAutoFollow {
                         HStack {
-                            Text("恢复跟随等待")
+                            Text("ui.settings.lyrics.interaction.follow_delay")
                             Slider(
                                 value: $settings.lyricsFollowDelay,
                                 in: 1...10,
                                 step: 1
                             )
-                            Text("\(Int(settings.lyricsFollowDelay)) 秒")
+                            Text(L10n.format("ui.common.seconds", Int(settings.lyricsFollowDelay)))
                                 .monospacedDigit()
                                 .frame(width: 60, alignment: .trailing)
                         }
                     }
                 } header: {
-                    Text("浏览与跳转")
+                    Text("ui.settings.lyrics.interaction.section.browse_seek")
                 } footer: {
-                    Text("开启自动跟随后，手动浏览结束并等待指定时间，歌词会返回当前播放行。")
+                    Text("ui.settings.lyrics.interaction.auto_follow.footer")
                 }
 
-                Section("同步") {
+                Section("ui.settings.lyrics.interaction.section.sync") {
                     HStack {
-                        Text("歌词提前量")
+                        Text("ui.settings.lyrics.interaction.advance_time")
                         Slider(
                             value: $settings.lyricsAdvanceTime,
                             in: AppSettings.lyricsAdvanceTimeRange,
                             step: 0.1
                         )
-                        Text(
-                            "\(settings.lyricsAdvanceTime, specifier: "%.1f") s"
-                        )
+                        Text(L10n.format("ui.common.seconds_decimal", settings.lyricsAdvanceTime))
                         .monospacedDigit()
                         .frame(width: 60, alignment: .trailing)
                     }
 
                     Toggle(
-                        "同时应用于逐字歌词",
+                        "ui.settings.lyrics.interaction.advance_word_by_word",
                         isOn:
                             $settings
                                 .lyricsAdvanceTimeAppliesToWordByWord

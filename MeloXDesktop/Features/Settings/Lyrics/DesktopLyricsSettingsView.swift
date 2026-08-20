@@ -5,7 +5,7 @@ struct DesktopLyricsSettingsView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("歌词设置分类", selection: $page) {
+            Picker("ui.desktop.lyrics.settings_category", selection: $page) {
                 ForEach(Page.allCases) { page in
                     Text(page.title).tag(page)
                 }
@@ -46,11 +46,11 @@ struct DesktopLyricsSettingsView: View {
 
         var title: String {
             switch self {
-            case .appearance: "排版"
-            case .content: "内容"
-            case .interaction: "交互"
-            case .animation: "动画"
-            case .extensions: "扩展"
+            case .appearance: L10n.string("ui.desktop.lyrics.page.typography")
+            case .content: L10n.string("ui.desktop.lyrics.page.content")
+            case .interaction: L10n.string("ui.desktop.lyrics.page.interaction")
+            case .animation: L10n.string("ui.desktop.lyrics.page.animation")
+            case .extensions: L10n.string("ui.desktop.lyrics.page.extensions")
             }
         }
     }

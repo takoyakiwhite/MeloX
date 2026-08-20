@@ -46,6 +46,6 @@ private enum IntelligenceModeError: LocalizedError {
     case emptyRecommendations
 
     var errorDescription: String? {
-        "网易云音乐暂时没有返回可播放的心动模式歌曲。"
+        L10n.string("ui.error.heart_mode.no_playable_song")
     }
 }

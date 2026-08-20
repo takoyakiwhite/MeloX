@@ -86,7 +86,7 @@ struct DesktopBottomPlayer: View {
                     Label(issue.message, systemImage: "exclamationmark.triangle")
                         .font(.caption)
                     Spacer()
-                    Button("重试") { Task { await model.player.retry() } }
+                    Button("ui.common.retry") { Task { await model.player.retry() } }
                     Button {
                         model.player.dismissPlaybackIssue()
                     } label: {
@@ -119,7 +119,7 @@ struct DesktopBottomPlayer: View {
                     inspectorButton(
                         .lyrics,
                         systemImage: "quote.bubble",
-                        title: "显示歌词"
+                        title: L10n.string("ui.desktop.commands.show_lyrics")
                     )
 
                     Color.clear.frame(
@@ -130,7 +130,7 @@ struct DesktopBottomPlayer: View {
                     inspectorButton(
                         .queue,
                         systemImage: "list.bullet",
-                        title: "显示播放列表"
+                        title: L10n.string("ui.desktop.commands.show_queue")
                     )
 
                     Color.clear.frame(
@@ -168,6 +168,10 @@ struct DesktopBottomPlayer: View {
         .buttonStyle(.plain)
         .help(title)
         .accessibilityLabel(title)
-        .accessibilityValue(isSelected ? "已选择" : "未选择")
+        .accessibilityValue(
+            isSelected
+                ? L10n.string("ui.common.selected")
+                : L10n.string("ui.common.not_selected")
+        )
     }
 }

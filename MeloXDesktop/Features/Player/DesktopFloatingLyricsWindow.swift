@@ -132,7 +132,7 @@ struct DesktopFloatingLyricsWindow: View {
 
     private var lyricsContent: some View {
         VStack(alignment: .leading, spacing: preferences.lineSpacing) {
-            Text(currentLine?.text ?? "暂无歌词")
+            Text(currentLine?.text ?? L10n.string("ui.desktop.lyrics.unavailable"))
                 .font(
                     .system(
                         size: 26 * fontScale,
@@ -226,8 +226,8 @@ struct DesktopFloatingLyricsWindow: View {
                         .contentShape(.rect)
                 }
                 .buttonStyle(.borderless)
-                .help("关闭桌面歌词")
-                .accessibilityLabel("关闭桌面歌词")
+                .help(L10n.string("ui.floating_lyrics.close"))
+                .accessibilityLabel("ui.floating_lyrics.close")
             }
             Spacer()
         }

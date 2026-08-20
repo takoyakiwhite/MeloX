@@ -29,47 +29,47 @@ enum TextPVStyle: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .blueBold: "蓝色冲击"
-        case .kineticSplit: "斩击"
-        case .bluePlane: "蓝色构成(建议配合视频使用)"
-        case .cyberGrunge: "赛博废墟"
-        case .geometric: "几何"
-        case .rainCity: "黑客帝国"
-        case .cyberpunkHUD: "夜之城监控(建议配合视频使用)"
-        case .emotionCinema: "情绪电影(建议配合视频使用)"
-        case .hystericNight: "歇斯底里之夜(光敏慎点)"
-        case .spiderWeb: "蛛网"
-        case .staggeredText: "错落文字"
-        case .calmVillain: "冷静的反派"
-        case .girlyClouds: "少女云朵"
-        case .sweetPink: "格子花边"
-        case .flyMeToTheMoon: "Fly Me to the Moon"
-        case .kawaiPixel: "Kawaii像素"
-        case .crimeScene: "案发现场"
-        case .haruhikage: "春日影"
+        case .blueBold: L10n.string("ui.settings.text_pv.style.blue_bold")
+        case .kineticSplit: L10n.string("ui.settings.text_pv.style.kinetic_split")
+        case .bluePlane: L10n.string("ui.settings.text_pv.style.blue_plane")
+        case .cyberGrunge: L10n.string("ui.settings.text_pv.style.cyber_grunge")
+        case .geometric: L10n.string("ui.settings.text_pv.style.geometric")
+        case .rainCity: L10n.string("ui.settings.text_pv.style.rain_city")
+        case .cyberpunkHUD: L10n.string("ui.settings.text_pv.style.cyberpunk_hud")
+        case .emotionCinema: L10n.string("ui.settings.text_pv.style.emotion_cinema")
+        case .hystericNight: L10n.string("ui.settings.text_pv.style.hysteric_night")
+        case .spiderWeb: L10n.string("ui.settings.text_pv.style.spider_web")
+        case .staggeredText: L10n.string("ui.settings.text_pv.style.staggered_text")
+        case .calmVillain: L10n.string("ui.settings.text_pv.style.calm_villain")
+        case .girlyClouds: L10n.string("ui.settings.text_pv.style.girly_clouds")
+        case .sweetPink: L10n.string("ui.settings.text_pv.style.sweet_pink")
+        case .flyMeToTheMoon: L10n.string("ui.settings.text_pv.style.fly_me_to_the_moon")
+        case .kawaiPixel: L10n.string("ui.settings.text_pv.style.kawaii_pixel")
+        case .crimeScene: L10n.string("ui.settings.text_pv.style.crime_scene")
+        case .haruhikage: L10n.string("ui.settings.text_pv.style.haruhikage")
         }
     }
 
     var description: String {
         switch self {
-        case .blueBold: "蓝底、轮廓字与带阴影的几何文字块"
-        case .kineticSplit: "米白底、酒红斩击结构与多层文字"
-        case .bluePlane: "反相蓝色构成、物理公式与目标节点"
-        case .cyberGrunge: "黑白网点、监视器、噪声与发光字卡"
-        case .geometric: "明黄背景、同心方块与波浪文字"
-        case .rainCity: "青绿色雨幕文字与色差暗角"
-        case .cyberpunkHUD: "黄色监控网格、红色目标框与情报面板"
-        case .emotionCinema: "冷色渐变、流动线条与克制的电影文字"
-        case .hystericNight: "放射矩形与逐字发光卡片，包含强烈闪动"
-        case .spiderWeb: "红色蛛网、扫描线与故障文字"
-        case .staggeredText: "五种错落排版循环切换"
-        case .calmVillain: "粉蓝精密构成、透视网格与冷光字卡"
-        case .girlyClouds: "粉色斜纹、边缘云朵与中央标题"
-        case .sweetPink: "移动粉格、脉冲圆与扇贝花边"
-        case .flyMeToTheMoon: "深空纹理、行星与竖排小字"
-        case .kawaiPixel: "复古桌面窗口、像素图标与打字机文字"
-        case .crimeScene: "受害者轮廓、血迹与移动警戒线"
-        case .haruhikage: "蓝灰半调背景与彩色蜡笔碎裂文字"
+        case .blueBold: L10n.string("ui.settings.text_pv.style.blue_bold.detail")
+        case .kineticSplit: L10n.string("ui.settings.text_pv.style.kinetic_split.detail")
+        case .bluePlane: L10n.string("ui.settings.text_pv.style.blue_plane.detail")
+        case .cyberGrunge: L10n.string("ui.settings.text_pv.style.cyber_grunge.detail")
+        case .geometric: L10n.string("ui.settings.text_pv.style.geometric.detail")
+        case .rainCity: L10n.string("ui.settings.text_pv.style.rain_city.detail")
+        case .cyberpunkHUD: L10n.string("ui.settings.text_pv.style.cyberpunk_hud.detail")
+        case .emotionCinema: L10n.string("ui.settings.text_pv.style.emotion_cinema.detail")
+        case .hystericNight: L10n.string("ui.settings.text_pv.style.hysteric_night.detail")
+        case .spiderWeb: L10n.string("ui.settings.text_pv.style.spider_web.detail")
+        case .staggeredText: L10n.string("ui.settings.text_pv.style.staggered_text.detail")
+        case .calmVillain: L10n.string("ui.settings.text_pv.style.calm_villain.detail")
+        case .girlyClouds: L10n.string("ui.settings.text_pv.style.girly_clouds.detail")
+        case .sweetPink: L10n.string("ui.settings.text_pv.style.sweet_pink.detail")
+        case .flyMeToTheMoon: L10n.string("ui.settings.text_pv.style.fly_me_to_the_moon.detail")
+        case .kawaiPixel: L10n.string("ui.settings.text_pv.style.kawaii_pixel.detail")
+        case .crimeScene: L10n.string("ui.settings.text_pv.style.crime_scene.detail")
+        case .haruhikage: L10n.string("ui.settings.text_pv.style.haruhikage.detail")
         }
     }
 

@@ -25,20 +25,23 @@ struct LyricsSelectionView: View {
             shareControl
         }
         .alert(
-            "替换之前的选择？",
+            "ui.lyrics.share.replace_confirmation",
             isPresented: replacementAlertBinding
         ) {
-            Button("替换", role: .destructive) {
+            Button("ui.common.replace", role: .destructive) {
                 guard let replacementIndex else { return }
                 store.replaceSelection(with: replacementIndex)
                 self.replacementIndex = nil
             }
-            Button("取消", role: .cancel) {
+            Button("ui.common.cancel", role: .cancel) {
                 replacementIndex = nil
             }
         } message: {
             Text(
-                "这行歌词无法在 \(store.characterLimit) 个字符的限制内与当前选择一起分享。"
+                L10n.format(
+                    "ui.lyrics.share.character_limit_message",
+                    store.characterLimit
+                )
             )
         }
         .sheet(item: $sharePayload) { payload in
@@ -138,7 +141,7 @@ struct LyricsSelectionView: View {
             sharePayload = store.payload
         } label: {
             Label(
-                "分享歌词",
+                "ui.lyrics.share.title",
                 systemImage: "square.and.arrow.up"
             )
             .frame(maxWidth: .infinity)
@@ -154,14 +157,20 @@ struct LyricsSelectionView: View {
 
     private var selectionTitle: String {
         let count = store.selectedLineCount
-        return count == 0 ? "未选择歌词" : "已选择 \(count) 行歌词"
+        return count == 0
+            ? L10n.string("ui.lyrics.share.none_selected")
+            : L10n.format("ui.lyrics.share.selected_lines", count)
     }
 
     private var selectionSubtitle: String {
         guard store.selectedLineCount > 0 else {
-            return "轻点一行歌词以分享"
+            return L10n.string("ui.lyrics.share.select_hint")
         }
-        return "\(store.selectedCharacterCount) / \(store.characterLimit) 个字符"
+        return L10n.format(
+            "ui.lyrics.share.character_count",
+            store.selectedCharacterCount,
+            store.characterLimit
+        )
     }
 
     private var replacementAlertBinding: Binding<Bool> {

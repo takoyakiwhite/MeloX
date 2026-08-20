@@ -14,7 +14,7 @@ struct MusicCollectionDownloadMenuContent: View {
             }
         } label: {
             Label(
-                "下载全部（\(downloadableSongCount) 首）",
+                L10n.format("ui.downloads.download_all_count", downloadableSongCount),
                 systemImage: "arrow.down.circle"
             )
         }
@@ -28,7 +28,7 @@ struct MusicCollectionDownloadMenuContent: View {
                 coordinator.beginSelection()
             }
         } label: {
-            Label("多选", systemImage: "checklist")
+            Label("ui.common.select_multiple", systemImage: "checklist")
         }
         .disabled(
             downloadableSongCount == 0
@@ -45,7 +45,7 @@ struct MusicCollectionDownloadSelectionToolbar: ToolbarContent {
     @ToolbarContentBuilder
     var body: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
-            Button("完成") {
+            Button("ui.common.done") {
                 withAnimation(.easeInOut(duration: 0.2)) {
                     coordinator.finishSelection()
                 }
@@ -63,8 +63,8 @@ struct MusicCollectionDownloadSelectionToolbar: ToolbarContent {
             } label: {
                 Label(
                     hasSelectedAllDownloadableSongs
-                        ? "取消全选"
-                        : "全选",
+                        ? L10n.string("ui.common.deselect_all")
+                        : L10n.string("ui.common.select_all"),
                     systemImage: hasSelectedAllDownloadableSongs
                         ? "checkmark.circle.fill"
                         : "checkmark.circle"
@@ -80,7 +80,10 @@ struct MusicCollectionDownloadSelectionToolbar: ToolbarContent {
             if coordinator.isPreparing {
                 ProgressView()
                     .accessibilityLabel(
-                        "正在准备下载 \(coordinator.preparingSongCount) 首歌曲"
+                        L10n.format(
+                            "ui.downloads.preparing_song_count",
+                            coordinator.preparingSongCount
+                        )
                     )
             } else {
                 Menu {
@@ -91,7 +94,7 @@ struct MusicCollectionDownloadSelectionToolbar: ToolbarContent {
                     }
                 } label: {
                     Label(
-                        "下载 \(selectedDownloadCount) 首",
+                        L10n.format("ui.downloads.download_selected_count", selectedDownloadCount),
                         systemImage: "arrow.down.circle"
                     )
                 }

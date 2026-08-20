@@ -9,9 +9,9 @@ enum FloatingLyricsTextEffect: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .none: "无"
-        case .shadow: "阴影"
-        case .glow: "辉光"
+        case .none: L10n.string("ui.desktop.floating_lyrics.effect.none")
+        case .shadow: L10n.string("ui.desktop.floating_lyrics.effect.shadow")
+        case .glow: L10n.string("ui.desktop.floating_lyrics.effect.glow")
         }
     }
 }

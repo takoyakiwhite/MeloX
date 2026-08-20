@@ -13,15 +13,15 @@ struct WatchSearchView: View {
             switch phase {
             case .idle:
                 ContentUnavailableView(
-                    "搜索网易云音乐",
+                    "ui.watch.search.empty.title",
                     systemImage: "magnifyingglass",
-                    description: Text("输入歌曲、歌手或专辑名称。")
+                    description: Text("ui.watch.search.empty.description")
                 )
             case .loading:
-                ProgressView("正在搜索")
+                ProgressView("ui.watch.search.searching")
             case .failed(let message):
                 ContentUnavailableView(
-                    "搜索失败",
+                    "ui.watch.search.failed",
                     systemImage: "exclamationmark.triangle",
                     description: Text(message)
                 )
@@ -41,8 +41,11 @@ struct WatchSearchView: View {
                 }
             }
         }
-        .navigationTitle("搜索")
-        .searchable(text: $query, prompt: "歌曲、歌手或专辑")
+        .navigationTitle("ui.navigation.search")
+        .searchable(
+            text: $query,
+            prompt: Text("ui.watch.search.prompt")
+        )
         .onSubmit(of: .search) {
             Task { await search() }
         }

@@ -16,14 +16,14 @@ struct TabLayoutSettingsView: View {
 
                     Spacer(minLength: 8)
 
-                    Text("固定在首页")
+                    Text("ui.settings.tab_layout.pinned_home")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             } header: {
-                Text("推荐")
+                Text("ui.navigation.recommended")
             } footer: {
-                Text("推荐固定在首页首位，不参与移动。")
+                Text("ui.settings.tab_layout.recommended.footer")
             }
 
             Section {
@@ -35,9 +35,9 @@ struct TabLayoutSettingsView: View {
                     placementPicker(for: tab)
                 }
             } header: {
-                Text("内容页面")
+                Text("ui.settings.tab_layout.section.content_pages")
             } footer: {
-                Text("可将首页内容移到底部标签栏，也可把发现和音乐库移入首页。")
+                Text("ui.settings.tab_layout.content_pages.footer")
             }
 
             Section {
@@ -49,9 +49,9 @@ struct TabLayoutSettingsView: View {
                     placementPicker(for: tab)
                 }
             } header: {
-                Text("收藏与本地")
+                Text("ui.settings.tab_layout.section.library_local")
             } footer: {
-                Text("这些页面可放在首页、底部标签栏，或保留在音乐库内。")
+                Text("ui.settings.tab_layout.library_local.footer")
             }
 
             Section {
@@ -59,7 +59,9 @@ struct TabLayoutSettingsView: View {
                     orderRow(
                         for: tab,
                         trailingText:
-                            tab == .recommended ? "固定" : nil
+                            tab == .recommended
+                                ? L10n.string("ui.common.fixed")
+                                : nil
                     )
                     .moveDisabled(tab == .recommended)
                 }
@@ -72,9 +74,9 @@ struct TabLayoutSettingsView: View {
                     settings.setHomeTabOrder(tabs)
                 }
             } header: {
-                Text("首页顺序")
+                Text("ui.settings.tab_layout.section.home_order")
             } footer: {
-                Text("首页只剩推荐时，不会显示页面切换条。")
+                Text("ui.settings.tab_layout.home_order.footer")
             }
 
             Section {
@@ -94,14 +96,14 @@ struct TabLayoutSettingsView: View {
                     settings.setVisibleTabOrder(tabs)
                 }
             } header: {
-                Text("底部标签栏顺序")
+                Text("ui.settings.tab_layout.section.tab_order")
             } footer: {
-                Text("首页入口固定在首位，系统搜索标签固定在末尾；轻点右上角“编辑”可拖动其他项目。")
+                Text("ui.settings.tab_layout.tab_order.footer")
             }
 
             Section {
                 Button(
-                    "恢复默认页面布局",
+                    "ui.settings.tab_layout.reset",
                     systemImage: "arrow.counterclockwise",
                     role: .destructive
                 ) {
@@ -110,22 +112,22 @@ struct TabLayoutSettingsView: View {
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("页面与标签栏")
+        .navigationTitle("ui.settings.tab_layout.title")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             EditButton()
         }
         .confirmationDialog(
-            "恢复默认页面布局？",
+            "ui.settings.tab_layout.reset.confirmation",
             isPresented: $showsResetConfirmation,
             titleVisibility: .visible
         ) {
-            Button("恢复默认布局", role: .destructive) {
+            Button("ui.settings.tab_layout.reset.action", role: .destructive) {
                 settings.resetTabLayout()
             }
-            Button("取消", role: .cancel) {}
+            Button("ui.common.cancel", role: .cancel) {}
         } message: {
-            Text("推荐、音乐和播客会回到首页；云盘会放到底部标签栏，其他收藏与本地页面会回到音乐库。")
+            Text("ui.settings.tab_layout.reset.message")
         }
     }
 
@@ -171,9 +173,9 @@ struct TabLayoutSettingsView: View {
     ) -> String? {
         switch tab {
         case .home:
-            "固定入口"
+            L10n.string("ui.settings.tab_layout.fixed_entry")
         case .search:
-            "系统固定"
+            L10n.string("ui.settings.tab_layout.system_fixed")
         default:
             nil
         }

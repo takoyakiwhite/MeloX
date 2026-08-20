@@ -120,9 +120,9 @@ enum DownloadError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            "歌曲下载服务返回了无效响应。"
+            L10n.string("ui.error.download.invalid_response")
         case .emptyFile:
-            "下载完成的歌曲文件为空。"
+            L10n.string("ui.error.download.empty_file")
         }
     }
 }

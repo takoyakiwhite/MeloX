@@ -19,7 +19,7 @@ struct SettingsAccountSection: View {
                 accountOverview
 
                 if !library.isLoggedIn {
-                    Text("登录 Cookie 仅保存在本机，用于同步收藏、云盘和账号内容。")
+                    Text("ui.settings.account.cookie.footer")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .padding(.horizontal, 14)
@@ -42,17 +42,17 @@ struct SettingsAccountSection: View {
             }
         }
         .confirmationDialog(
-            "退出当前网易云账号？",
+            "ui.settings.account.logout.confirmation",
             isPresented: $showsLogoutConfirmation
         ) {
-            Button("退出登录", role: .destructive) {
+            Button("ui.settings.account.logout", role: .destructive) {
                 logout()
             }
         } message: {
             Text(
                 AppFeatureAvailability.downloads
-                    ? "本机保存的网易云登录 Cookie 和已加载的账号数据将被清除，已下载歌曲不会被删除。"
-                    : "本机保存的网易云登录 Cookie 和已加载的账号数据将被清除。"
+                    ? L10n.string("ui.settings.account.logout.message.downloads")
+                    : L10n.string("ui.settings.account.logout.message")
             )
         }
     }
@@ -86,16 +86,16 @@ struct SettingsAccountSection: View {
                 .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .accessibilityHint("打开账号信息与个人主页")
+            .accessibilityHint("ui.settings.account.open.hint")
         } else if library.isLoggedIn {
             HStack(spacing: 16) {
                 ProgressView()
                     .frame(width: 60, height: 60)
 
                 VStack(alignment: .leading, spacing: 5) {
-                    Text("网易云音乐账号")
+                    Text("ui.settings.account.netease_account")
                         .font(.title3.weight(.semibold))
-                    Text("正在读取账号信息")
+                    Text("ui.settings.account.loading")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -115,11 +115,11 @@ struct SettingsAccountSection: View {
                     .background(.quaternary, in: .circle)
 
                     VStack(alignment: .leading, spacing: 5) {
-                        Text("登录网易云音乐")
+                        Text("ui.settings.account.login")
                             .font(.title3.weight(.semibold))
                             .foregroundStyle(.primary)
 
-                        Text("同步收藏、云盘与播放记录")
+                        Text("ui.settings.account.login.subtitle")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
@@ -172,7 +172,7 @@ struct SettingsAccountSection: View {
                 .font(.title3.weight(.medium))
                 .frame(width: 30)
 
-                Text("退出登录")
+                Text("ui.settings.account.logout")
                     .font(.body.weight(.medium))
 
                 Spacer(minLength: 8)
@@ -218,9 +218,13 @@ struct SettingsAccountSection: View {
 
     private func accountSubtitle(_ profile: AccountProfile) -> String {
         if let detail = library.accountDetail, detail.level > 0 {
-            return "Lv.\(detail.level) · 用户 ID \(profile.id)"
+            return L10n.format(
+                "ui.settings.account.subtitle.level",
+                detail.level,
+                profile.id
+            )
         }
-        return "用户 ID \(profile.id) · 账号信息与同步"
+        return L10n.format("ui.settings.account.subtitle", profile.id)
     }
 
     private func logout() {

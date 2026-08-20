@@ -22,7 +22,11 @@ struct ListenTogetherSyncStatusView: View {
 
                 Spacer(minLength: 8)
 
-                Text(listenTogether.isHost ? "房主" : "参与者")
+                Text(
+                    listenTogether.isHost
+                        ? L10n.string("ui.listen_together.host")
+                        : L10n.string("ui.listen_together.participant")
+                )
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(statusColor)
                     .padding(.horizontal, 9)
@@ -46,10 +50,10 @@ struct ListenTogetherSyncStatusView: View {
                     if isRefreshing {
                         ProgressView()
                             .controlSize(.small)
-                            .accessibilityLabel("正在同步")
+                            .accessibilityLabel("ui.listen_together.syncing")
                     } else {
                         Label(
-                            "立即同步",
+                            "ui.listen_together.sync_now",
                             systemImage: "arrow.clockwise"
                         )
                     }
@@ -92,7 +96,7 @@ struct ListenTogetherSyncStatusView: View {
         if let lastSyncDate = listenTogether.lastSyncDate {
             Label {
                 HStack(spacing: 3) {
-                    Text("最近同步")
+                    Text("ui.listen_together.last_sync")
                     Text(lastSyncDate, style: .relative)
                 }
             } icon: {
@@ -101,7 +105,7 @@ struct ListenTogetherSyncStatusView: View {
             .foregroundStyle(.secondary)
         } else {
             Label(
-                "等待首次同步",
+                "ui.listen_together.waiting_first_sync",
                 systemImage: "clock"
             )
             .foregroundStyle(.secondary)
@@ -111,22 +115,22 @@ struct ListenTogetherSyncStatusView: View {
     private var statusTitle: String {
         switch listenTogether.connectionState {
         case .idle:
-            "正在准备同步"
+            L10n.string("ui.listen_together.preparing_sync")
         case .connected:
-            "播放已与房间同步"
+            L10n.string("ui.listen_together.playback_synchronized")
         case .reconnecting:
-            "正在恢复房间连接"
+            L10n.string("ui.listen_together.restoring_connection")
         }
     }
 
     private var statusDetail: String {
         switch listenTogether.connectionState {
         case .idle:
-            "正在读取房间的播放状态。"
+            L10n.string("ui.listen_together.reading_playback_state")
         case .connected:
-            "播放、进度与队列会自动保持一致。"
+            L10n.string("ui.listen_together.sync_message")
         case .reconnecting:
-            "连接恢复后会自动继续，无需重新加入。"
+            L10n.string("ui.listen_together.reconnect_message")
         }
     }
 

@@ -10,64 +10,64 @@ struct LyricsInteractionSettingsView: View {
             Section {
                 Toggle(
                     settings.lyricsStyle == .appleMusic
-                        ? "单击歌词跳转"
-                        : "双击歌词跳转",
+                        ? L10n.string("ui.settings.lyrics.interaction.tap_to_seek")
+                        : L10n.string("ui.settings.lyrics.interaction.double_tap_to_seek"),
                     isOn: $settings.lyricsTapToSeek
                 )
 
                 if settings.lyricsStyle == .appleMusic {
                     Toggle(
-                        "长按歌词分享",
+                        "ui.settings.lyrics.interaction.long_press_share",
                         isOn: $settings.lyricsLongPressToShare
                     )
                 }
 
                 Toggle(
-                    "浏览后恢复跟随",
+                    "ui.settings.lyrics.interaction.auto_follow",
                     isOn: $settings.lyricsAutoFollow
                 )
 
                 if settings.lyricsAutoFollow {
                     valueSlider(
-                        title: "恢复跟随等待",
+                        title: L10n.string("ui.settings.lyrics.interaction.follow_delay"),
                         value: $settings.lyricsFollowDelay,
                         range: 1...10,
                         step: 1,
-                        valueText: "\(Int(settings.lyricsFollowDelay)) 秒"
+                        valueText: L10n.format("ui.common.seconds", Int(settings.lyricsFollowDelay))
                     )
                 }
             } header: {
-                Text("浏览与跳转")
+                Text("ui.settings.lyrics.interaction.section.browse_seek")
             } footer: {
-                Text("开启自动跟随后，手动浏览结束并等待指定时间，歌词会返回当前播放行。")
+                Text("ui.settings.lyrics.interaction.auto_follow.footer")
             }
 
             Section {
                 valueSlider(
-                    title: "歌词提前量",
+                    title: L10n.string("ui.settings.lyrics.interaction.advance_time"),
                     value: $settings.lyricsAdvanceTime,
                     range: 0...5,
                     step: 0.1,
                     valueText:
-                        "\(settings.lyricsAdvanceTime.formatted(.number.precision(.fractionLength(1)))) 秒"
+                        L10n.format("ui.common.seconds_decimal", settings.lyricsAdvanceTime)
                 )
 
                 Toggle(
-                    "同时应用于逐字歌词",
+                    "ui.settings.lyrics.interaction.advance_word_by_word",
                     isOn:
                         $settings
                             .lyricsAdvanceTimeAppliesToWordByWord
                 )
             } header: {
-                Text("同步")
+                Text("ui.settings.lyrics.interaction.section.sync")
             } footer: {
-                Text("普通逐行歌词和悬浮歌词会提前显示，不会改变音频进度。开启后，逐字歌词的行切换和逐字高光也会使用相同提前量。")
+                Text("ui.settings.lyrics.interaction.sync.footer")
             }
 
             if settings.lyricsStyle == .appleMusic {
                 Section {
                     valueSlider(
-                        title: "控制栏自动隐藏",
+                        title: L10n.string("ui.settings.lyrics.interaction.controls_auto_hide"),
                         value:
                             $settings
                                 .appleMusicLyricsInterfaceAutoHideDelay,
@@ -76,11 +76,11 @@ struct LyricsInteractionSettingsView: View {
                                 .appleMusicLyricsInterfaceAutoHideDelayRange,
                         step: 1,
                         valueText:
-                            "\(Int(settings.appleMusicLyricsInterfaceAutoHideDelay)) 秒"
+                            L10n.format("ui.common.seconds", Int(settings.appleMusicLyricsInterfaceAutoHideDelay))
                     )
 
                     valueSlider(
-                        title: "滚动隐藏 UI 阈值",
+                        title: L10n.string("ui.settings.lyrics.interaction.scroll_hide_threshold"),
                         value:
                             $settings
                                 .appleMusicLyricsScrollHideThreshold,
@@ -89,16 +89,16 @@ struct LyricsInteractionSettingsView: View {
                                 .appleMusicLyricsScrollHideThresholdRange,
                         step: 10,
                         valueText:
-                            "\(Int(settings.appleMusicLyricsScrollHideThreshold)) 点"
+                            L10n.format("ui.common.points", Int(settings.appleMusicLyricsScrollHideThreshold))
                     )
                 } header: {
-                    Text("Apple Music 界面")
+                    Text("ui.settings.lyrics.interaction.section.apple_music_interface")
                 } footer: {
-                    Text("停止操作后控制栏会自动隐藏；向后浏览达到阈值时也会隐藏，往回滚动会立即重新显示。")
+                    Text("ui.settings.lyrics.interaction.apple_music.footer")
                 }
             }
         }
-        .navigationTitle("交互与同步")
+        .navigationTitle("ui.settings.lyrics.interaction.title")
         .navigationBarTitleDisplayMode(.inline)
     }
 

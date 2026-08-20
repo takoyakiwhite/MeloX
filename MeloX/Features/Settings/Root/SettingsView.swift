@@ -38,7 +38,7 @@ struct SettingsView: View {
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle("MeloX")
         .navigationBarTitleDisplayMode(.inline)
-        .searchable(text: $searchText, prompt: "搜索设置")
+        .searchable(text: $searchText, prompt: "ui.settings.search.prompt")
         .toolbar(.visible, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .principal) {
@@ -51,8 +51,8 @@ struct SettingsView: View {
                 } label: {
                     Image(systemName: "xmark")
                 }
-                .accessibilityLabel("关闭")
-                .accessibilityHint("关闭账号与设置")
+                .accessibilityLabel("ui.common.close")
+                .accessibilityHint("ui.settings.close.hint")
             }
         }
         .navigationDestination(for: SettingsRoute.self) { route in
@@ -60,19 +60,19 @@ struct SettingsView: View {
                 .toolbar(.visible, for: .navigationBar)
         }
         .confirmationDialog(
-            "恢复播放器默认设置？",
+            "ui.settings.reset.confirmation.title",
             isPresented: $showsResetConfirmation,
             titleVisibility: .visible
         ) {
-            Button("恢复默认设置", role: .destructive) {
+            Button("ui.settings.reset.action", role: .destructive) {
                 resetPlayerSettings()
             }
-            Button("取消", role: .cancel) {}
+            Button("ui.common.cancel", role: .cancel) {}
         } message: {
             Text(
                 AppFeatureAvailability.downloads
-                    ? "这会覆盖播放、歌词与扩展显示的自定义参数，但不会影响账号、下载和音乐数据。"
-                    : "这会覆盖播放、歌词与扩展显示的自定义参数，但不会影响账号和音乐数据。"
+                    ? L10n.string("ui.settings.reset.message.downloads")
+                    : L10n.string("ui.settings.reset.message")
             )
         }
     }
@@ -98,9 +98,9 @@ struct SettingsView: View {
 
             if !showsAccount && visibleSections.isEmpty && !showsReset {
                 ContentUnavailableView(
-                    "没有找到设置",
+                    "ui.settings.search.empty.title",
                     systemImage: "magnifyingglass",
-                    description: Text("换个关键词再试。")
+                    description: Text("ui.settings.search.empty.description")
                 )
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 48)
@@ -122,7 +122,7 @@ struct SettingsView: View {
                 )
             } else {
                 ContentUnavailableView(
-                    "账号信息不可用",
+                    "ui.settings.account.unavailable",
                     systemImage:
                         "person.crop.circle.badge.exclamationmark"
                 )

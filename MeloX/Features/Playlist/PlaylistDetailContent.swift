@@ -50,7 +50,7 @@ struct PlaylistDetailContent: View {
                         StandardMusicCollectionDetailHero(
                             artworkURL: playlist.artworkURL,
                             title: playlist.name,
-                            subtitle: playlist.creator?.nickname ?? "网易云音乐",
+                            subtitle: playlist.creator?.nickname ?? L10n.string("ui.service.netease_cloud_music"),
                             metadataText: standardMetadata,
                             tracks: playlist.tracks,
                             sourceID: playlist.id,
@@ -67,7 +67,9 @@ struct PlaylistDetailContent: View {
                         tracks: filteredTracks,
                         sourceID: playlist.id,
                         showsArtwork: usesToplistLayout,
-                        loadingTitle: usesToplistLayout ? "正在载入排行榜" : "正在载入歌单",
+                        loadingTitle: usesToplistLayout
+                            ? L10n.string("ui.toplists.loading")
+                            : L10n.string("ui.playlists.loading"),
                         isLoading: isLoading,
                         failureMessage: failureMessage,
                         hasMoreTracks: hasMoreTracks,
@@ -97,7 +99,11 @@ struct PlaylistDetailContent: View {
         let count = playlist.trackCount > 0
             ? playlist.trackCount
             : playlist.tracks.count
-        return "\(count) 首歌曲 · \(playlist.playCount.compactPlayCount) 次播放"
+        return L10n.format(
+            "ui.playlists.metadata",
+            count,
+            playlist.playCount.compactPlayCount
+        )
     }
 
     private var filteredTracks: [Song] {
@@ -283,7 +289,7 @@ private struct ToplistDetailHero: View {
     private var creatorName: String {
         playlist.creator?.nickname
             ?? summary?.creator?.nickname
-            ?? "网易云音乐"
+            ?? L10n.string("ui.service.netease_cloud_music")
     }
 
     private var updateText: String? {
@@ -333,7 +339,7 @@ struct MusicCollectionPrimaryActions: View {
                 .buttonBorderShape(.circle)
                 .controlSize(.large)
                 .disabled(tracks.isEmpty || isPreparingPlayback)
-                .accessibilityLabel("随机播放")
+                .accessibilityLabel("ui.player.shuffle")
 
                 Button {
                     Task {
@@ -351,10 +357,10 @@ struct MusicCollectionPrimaryActions: View {
                         if isPreparingPlayback {
                             HStack(spacing: 8) {
                                 ProgressView()
-                                Text("正在准备")
+                                Text("ui.downloads.preparing")
                             }
                         } else {
-                            Label("播放", systemImage: "play.fill")
+                            Label("ui.common.play", systemImage: "play.fill")
                         }
                     }
                     .font(.title3.weight(.bold))
@@ -377,7 +383,11 @@ struct MusicCollectionPrimaryActions: View {
                 .buttonStyle(.glass)
                 .buttonBorderShape(.circle)
                 .controlSize(.large)
-                .accessibilityLabel(isSaved ? "取消收藏" : "收藏")
+                .accessibilityLabel(
+                    isSaved
+                        ? L10n.string("ui.common.unfavorite")
+                        : L10n.string("ui.common.favorite")
+                )
             }
         }
     }
@@ -402,7 +412,9 @@ private struct ExpandablePlaylistDescription: View {
                 isExpanded.toggle()
             }
         } label: {
-            Text("\(description)  \(Text(isExpanded ? "收起" : "更多").bold())")
+            Text(
+                "\(description)  \(Text(isExpanded ? L10n.string("ui.common.collapse") : L10n.string("ui.common.more")).bold())"
+            )
                 .font(.body)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.leading)
@@ -411,7 +423,11 @@ private struct ExpandablePlaylistDescription: View {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, 20)
-        .accessibilityLabel(isExpanded ? "收起歌单简介" : "展开歌单简介")
+        .accessibilityLabel(
+            isExpanded
+                ? L10n.string("ui.playlists.collapse_description")
+                : L10n.string("ui.playlists.expand_description")
+        )
     }
 }
 
@@ -477,13 +493,10 @@ private extension String {
 
 private extension Int {
     var compactPlayCount: String {
-        switch self {
-        case 100_000_000...:
-            return String(format: "%.1f 亿", Double(self) / 100_000_000)
-        case 10_000...:
-            return String(format: "%.1f 万", Double(self) / 10_000)
-        default:
-            return formatted()
-        }
+        formatted(
+            .number
+                .notation(.compactName)
+                .locale(L10n.locale)
+        )
     }
 }

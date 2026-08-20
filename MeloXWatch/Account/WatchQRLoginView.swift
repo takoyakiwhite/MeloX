@@ -2,6 +2,38 @@ import QRCode
 import SwiftUI
 
 struct WatchQRLoginView: View {
+    private enum Status {
+        case generating
+        case waitingForScan
+        case generationFailed
+        case expiredRefreshing
+        case scannedWaitingForConfirmation
+        case loginSucceeded
+        case waitingForConfirmation
+        case statusCheckFailed
+
+        var title: String {
+            switch self {
+            case .generating:
+                L10n.string("ui.watch.qr.generating")
+            case .waitingForScan:
+                L10n.string("ui.watch.qr.waiting_scan")
+            case .generationFailed:
+                L10n.string("ui.watch.qr.generation_failed")
+            case .expiredRefreshing:
+                L10n.string("ui.watch.qr.expired_refreshing")
+            case .scannedWaitingForConfirmation:
+                L10n.string("ui.watch.qr.scanned_confirm")
+            case .loginSucceeded:
+                L10n.string("ui.watch.qr.login_succeeded")
+            case .waitingForConfirmation:
+                L10n.string("ui.watch.qr.waiting_confirmation")
+            case .statusCheckFailed:
+                L10n.string("ui.watch.qr.status_check_failed")
+            }
+        }
+    }
+
     @EnvironmentObject private var account: WatchAccountStore
     @EnvironmentObject private var connectivity: WatchConnectivityStore
     @Environment(\.dismiss) private var dismiss
@@ -10,7 +42,7 @@ struct WatchQRLoginView: View {
 
     @State private var key: String?
     @State private var qrImage: CGImage?
-    @State private var status = "正在生成二维码"
+    @State private var status = Status.generating
     @State private var isLoading = true
     @State private var errorMessage: String?
 
@@ -28,17 +60,19 @@ struct WatchQRLoginView: View {
                     .scaledToFit()
                     .padding(8)
                     .background(.white, in: .rect(cornerRadius: 14))
-                    .accessibilityLabel("网易云音乐登录二维码")
+                    .accessibilityLabel(
+                        L10n.string("ui.watch.qr.accessibility")
+                    )
                 } else if isLoading {
                     ProgressView()
                         .frame(height: 120)
                 }
 
-                Text(status)
+                Text(status.title)
                     .font(.footnote)
                     .multilineTextAlignment(.center)
 
-                Text("使用 iPhone 上的网易云音乐 App 扫码并确认")
+                Text("ui.watch.qr.instructions")
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -49,7 +83,7 @@ struct WatchQRLoginView: View {
                         .foregroundStyle(.red)
                         .multilineTextAlignment(.center)
 
-                    Button("重新生成") {
+                    Button("ui.watch.qr.regenerate") {
                         Task { await generateAndPoll() }
                     }
                 }
@@ -57,7 +91,7 @@ struct WatchQRLoginView: View {
             .frame(maxWidth: .infinity)
             .padding(.horizontal, 8)
         }
-        .navigationTitle("二维码登录")
+        .navigationTitle("ui.watch.qr.title")
         .task {
             await generateAndPoll()
         }
@@ -66,20 +100,20 @@ struct WatchQRLoginView: View {
     private func generateAndPoll() async {
         isLoading = true
         errorMessage = nil
-        status = "正在生成二维码"
+        status = .generating
         do {
             let key = try await api.makeQRLoginKey()
             self.key = key
             let url = "https://music.163.com/login?codekey=\(key)"
             qrImage = try? makeQRCode(url)
             isLoading = false
-            status = "等待扫码"
+            status = .waitingForScan
             await poll(key: key)
         } catch is CancellationError {
         } catch {
             isLoading = false
             errorMessage = error.localizedDescription
-            status = "生成失败"
+            status = .generationFailed
         }
     }
 
@@ -89,18 +123,18 @@ struct WatchQRLoginView: View {
                 let result = try await api.checkQRLogin(key: key)
                 switch result.code {
                 case 800:
-                    status = "二维码已过期，正在刷新"
+                    status = .expiredRefreshing
                     await generateAndPoll()
                     return
                 case 801:
-                    status = "等待扫码"
+                    status = .waitingForScan
                 case 802:
-                    status = "已扫码，请在 iPhone 上确认"
+                    status = .scannedWaitingForConfirmation
                 case 803:
                     guard !result.cookie.isEmpty else {
                         throw WatchNeteaseError.invalidResponse
                     }
-                    status = "登录成功"
+                    status = .loginSucceeded
                     account.saveQRLogin(
                         cookie: result.cookie,
                         profile: nil
@@ -112,14 +146,14 @@ struct WatchQRLoginView: View {
                     dismiss()
                     return
                 default:
-                    status = result.message ?? "等待网易云音乐确认"
+                    status = .waitingForConfirmation
                 }
                 try await Task.sleep(for: .seconds(1))
             } catch is CancellationError {
                 return
             } catch {
                 errorMessage = error.localizedDescription
-                status = "检查登录状态失败"
+                status = .statusCheckFailed
                 return
             }
         }

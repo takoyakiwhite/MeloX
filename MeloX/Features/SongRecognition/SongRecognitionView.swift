@@ -19,8 +19,8 @@ struct SongRecognitionView: View {
                 readyView
             case .requestingPermission:
                 progressView(
-                    title: "正在准备麦克风",
-                    description: "首次使用时，请允许 MeloX 访问麦克风。"
+                    title: L10n.string("ui.recognition.preparing_microphone"),
+                    description: L10n.string("ui.recognition.microphone_permission_message")
                 )
             case .listening:
                 if recognition.isContinuous {
@@ -30,8 +30,8 @@ struct SongRecognitionView: View {
                 }
             case .matching:
                 progressView(
-                    title: "正在识别",
-                    description: "正在生成音频指纹并查询网易云音乐曲库。"
+                    title: L10n.string("ui.recognition.matching"),
+                    description: L10n.string("ui.recognition.matching_message")
                 )
             case .results:
                 resultsView
@@ -41,13 +41,13 @@ struct SongRecognitionView: View {
                 failureView(failure)
             }
         }
-        .navigationTitle("听歌识曲")
+        .navigationTitle("ui.recognition.title")
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if showsRestartButton {
                 ToolbarItem(placement: .primaryAction) {
                     Button(
-                        "重新识别",
+                        "ui.recognition.restart",
                         systemImage: "arrow.clockwise",
                         action: startRecognition
                     )
@@ -55,17 +55,17 @@ struct SongRecognitionView: View {
             }
         }
         .alert(
-            "收藏失败",
+            "ui.error.favorite_failed",
             isPresented: Binding(
                 get: { library.errorMessage != nil },
                 set: { if !$0 { library.clearError() } }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 library.clearError()
             }
         } message: {
-            Text(library.errorMessage ?? "未知错误")
+            Text(library.errorMessage ?? L10n.string("ui.common.unknown_error"))
         }
         .onDisappear {
             recognition.cancel()
@@ -74,12 +74,12 @@ struct SongRecognitionView: View {
 
     private var readyView: some View {
         ContentUnavailableView {
-            Label("听歌识曲", systemImage: "waveform")
+            Label("ui.recognition.title", systemImage: "waveform")
         } description: {
             Text(readyDescription)
         } actions: {
             Button(
-                "开始识别",
+                "ui.recognition.start",
                 systemImage: "mic.fill",
                 action: startRecognition
             )
@@ -94,17 +94,20 @@ struct SongRecognitionView: View {
             listeningSymbol
 
             VStack(spacing: 8) {
-                Text("正在聆听")
+                Text("ui.recognition.listening")
                     .font(.title2.bold())
                 Text(
-                    "请将设备靠近声源并尽量保持安静。识别到结果后会立即显示，最长聆听 \(settings.songRecognition.duration.title)。"
+                    L10n.format(
+                        "ui.recognition.listening_message",
+                        settings.songRecognition.duration.title
+                    )
                 )
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
             }
 
-            Button("取消", role: .cancel) {
+            Button("ui.common.cancel", role: .cancel) {
                 recognition.cancel()
             }
             .buttonStyle(.bordered)
@@ -121,15 +124,15 @@ struct SongRecognitionView: View {
                     listeningSymbol
 
                     VStack(spacing: 6) {
-                        Text("正在持续识别")
+                        Text("ui.recognition.continuous")
                             .font(.title3.bold())
-                        Text("新结果会持续加入列表，直到你手动停止。")
+                        Text("ui.recognition.continuous_message")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .multilineTextAlignment(.center)
                     }
 
-                    Button("停止识别", role: .cancel) {
+                    Button("ui.recognition.stop", role: .cancel) {
                         recognition.stopContinuousRecognition()
                     }
                     .buttonStyle(.bordered)
@@ -140,7 +143,7 @@ struct SongRecognitionView: View {
             }
 
             if !recognition.results.isEmpty {
-                Section("识别结果") {
+                Section("ui.recognition.results") {
                     ForEach(recognition.results) { result in
                         recognitionResultRow(result)
                     }
@@ -152,7 +155,7 @@ struct SongRecognitionView: View {
 
     private var resultsView: some View {
         List {
-            Section("识别结果") {
+            Section("ui.recognition.results") {
                 ForEach(recognition.results) { result in
                     recognitionResultRow(result)
                 }
@@ -191,8 +194,8 @@ struct SongRecognitionView: View {
             } label: {
                 Label(
                     library.contains(song: result.song)
-                        ? "取消收藏"
-                        : "收藏",
+                        ? L10n.string("ui.common.unfavorite")
+                        : L10n.string("ui.common.favorite"),
                     systemImage:
                         library.contains(song: result.song)
                             ? "heart.slash"
@@ -201,20 +204,20 @@ struct SongRecognitionView: View {
             }
             .tint(.pink)
         }
-        .accessibilityHint("从识别到的位置开始播放")
+        .accessibilityHint("ui.recognition.play_from_match_hint")
     }
 
     private var noMatchView: some View {
         ContentUnavailableView {
             Label(
-                "没有识别到歌曲",
+                "ui.recognition.no_match",
                 systemImage: "questionmark.circle"
             )
         } description: {
-            Text("请靠近声源、减少环境噪声，或在设置中延长时长、选择持续识别后重试。")
+            Text("ui.recognition.no_match_message")
         } actions: {
             Button(
-                "再试一次",
+                "ui.recognition.try_again",
                 systemImage: "arrow.clockwise",
                 action: startRecognition
             )
@@ -227,7 +230,7 @@ struct SongRecognitionView: View {
     ) -> some View {
         ContentUnavailableView {
             Label(
-                "无法完成识别",
+                "ui.recognition.failed",
                 systemImage: "exclamationmark.triangle"
             )
         } description: {
@@ -237,20 +240,20 @@ struct SongRecognitionView: View {
                let settingsURL = URL(
                    string: UIApplication.openSettingsURLString
                ) {
-                Button("打开系统设置", systemImage: "gear") {
+                Button("ui.common.open_system_settings", systemImage: "gear") {
                     openURL(settingsURL)
                 }
                 .buttonStyle(.borderedProminent)
 
                 Button(
-                    "重试",
+                    "ui.common.retry",
                     systemImage: "arrow.clockwise",
                     action: startRecognition
                 )
                 .buttonStyle(.bordered)
             } else {
                 Button(
-                    "重试",
+                    "ui.common.retry",
                     systemImage: "arrow.clockwise",
                     action: startRecognition
                 )
@@ -273,7 +276,7 @@ struct SongRecognitionView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
 
-            Button("取消", role: .cancel) {
+            Button("ui.common.cancel", role: .cancel) {
                 recognition.cancel()
             }
             .buttonStyle(.bordered)
@@ -298,9 +301,9 @@ struct SongRecognitionView: View {
     private var readyDescription: String {
         let duration = settings.songRecognition.duration
         if duration.isContinuous {
-            return "将 iPhone 靠近正在播放的音乐。MeloX 会持续聆听并不断展示识别结果，直到你手动停止。只会向网易云音乐发送设备端生成的音频指纹。"
+            return L10n.string("ui.recognition.ready.continuous")
         }
-        return "将 iPhone 靠近正在播放的音乐。MeloX 最长会聆听 \(duration.title)，识别到结果后立即停止，并只向网易云音乐发送设备端生成的音频指纹。"
+        return L10n.format("ui.recognition.ready.limited", duration.title)
     }
 
     private func play(_ result: SongRecognitionResult) {

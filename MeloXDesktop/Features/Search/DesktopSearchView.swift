@@ -142,7 +142,7 @@ struct DesktopSearchView: View {
 
         VStack(spacing: 0) {
             if !store.query.isEmpty {
-                Picker("类型", selection: $store.kind) {
+                Picker("ui.desktop.search.type", selection: $store.kind) {
                     ForEach(availableSearchKinds) { kind in
                         Text(kind.title).tag(kind)
                     }
@@ -162,7 +162,7 @@ struct DesktopSearchView: View {
                 Group {
                     if let error = store.errorMessage {
                         ContentUnavailableView(
-                            "搜索失败",
+                            "ui.desktop.search.failed",
                             systemImage: "exclamationmark.magnifyingglass",
                             description: Text(error)
                         )
@@ -174,9 +174,9 @@ struct DesktopSearchView: View {
                             .frame(maxWidth: .infinity, minHeight: 320)
                     } else {
                         ContentUnavailableView(
-                            "搜索 MeloX",
+                            "ui.desktop.search.empty.title",
                             systemImage: "magnifyingglass",
-                            description: Text("结果直接来自网易云音乐原始接口。")
+                            description: Text("ui.desktop.search.empty.message")
                         )
                         .frame(maxWidth: .infinity, minHeight: 320)
                     }
@@ -186,7 +186,7 @@ struct DesktopSearchView: View {
             }
         }
         .desktopLoadingStatus(
-            "正在搜索…",
+            L10n.string("ui.desktop.search.searching"),
             isPresented: store.isSearching
         )
         .animation(.smooth(duration: 0.22), value: store.query.isEmpty)
@@ -197,7 +197,7 @@ struct DesktopSearchView: View {
                         Image(systemName: "magnifyingglass")
                             .foregroundStyle(.secondary)
 
-                        TextField("网易云音乐", text: $store.query)
+                        TextField("ui.search.prompt", text: $store.query)
                             .textFieldStyle(.plain)
                             .onSubmit {
                                 Task { await store.search(using: model) }
@@ -210,9 +210,9 @@ struct DesktopSearchView: View {
                 }
 
                 ToolbarItem(placement: .primaryAction) {
-                    Picker("搜索范围", selection: $store.source) {
-                        Text("网易云音乐").tag(DesktopSearchSource.catalog)
-                        Text("资料库").tag(DesktopSearchSource.library)
+                    Picker("ui.desktop.search.scope", selection: $store.source) {
+                        Text("ui.common.netease_cloud_music").tag(DesktopSearchSource.catalog)
+                        Text("ui.navigation.library").tag(DesktopSearchSource.library)
                     }
                     .pickerStyle(.segmented)
                     .labelsHidden()

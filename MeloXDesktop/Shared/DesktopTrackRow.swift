@@ -38,7 +38,7 @@ struct DesktopTrackRow: View {
                         )
                         .foregroundStyle(isCurrent ? .red : .primary)
                     } else {
-                        Text(displayNumber ?? "\(index + 1)")
+                        Text(displayNumber ?? L10n.integer(index + 1))
                             .foregroundStyle(.secondary)
                     }
                 }
@@ -50,7 +50,7 @@ struct DesktopTrackRow: View {
                 )
             }
             .buttonStyle(.plain)
-            .help("播放\(song.name)")
+            .help(L10n.format("ui.common.play_named", song.name))
 
             if showsArtwork {
                 DesktopArtworkView(url: song.album?.artworkURL, cornerRadius: 6)
@@ -122,16 +122,16 @@ struct DesktopTrackRow: View {
 
     @ViewBuilder
     private var songMenuContent: some View {
-        Button("接下来播放", systemImage: "text.line.first.and.arrowtriangle.forward") {
+        Button("ui.player.play_next", systemImage: "text.line.first.and.arrowtriangle.forward") {
             Task { await model.player.playNext(song) }
         }
-        Button("添加到播放队列", systemImage: "text.badge.plus") {
+        Button("ui.player.add_to_queue", systemImage: "text.badge.plus") {
             model.player.addToPlaybackQueue(song)
         }
 
-        Menu("添加到播放列表", systemImage: "text.badge.plus") {
+        Menu("ui.playlists.add_to", systemImage: "text.badge.plus") {
             if model.library.favoritePlaylists.isEmpty {
-                Text("暂无可用播放列表")
+                Text("ui.playlists.none_available")
             } else {
                 ForEach(model.library.favoritePlaylists) { playlist in
                     Button(playlist.name) {
@@ -143,33 +143,35 @@ struct DesktopTrackRow: View {
 
         Divider()
         Button(
-            model.library.contains(song: song) ? "取消喜欢" : "喜欢",
+            model.library.contains(song: song)
+                ? L10n.string("ui.song.unlike")
+                : L10n.string("ui.song.like"),
             systemImage: model.library.contains(song: song) ? "star.fill" : "star"
         ) {
             model.library.toggle(song: song)
         }
-        Button("下载", systemImage: "arrow.down.circle") {
+        Button("ui.common.download", systemImage: "arrow.down.circle") {
             model.downloads.start(song, quality: model.settings.quality)
         }
 
         Divider()
-        Button("查看歌曲信息", systemImage: "info.circle") {
+        Button("ui.song.view_information", systemImage: "info.circle") {
             model.ui.navigate(to: .song(song.id))
         }
         if let artist = song.artists.first {
-            Button("前往艺人", systemImage: "music.mic") {
+            Button("ui.artist.go_to_generic", systemImage: "music.mic") {
                 model.ui.navigate(to: .artist(artist.id))
             }
         }
         if let album = song.album {
-            Button("前往专辑", systemImage: "square.stack") {
+            Button("ui.common.album", systemImage: "square.stack") {
                 model.ui.navigate(to: .album(album.id))
             }
         }
 
         if let url = URL(string: "https://music.163.com/#/song?id=\(song.id)") {
             ShareLink(item: url) {
-                Label("分享", systemImage: "square.and.arrow.up")
+                Label("ui.common.share", systemImage: "square.and.arrow.up")
             }
         }
     }

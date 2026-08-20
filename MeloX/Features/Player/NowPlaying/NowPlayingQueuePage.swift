@@ -79,7 +79,7 @@ struct NowPlayingQueuePage: View {
                 }
 
                 Section {
-                    Text("继续播放")
+                    Text("ui.player.continue_playing")
                         .font(.title2.bold())
                         .padding(.top, 14)
                         .padding(.bottom, 10)
@@ -89,7 +89,7 @@ struct NowPlayingQueuePage: View {
 
                     if upcomingEntries.isEmpty {
                         ContentUnavailableView(
-                            "没有待播放歌曲",
+                            "ui.player.no_up_next",
                             systemImage: "list.bullet"
                         )
                         .foregroundStyle(.white)
@@ -229,8 +229,8 @@ private struct NowPlayingQueueModeControls: View {
                 isSelected: player.isShuffled,
                 accessibilityLabel:
                     player.isShuffled
-                        ? "关闭随机播放"
-                        : "开启随机播放",
+                        ? L10n.string("ui.player.shuffle_off")
+                        : L10n.string("ui.player.shuffle_on"),
                 action: toggleShuffle
             )
 
@@ -247,8 +247,8 @@ private struct NowPlayingQueueModeControls: View {
                 isSelected: player.isAutoplayEnabled,
                 accessibilityLabel:
                     player.isAutoplayEnabled
-                        ? "关闭自动播放"
-                        : "开启自动播放",
+                        ? L10n.string("ui.player.autoplay_off")
+                        : L10n.string("ui.player.autoplay_on"),
                 action: toggleAutoplay
             )
 
@@ -257,15 +257,15 @@ private struct NowPlayingQueueModeControls: View {
                 isSelected: player.isAutoMixEnabled,
                 accessibilityLabel:
                     player.isAutoMixEnabled
-                        ? "关闭自动混音"
-                        : "开启自动混音",
+                        ? L10n.string("ui.player.automix_off")
+                        : L10n.string("ui.player.automix_on"),
                 action: toggleAutoMix
             )
         }
         .disabled(player.isListenTogetherSessionActive)
         .accessibilityHint(
             player.isListenTogetherSessionActive
-                ? "一起听期间由房间统一管理播放模式"
+                ? L10n.string("ui.listen_together.playback_mode_managed")
                 : ""
         )
     }

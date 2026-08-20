@@ -79,11 +79,16 @@ struct TextPVLyricsView: View {
                 includingTranslation: settings.lyricsTranslationEnabled
             )
         )
-        .accessibilityValue("当前播放，文字PV，\(snapshot.template.style.title)")
+        .accessibilityValue(
+            L10n.format(
+                "ui.text_pv.current_accessibility",
+                snapshot.template.style.title
+            )
+        )
         .accessibilityHint(
             settings.lyricsTapToSeek
-                ? "双击从这句歌词重新播放"
-                : "歌词跳转已在设置中关闭"
+                ? L10n.string("ui.lyrics.double_tap_seek_hint")
+                : L10n.string("ui.lyrics.seek_disabled_hint")
         )
         .accessibilityAddTraits(settings.lyricsTapToSeek ? .isButton : [])
         .accessibilityAction { seek(to: snapshot.line) }
@@ -154,12 +159,12 @@ private struct TextPVEmptyState: View {
         Group {
             if let errorMessage {
                 ContentUnavailableView(
-                    "暂无歌词",
+                    "ui.lyrics.empty",
                     systemImage: "textformat.size.larger",
                     description: Text(errorMessage)
                 )
             } else {
-                ProgressView("正在生成文字PV")
+                ProgressView("ui.text_pv.generating")
                     .tint(.white)
             }
         }

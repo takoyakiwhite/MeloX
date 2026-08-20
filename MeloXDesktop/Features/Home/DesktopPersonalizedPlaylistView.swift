@@ -7,9 +7,9 @@ enum DesktopPersonalizedPlaylistKind: Hashable {
 
     var title: String {
         switch self {
-        case .dailySongs: "每日推荐"
-        case .privateRoaming: "私人漫游"
-        case .similarSongs: "相似歌曲"
+        case .dailySongs: L10n.string("ui.home.action.daily_songs")
+        case .privateRoaming: L10n.string("ui.home.action.private_roaming")
+        case .similarSongs: L10n.string("ui.home.action.similar_songs")
         }
     }
 
@@ -38,20 +38,20 @@ enum DesktopPersonalizedPlaylistKind: Hashable {
 
     var loadingMessage: String {
         switch self {
-        case .dailySongs: "正在载入每日推荐…"
-        case .privateRoaming: "正在准备私人漫游…"
-        case .similarSongs: "正在查找相似歌曲…"
+        case .dailySongs: L10n.string("ui.home.daily_songs.loading")
+        case .privateRoaming: L10n.string("ui.desktop.home.private_roaming.loading")
+        case .similarSongs: L10n.string("ui.desktop.home.similar_songs.loading")
         }
     }
 
     var emptyDescription: String {
         switch self {
         case .dailySongs:
-            "稍后再试，或使用“换一批”重新请求。"
+            L10n.string("ui.desktop.home.daily_songs.empty")
         case .privateRoaming:
-            "网易云音乐暂时没有返回新的漫游歌曲。"
+            L10n.string("ui.desktop.home.private_roaming.empty")
         case .similarSongs:
-            "网易云音乐暂时没有找到与当前歌曲相似的内容。"
+            L10n.string("ui.desktop.home.similar_songs.empty")
         }
     }
 }
@@ -82,15 +82,15 @@ struct DesktopPersonalizedPlaylistView: View {
             await load()
         }
         .alert(
-            "无法换一批",
+            L10n.string("ui.home.daily_songs.refresh_failed"),
             isPresented: Binding(
                 get: { refreshErrorMessage != nil },
                 set: { if !$0 { refreshErrorMessage = nil } }
             )
         ) {
-            Button("好") { refreshErrorMessage = nil }
+            Button("ui.common.ok") { refreshErrorMessage = nil }
         } message: {
-            Text(refreshErrorMessage ?? "请稍后重试。")
+            Text(refreshErrorMessage ?? L10n.string("ui.error.try_again_later"))
         }
         .animation(
             reduceMotion ? nil : .smooth(duration: 0.30),
@@ -117,7 +117,7 @@ struct DesktopPersonalizedPlaylistView: View {
             LazyVStack(alignment: .leading, spacing: 34) {
                 DesktopCollectionHeader(
                     artworkURL: artworkURL,
-                    kind: "播放列表",
+                    kind: L10n.string("ui.common.playlist"),
                     title: kind.title,
                     subtitle: subtitle,
                     metadata: metadata,
@@ -135,7 +135,7 @@ struct DesktopPersonalizedPlaylistView: View {
 
                 if songs.isEmpty {
                     ContentUnavailableView(
-                        "暂无\(kind.title)",
+                        L10n.format("ui.desktop.home.no_personalized_songs", kind.title),
                         systemImage: kind.systemImage,
                         description: Text(kind.emptyDescription)
                     )
@@ -155,13 +155,13 @@ struct DesktopPersonalizedPlaylistView: View {
     private var loginRequiredView: some View {
         ContentUnavailableView {
             Label(
-                "登录后查看\(kind.title)",
+                L10n.format("ui.desktop.home.sign_in_to_view", kind.title),
                 systemImage: "person.crop.circle.badge.exclamationmark"
             )
         } description: {
-            Text("该播放列表由网易云音乐根据你的账号偏好生成。")
+            Text("ui.desktop.home.account_generated_playlist")
         } actions: {
-            Button("登录网易云音乐") {
+            Button("ui.account.login_netease") {
                 model.ui.sheet = .login
             }
             .buttonStyle(.borderedProminent)
@@ -184,12 +184,12 @@ struct DesktopPersonalizedPlaylistView: View {
     private var subtitle: String? {
         switch kind {
         case .dailySongs, .privateRoaming:
-            "网易云音乐"
+            L10n.string("ui.common.netease_cloud_music")
         case .similarSongs:
             if let seedSong {
-                "基于《\(seedSong.name)》"
+                L10n.format("ui.desktop.home.based_on_song", seedSong.name)
             } else {
-                "从当前歌曲出发"
+                L10n.string("ui.home.action.similar_songs.subtitle")
             }
         }
     }
@@ -197,32 +197,38 @@ struct DesktopPersonalizedPlaylistView: View {
     private var metadata: String {
         switch kind {
         case .dailySongs:
-            "\(songs.count) 首歌曲 · \(todayText)"
+            L10n.format("ui.desktop.home.song_count_date", songs.count, todayText)
         case .privateRoaming:
-            "\(songs.count) 首歌曲 · 专属推荐"
+            L10n.format("ui.desktop.home.song_count_personalized", songs.count)
         case .similarSongs:
-            "\(songs.count) 首歌曲"
+            L10n.format("ui.common.song_count", songs.count)
         }
     }
 
     private var collectionDescription: String? {
         switch kind {
         case .dailySongs:
-            return "根据你的音乐口味生成，每日更新。"
+            return L10n.string("ui.desktop.home.daily_songs.description")
         case .privateRoaming:
-            return "探索你可能喜欢、但还没有听过的音乐。"
+            return L10n.string("ui.desktop.home.private_roaming.description")
         case .similarSongs:
             guard let seedSong else {
-                return "从正在播放的歌曲出发，发现风格相近的音乐。"
+                return L10n.string("ui.desktop.home.similar_songs.description")
             }
-            return "从 \(seedSong.artistText) 的《\(seedSong.name)》出发，发现风格相近的音乐。"
+            return L10n.format(
+                "ui.desktop.home.similar_songs.seed_description",
+                seedSong.artistText,
+                seedSong.name
+            )
         }
     }
 
     private var supplementaryAction: DesktopCollectionSupplementaryAction? {
         guard case .dailySongs = kind else { return nil }
         return DesktopCollectionSupplementaryAction(
-            title: isRefreshing ? "更换中" : "换一批",
+            title: isRefreshing
+                ? L10n.string("ui.home.daily_songs.refreshing")
+                : L10n.string("ui.home.daily_songs.refresh"),
             systemImage: "arrow.triangle.2.circlepath",
             isRunning: isRefreshing,
             isDisabled: phase != .loaded,
@@ -233,7 +239,9 @@ struct DesktopPersonalizedPlaylistView: View {
     }
 
     private var todayText: String {
-        Date.now.formatted(date: .long, time: .omitted)
+        Date.now.formatted(
+            Date.FormatStyle(date: .long, time: .omitted).locale(L10n.locale)
+        )
     }
 
     private var loadRequest: DesktopPersonalizedPlaylistLoadRequest {
@@ -326,7 +334,7 @@ private enum DesktopPersonalizedPlaylistError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptyRecommendations(let title):
-            "网易云音乐暂时没有返回可用的\(title)歌曲。"
+            L10n.format("ui.desktop.home.no_available_recommendations", title)
         }
     }
 }

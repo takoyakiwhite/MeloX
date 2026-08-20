@@ -1,36 +1,57 @@
 import SwiftUI
 
 struct WatchSettingsView: View {
+    @AppStorage(AppLanguage.storageKey)
+    private var appLanguage: AppLanguage = .system
+
     var body: some View {
         List {
-            Section("播放器") {
+            Section("ui.settings.language.section") {
+                Picker(
+                    "ui.settings.language.picker",
+                    selection: Binding(
+                        get: { appLanguage },
+                        set: { language in
+                            L10n.activate(language)
+                            appLanguage = language
+                        }
+                    )
+                ) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.title)
+                            .tag(language)
+                    }
+                }
+            }
+
+            Section("ui.watch.settings.player") {
                 NavigationLink {
                     WatchAudioSettingsView()
                 } label: {
-                    Label("音质与音量", systemImage: "speaker.wave.2")
+                    Label("ui.watch.settings.audio", systemImage: "speaker.wave.2")
                 }
 
                 NavigationLink {
                     WatchPlaybackBehaviorSettingsView()
                 } label: {
-                    Label("播放行为", systemImage: "repeat")
+                    Label("ui.watch.settings.playback_behavior", systemImage: "repeat")
                 }
 
                 NavigationLink {
                     WatchPlayerAppearanceSettingsView()
                 } label: {
-                    Label("播放器外观", systemImage: "rectangle.inset.filled")
+                    Label("ui.watch.settings.player_appearance", systemImage: "rectangle.inset.filled")
                 }
             }
 
-            Section("歌词") {
+            Section("ui.common.lyrics") {
                 NavigationLink {
                     WatchLyricsSettingsView()
                 } label: {
-                    Label("歌词显示与动效", systemImage: "quote.bubble")
+                    Label("ui.watch.settings.lyrics", systemImage: "quote.bubble")
                 }
             }
         }
-        .navigationTitle("设置")
+        .navigationTitle("ui.watch.settings.title")
     }
 }

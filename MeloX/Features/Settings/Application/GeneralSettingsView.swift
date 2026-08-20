@@ -9,7 +9,26 @@ struct GeneralSettingsView: View {
         Form {
             Section {
                 Picker(
-                    "主题",
+                    "ui.settings.language.picker",
+                    selection: Binding(
+                        get: { settings.appLanguage },
+                        set: settings.setAppLanguage
+                    )
+                ) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.title)
+                            .tag(language)
+                    }
+                }
+            } header: {
+                Text("ui.settings.language.section")
+            } footer: {
+                Text("ui.settings.language.footer")
+            }
+
+            Section {
+                Picker(
+                    "ui.settings.general.theme.picker",
                     selection: $settings.appearance
                 ) {
                     ForEach(AppAppearance.allCases) { appearance in
@@ -21,18 +40,18 @@ struct GeneralSettingsView: View {
                     }
                 }
             } header: {
-                Text("外观")
+                Text("ui.settings.general.appearance.section")
             } footer: {
-                Text("跟随系统会根据设备外观自动切换浅色和深色主题。")
+                Text("ui.settings.general.appearance.footer")
             }
 
             Section {
                 Toggle(
-                    "启动时继续上次页面",
+                    "ui.settings.general.restore_last_page",
                     isOn: $settings.restoresLastSelectedTab
                 )
 
-                Picker("默认启动页面", selection: $settings.defaultLaunchTab) {
+                Picker("ui.settings.general.default_launch_page", selection: $settings.defaultLaunchTab) {
                     ForEach(settings.visibleTabs) { tab in
                         Label(
                             tab.settingsTitle,
@@ -43,37 +62,37 @@ struct GeneralSettingsView: View {
                 }
                 .disabled(settings.restoresLastSelectedTab)
             } header: {
-                Text("启动与导航")
+                Text("ui.settings.general.launch_navigation.section")
             } footer: {
                 if settings.restoresLastSelectedTab {
-                    Text("下次启动时会回到最后使用的主页面。关闭后，将打开所选的默认启动页面。")
+                    Text("ui.settings.general.launch_navigation.restore.footer")
                 } else {
-                    Text("默认启动页面会在下次启动 MeloX 时生效。")
+                    Text("ui.settings.general.launch_navigation.default.footer")
                 }
             }
 
             Section {
                 Toggle(
-                    "识别剪贴板中的网易云链接",
+                    "ui.settings.general.clipboard_recognition",
                     isOn: $settings.recognizesClipboardLinksOnLaunch
                 )
             } header: {
-                Text("剪贴板")
+                Text("ui.settings.general.clipboard.section")
             } footer: {
                 Text(
-                    "开启后，MeloX 会在每次启动时读取一次剪贴板；识别到网易云歌曲或一起听链接时，会先询问是否打开。系统可能显示粘贴权限提示。"
+                    "ui.settings.general.clipboard.footer"
                 )
             }
 
             if !settings.embeddedLibraryPages.isEmpty {
                 Section {
                     Toggle(
-                        "记住上次音乐库页面",
+                        "ui.settings.general.library.restore_last_page",
                         isOn: $settings.restoresLastLibraryPage
                     )
 
                     Picker(
-                        "默认打开页面",
+                        "ui.settings.general.library.default_page",
                         selection: $settings.defaultLibraryPage
                     ) {
                         ForEach(settings.embeddedLibraryPages) { page in
@@ -83,17 +102,17 @@ struct GeneralSettingsView: View {
                     }
                     .disabled(settings.restoresLastLibraryPage)
                 } header: {
-                    Text("音乐库")
+                    Text("ui.navigation.library")
                 } footer: {
                     if settings.restoresLastLibraryPage {
-                        Text("重新启动后，音乐库会恢复到最后浏览的内置页面。")
+                        Text("ui.settings.general.library.restore.footer")
                     } else {
-                        Text("每次启动 MeloX 后首次打开音乐库时，会显示所选页面。")
+                        Text("ui.settings.general.library.default.footer")
                     }
                 }
             }
         }
-        .navigationTitle("通用")
+        .navigationTitle("ui.settings.catalog.general.title")
         .navigationBarTitleDisplayMode(.inline)
     }
 }

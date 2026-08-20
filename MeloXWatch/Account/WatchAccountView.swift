@@ -28,7 +28,7 @@ struct WatchAccountView: View {
                         .clipShape(.circle)
 
                         VStack(alignment: .leading) {
-                            Text(account.profile?.nickname ?? "网易云账号")
+                            Text(account.profile?.nickname ?? L10n.string("ui.account.netease_account"))
                                 .font(.headline)
                             Text(account.source.title)
                                 .font(.caption2)
@@ -37,11 +37,11 @@ struct WatchAccountView: View {
                     }
                 }
 
-                Section("同步") {
+                Section("ui.watch.account.sync") {
                     Button {
                         connectivity.sendAccountToPhone()
                     } label: {
-                        Label("同步登录到 iPhone", systemImage: "iphone")
+                        Label("ui.watch.account.sync_to_iphone", systemImage: "iphone")
                     }
 
                     Button {
@@ -49,14 +49,14 @@ struct WatchAccountView: View {
                         connectivity.requestSnapshot()
                     } label: {
                         Label(
-                            "改用 iPhone 登录",
+                            "ui.watch.account.use_iphone_login",
                             systemImage: "applewatch.radiowaves.left.and.right"
                         )
                     }
                 }
 
                 Section {
-                    Button("退出手表登录", role: .destructive) {
+                    Button("ui.watch.account.sign_out", role: .destructive) {
                         account.clear()
                     }
                 }
@@ -65,7 +65,7 @@ struct WatchAccountView: View {
                     NavigationLink {
                         WatchQRLoginView(api: api)
                     } label: {
-                        Label("二维码登录", systemImage: "qrcode")
+                        Label("ui.watch.account.qr_login", systemImage: "qrcode")
                     }
 
                     Button {
@@ -73,28 +73,28 @@ struct WatchAccountView: View {
                         connectivity.requestSnapshot()
                     } label: {
                         Label(
-                            "从 iPhone 同步",
+                            "ui.watch.account.sync_from_iphone",
                             systemImage: "arrow.triangle.2.circlepath"
                         )
                     }
                 }
 
                 Section {
-                    Text("watchOS 不提供嵌入式 WebKit。MeloX 使用网易云原生二维码接口实现手表独立登录，也可以直接同步 iPhone 的登录 Cookie。")
+                    Text("ui.watch.account.login_explanation")
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
 
             if let error = connectivity.lastErrorMessage {
-                Section("连接状态") {
+                Section("ui.watch.account.connection_status") {
                     Text(error)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }
             }
         }
-        .navigationTitle("网易云账号")
+        .navigationTitle("ui.account.netease_account")
         .task {
             guard account.isLoggedIn,
                   account.profile == nil else {

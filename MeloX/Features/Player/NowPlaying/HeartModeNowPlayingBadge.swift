@@ -10,7 +10,7 @@ struct HeartModeNowPlayingBadge: View {
             Button {
                 showsActions = true
             } label: {
-                Label("心动模式", systemImage: "heart.fill")
+                Label("ui.home.action.heart_mode", systemImage: "heart.fill")
                     .font(.caption2.weight(.semibold))
                     .lineLimit(1)
                     .padding(.horizontal, 8)
@@ -20,22 +20,22 @@ struct HeartModeNowPlayingBadge: View {
             }
             .buttonStyle(.plain)
             .fixedSize()
-            .accessibilityLabel("当前正在使用心动模式")
-            .accessibilityHint("轻点管理心动模式")
+            .accessibilityLabel("ui.heart_mode.active")
+            .accessibilityHint("ui.heart_mode.manage_hint")
             .confirmationDialog(
-                "心动模式",
+                "ui.home.action.heart_mode",
                 isPresented: $showsActions,
                 titleVisibility: .visible
             ) {
                 Button(role: .destructive) {
                     player.disableHeartMode()
                 } label: {
-                    Label("关闭心动模式", systemImage: "heart.slash")
+                    Label("ui.heart_mode.turn_off", systemImage: "heart.slash")
                 }
 
-                Button("取消", role: .cancel) {}
+                Button("ui.common.cancel", role: .cancel) {}
             } message: {
-                Text("关闭后会保留当前播放队列。")
+                Text("ui.heart_mode.turn_off_message")
             }
         }
     }

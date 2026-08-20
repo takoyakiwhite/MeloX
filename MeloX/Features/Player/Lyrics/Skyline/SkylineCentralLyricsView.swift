@@ -121,7 +121,7 @@ struct SkylineCentralLyricsView: View {
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
-        .accessibilityValue("当前歌词")
+        .accessibilityValue("ui.lyrics.current")
         .task(id: line.id) {
             await presentCurrentLyrics()
         }
@@ -134,7 +134,11 @@ struct SkylineCentralLyricsView: View {
     private var accessibilityLabel: String {
         guard let displayedLine else { return "" }
         guard let displayedNextLine else { return displayedLine.text }
-        return "\(displayedLine.text)，下一句：\(displayedNextLine.text)"
+        return L10n.format(
+            "ui.lyrics.current_and_next",
+            displayedLine.text,
+            displayedNextLine.text
+        )
     }
 
     private var availableDisplayDuration: TimeInterval? {

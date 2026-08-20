@@ -103,7 +103,7 @@ final class DownloadStore {
             }
             resolvedDatabase = openedDatabase
         } catch {
-            initialErrorMessage = "无法打开下载数据库：\(error.localizedDescription)"
+            initialErrorMessage = L10n.format("ui.error.download.open_database_failed", error.localizedDescription)
         }
 
         self.database = resolvedDatabase
@@ -194,7 +194,7 @@ final class DownloadStore {
             }
             start(song, quality: settings.automaticCacheQuality)
         } catch {
-            errorMessage = "无法记录歌曲播放次数：\(error.localizedDescription)"
+            errorMessage = L10n.format("ui.error.download.record_play_count_failed", error.localizedDescription)
         }
     }
 
@@ -221,7 +221,7 @@ final class DownloadStore {
             downloads.remove(at: index)
             try storage.removeFile(named: download.fileName)
         } catch {
-            errorMessage = "无法删除已下载歌曲：\(error.localizedDescription)"
+            errorMessage = L10n.format("ui.error.download.delete_song_failed", error.localizedDescription)
         }
     }
 
@@ -244,7 +244,10 @@ final class DownloadStore {
         }
 
         if !failures.isEmpty {
-            errorMessage = "本地歌曲已失效，部分缓存清理失败：\(failures.joined(separator: "；"))"
+            errorMessage = L10n.format(
+                "ui.error.download.partial_cache_cleanup",
+                failures.joined(separator: L10n.string("ui.common.list_separator"))
+            )
         }
     }
 
@@ -260,7 +263,7 @@ final class DownloadStore {
             downloads.removeAll()
             try storage.removeAllFiles()
         } catch {
-            errorMessage = "无法清除下载内容：\(error.localizedDescription)"
+            errorMessage = L10n.format("ui.error.download.clear_failed", error.localizedDescription)
         }
     }
 
@@ -301,7 +304,7 @@ final class DownloadStore {
             )
         } catch {
             errorMessage =
-                "无法修复下载存储：\(error.localizedDescription)"
+                L10n.format("ui.error.download.repair_failed", error.localizedDescription)
             return .empty
         }
     }
@@ -315,7 +318,7 @@ final class DownloadStore {
             try database.clearPlaybackCounts()
         } catch {
             errorMessage =
-                "无法重置自动缓存计数：\(error.localizedDescription)"
+                L10n.format("ui.error.download.reset_cache_count_failed", error.localizedDescription)
         }
     }
 
@@ -328,7 +331,7 @@ final class DownloadStore {
             try database.optimizeStorage()
         } catch {
             errorMessage =
-                "无法优化本地数据库：\(error.localizedDescription)"
+                L10n.format("ui.error.download.optimize_database_failed", error.localizedDescription)
         }
     }
 
@@ -402,7 +405,7 @@ final class DownloadStore {
             return
         } catch {
             guard requestIDs[song.id] == requestID else { return }
-            errorMessage = "《\(song.name)》下载失败：\(error.localizedDescription)"
+            errorMessage = L10n.format("ui.error.download.song_failed", song.name, error.localizedDescription)
         }
     }
 
@@ -412,7 +415,7 @@ final class DownloadStore {
             guard let database else { throw DownloadDatabaseError.unavailable }
             try database.removeDownload(songID: songID)
         } catch {
-            errorMessage = "无法更新下载记录：\(error.localizedDescription)"
+            errorMessage = L10n.format("ui.error.download.update_record_failed", error.localizedDescription)
         }
     }
 

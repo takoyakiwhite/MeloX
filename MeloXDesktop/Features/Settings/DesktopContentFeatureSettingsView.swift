@@ -5,7 +5,7 @@ struct DesktopContentFeatureSettingsView: View {
 
     var body: some View {
         Form {
-            Section("可选功能") {
+            Section("ui.settings.content_features.section") {
                 ForEach(ContentFeature.allCases) { feature in
                     Toggle(isOn: binding(for: feature)) {
                         Label {
@@ -23,7 +23,7 @@ struct DesktopContentFeatureSettingsView: View {
             }
 
             Section {
-                Text("关闭后会隐藏侧边栏、主页与搜索中的相关入口，并停止主动载入对应内容；不会删除收藏、下载、云盘歌曲或播放记录。")
+                Text("ui.settings.content_features.footer")
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }

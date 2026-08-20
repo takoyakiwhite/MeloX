@@ -13,17 +13,17 @@ struct QueueView: View {
                     if index == player.currentIndex {
                         Image(systemName: player.isPlaying ? "speaker.wave.2.fill" : "speaker.fill")
                             .foregroundStyle(.tint)
-                            .accessibilityLabel("当前歌曲")
+                            .accessibilityLabel("ui.player.current_song")
                     }
                 }
             }
             .buttonStyle(.plain)
         }
         .listStyle(.plain)
-        .navigationTitle("接下来播放")
+        .navigationTitle("ui.player.up_next")
         .overlay {
             if player.queue.isEmpty {
-                ContentUnavailableView("播放队列为空", systemImage: "list.bullet")
+                ContentUnavailableView("ui.player.queue_empty", systemImage: "list.bullet")
             }
         }
     }

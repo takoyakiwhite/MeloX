@@ -9,20 +9,20 @@ enum PlayerVolumeControlMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .hidden: "不显示"
-        case .independent: "独立音量"
-        case .system: "系统音量"
+        case .hidden: L10n.string("ui.settings.volume_control.hidden")
+        case .independent: L10n.string("ui.settings.volume_control.independent")
+        case .system: L10n.string("ui.settings.volume_control.system")
         }
     }
 
     var description: String {
         switch self {
         case .hidden:
-            "播放器不显示音量滑杆，音量由系统控制。"
+            L10n.string("ui.settings.volume_control.hidden.detail")
         case .independent:
-            "播放器音量独立于系统音量，并会记住上次设置。"
+            L10n.string("ui.settings.volume_control.independent.detail")
         case .system:
-            "播放器显示系统音量滑杆，与设备音量键控制同一音量。"
+            L10n.string("ui.settings.volume_control.system.detail")
         }
     }
 }

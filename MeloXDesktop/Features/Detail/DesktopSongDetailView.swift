@@ -1,11 +1,19 @@
 import SwiftUI
 
 private enum DesktopSongDetailTab: String, CaseIterable, Identifiable {
-    case details = "详情"
-    case lyrics = "歌词"
-    case comments = "评论"
+    case details
+    case lyrics
+    case comments
 
     var id: Self { self }
+
+    var title: String {
+        switch self {
+        case .details: L10n.string("ui.song.detail.title")
+        case .lyrics: L10n.string("ui.common.lyrics")
+        case .comments: L10n.string("ui.comments.title")
+        }
+    }
 }
 
 struct DesktopSongDetailView: View {
@@ -27,24 +35,34 @@ struct DesktopSongDetailView: View {
                     LazyVStack(alignment: .leading, spacing: 28) {
                         DesktopCollectionHeader(
                             artworkURL: song.album?.artworkURL,
-                            kind: song.isPodcastProgram ? "播客节目" : "歌曲",
+                            kind: song.isPodcastProgram
+                                ? L10n.string("ui.podcasts.episode")
+                                : L10n.string("ui.common.songs"),
                             title: song.name,
                             subtitle: song.artistText,
                             metadata: [song.album?.name, song.durationText]
                                 .compactMap { $0 }
-                                .joined(separator: " · "),
+                                .joined(
+                                    separator: L10n.string(
+                                        "ui.common.metadata_separator"
+                                    )
+                                ),
                             description: song.aliases.isEmpty
                                 ? song.podcastMetadata?.programDescription
-                                : song.aliases.joined(separator: " · "),
+                                : L10n.joined(
+                                    song.aliases,
+                                    separatorKey:
+                                        "ui.common.metadata_separator"
+                                ),
                             songs: [song],
                             sourceID: song.album?.id,
                             isFavorite: model.library.contains(song: song),
                             favoriteAction: { model.library.toggle(song: song) }
                         )
 
-                        Picker("内容", selection: $selectedTab) {
+                        Picker("ui.desktop.song.content", selection: $selectedTab) {
                             ForEach(DesktopSongDetailTab.allCases) { tab in
-                                Text(tab.rawValue).tag(tab)
+                                Text(tab.title).tag(tab)
                             }
                         }
                         .pickerStyle(.segmented)
@@ -56,14 +74,14 @@ struct DesktopSongDetailView: View {
                     .padding(.vertical, 34)
                 }
             } else if isLoading {
-                DesktopDetailLoadingView(message: "正在载入歌曲…")
+                DesktopDetailLoadingView(message: L10n.string("ui.song.loading"))
             } else {
-                DesktopDetailErrorView(message: errorMessage ?? "未知错误") {
+                DesktopDetailErrorView(message: errorMessage ?? L10n.string("ui.error.unknown")) {
                     Task { await load() }
                 }
             }
         }
-        .navigationTitle(song?.name ?? "歌曲")
+        .navigationTitle(song?.name ?? L10n.string("ui.common.songs"))
         .task(id: songID) { await load() }
     }
 
@@ -72,12 +90,12 @@ struct DesktopSongDetailView: View {
         switch selectedTab {
         case .details:
             VStack(alignment: .leading, spacing: 18) {
-                DesktopSectionHeader(title: "相似歌曲")
+                DesktopSectionHeader(title: L10n.string("ui.home.action.similar_songs"))
                 DesktopCollectionTrackList(songs: similarSongs, sourceID: song.album?.id)
             }
         case .lyrics:
             if lyrics.isEmpty {
-                ContentUnavailableView("暂无歌词", systemImage: "quote.bubble")
+                ContentUnavailableView("ui.desktop.lyrics.unavailable", systemImage: "quote.bubble")
                     .frame(maxWidth: .infinity, minHeight: 260)
             } else {
                 LazyVStack(alignment: .leading, spacing: 22) {
@@ -99,7 +117,7 @@ struct DesktopSongDetailView: View {
             }
         case .comments:
             if comments.isEmpty {
-                ContentUnavailableView("暂无评论", systemImage: "bubble.left")
+                ContentUnavailableView("ui.comments.empty", systemImage: "bubble.left")
                     .frame(maxWidth: .infinity, minHeight: 260)
             } else {
                 LazyVStack(spacing: 0) {
@@ -119,7 +137,12 @@ struct DesktopSongDetailView: View {
                                 Text(comment.content)
                                     .textSelection(.enabled)
                                 if comment.likedCount > 0 {
-                                    Label("\(comment.likedCount)", systemImage: "hand.thumbsup")
+                                    Label(
+                                        comment.likedCount.formatted(
+                                            .number.locale(L10n.locale)
+                                        ),
+                                        systemImage: "hand.thumbsup"
+                                    )
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }

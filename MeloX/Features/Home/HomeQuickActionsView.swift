@@ -13,17 +13,17 @@ enum HomeQuickAction: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .dailySongs:
-            "每日推荐"
+            L10n.string("ui.home.action.daily_songs")
         case .hotSongs:
-            "热歌榜"
+            L10n.string("ui.home.action.hot_songs")
         case .heartMode:
-            "心动模式"
+            L10n.string("ui.home.action.heart_mode")
         case .privateRadar:
-            "私人雷达"
+            L10n.string("ui.home.action.private_radar")
         case .privateRoaming:
-            "私人漫游"
+            L10n.string("ui.home.action.private_roaming")
         case .similarSongs:
-            "相似歌曲"
+            L10n.string("ui.home.action.similar_songs")
         }
     }
 
@@ -47,34 +47,34 @@ enum HomeQuickAction: String, CaseIterable, Identifiable {
     var eyebrow: String {
         switch self {
         case .dailySongs:
-            "每日更新"
+            L10n.string("ui.home.action.daily_songs.eyebrow")
         case .hotSongs:
-            "全站热门"
+            L10n.string("ui.home.action.hot_songs.eyebrow")
         case .heartMode:
-            "为你心动"
+            L10n.string("ui.home.action.heart_mode.eyebrow")
         case .privateRadar:
-            "持续发现"
+            L10n.string("ui.home.action.private_radar.eyebrow")
         case .privateRoaming:
-            "探索模式"
+            L10n.string("ui.home.action.private_roaming.eyebrow")
         case .similarSongs:
-            "从当前歌曲出发"
+            L10n.string("ui.home.action.similar_songs.eyebrow")
         }
     }
 
     var subtitle: String {
         switch self {
         case .dailySongs:
-            "为你定制的歌曲"
+            L10n.string("ui.home.action.daily_songs.subtitle")
         case .hotSongs:
-            "大家都在听"
+            L10n.string("ui.home.action.hot_songs.subtitle")
         case .heartMode:
-            "喜欢与惊喜交替播放"
+            L10n.string("ui.home.action.heart_mode.subtitle")
         case .privateRadar:
-            "发现符合你口味的歌单"
+            L10n.string("ui.home.action.private_radar.subtitle")
         case .privateRoaming:
-            "漫游到新的好音乐"
+            L10n.string("ui.home.action.private_roaming.subtitle")
         case .similarSongs:
-            "播放更多相似歌曲"
+            L10n.string("ui.home.action.similar_songs.subtitle")
         }
     }
 
@@ -145,9 +145,9 @@ struct HomeQuickActionsView: View {
     ) -> String {
         switch action {
         case .dailySongs, .hotSongs, .privateRadar:
-            "打开\(action.title)"
+            L10n.format("ui.home.action.open_hint", action.title)
         case .heartMode, .privateRoaming, .similarSongs:
-            "开始播放\(action.title)"
+            L10n.format("ui.home.action.play_hint", action.title)
         }
     }
 }

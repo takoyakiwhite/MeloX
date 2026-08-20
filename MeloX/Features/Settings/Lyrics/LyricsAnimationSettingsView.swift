@@ -10,7 +10,7 @@ struct LyricsAnimationSettingsView: View {
         Form {
             Section {
                 Picker(
-                    "逐字与时间轴刷新率",
+                    "ui.settings.lyrics.animation.refresh_rate",
                     selection: $settings.lyricsRefreshRate
                 ) {
                     ForEach(LyricsRefreshRate.allCases) { refreshRate in
@@ -18,58 +18,58 @@ struct LyricsAnimationSettingsView: View {
                     }
                 }
             } header: {
-                Text("性能")
+                Text("ui.settings.lyrics.animation.section.performance")
             } footer: {
-                Text("控制逐字高光、歌词焦点、错峰移动与演奏段指示器的逐帧更新。越高越流畅，也越耗电；低电量模式和高负载文字PV会自动限制为 30 FPS。")
+                Text("ui.settings.lyrics.animation.performance.footer")
             }
 
             if settings.lyricsStyle == .appleMusic,
                appleMusicLyrics.motionPreset == .custom {
                 Section {
                     valueSlider(
-                        title: "基础拖尾延迟",
+                        title: L10n.string("ui.settings.lyrics.animation.base_cascade_delay"),
                         value: $settings.lyricsFocusCascadeDelay,
                         range: AppSettings.lyricsFocusCascadeDelayRange,
                         step: 0.001,
                         valueText:
-                            "\(Int((settings.lyricsFocusCascadeDelay * 1_000).rounded())) 毫秒"
+                            L10n.format("ui.common.milliseconds", Int((settings.lyricsFocusCascadeDelay * 1_000).rounded()))
                     )
 
                     valueSlider(
-                        title: "逐句拖尾增量",
+                        title: L10n.string("ui.settings.lyrics.animation.cascade_increment"),
                         value: $settings.lyricsFocusCascadeDelayIncrease,
                         range:
                             AppSettings
                                 .lyricsFocusCascadeDelayIncreaseRange,
                         step: 0.001,
                         valueText:
-                            "\(Int((settings.lyricsFocusCascadeDelayIncrease * 1_000).rounded())) 毫秒/句"
+                            L10n.format("ui.common.milliseconds_per_line", Int((settings.lyricsFocusCascadeDelayIncrease * 1_000).rounded()))
                     )
 
                     valueSlider(
-                        title: "后续歌词启动延迟",
+                        title: L10n.string("ui.settings.lyrics.animation.following_delay"),
                         value: $settings.lyricsFocusCascadeFollowingDelay,
                         range:
                             AppSettings
                                 .lyricsFocusCascadeFollowingDelayRange,
                         step: 0.001,
                         valueText:
-                            "\(Int((settings.lyricsFocusCascadeFollowingDelay * 1_000).rounded())) 毫秒"
+                            L10n.format("ui.common.milliseconds", Int((settings.lyricsFocusCascadeFollowingDelay * 1_000).rounded()))
                     )
 
                     valueSlider(
-                        title: "拖尾追赶节奏",
+                        title: L10n.string("ui.settings.lyrics.animation.catch_up_ratio"),
                         value: $settings.lyricsFocusCascadeCatchUpRatio,
                         range:
                             AppSettings
                                 .lyricsFocusCascadeCatchUpRatioRange,
                         step: 0.01,
                         valueText:
-                            "\(Int((settings.lyricsFocusCascadeCatchUpRatio * 100).rounded()))%"
+                            L10n.percent(settings.lyricsFocusCascadeCatchUpRatio)
                     )
 
                     valueSlider(
-                        title: "追赶速度梯度",
+                        title: L10n.string("ui.settings.lyrics.animation.chase_speed_gradient"),
                         value:
                             $settings
                                 .lyricsFocusCascadeChaseSpeedGradient,
@@ -78,37 +78,37 @@ struct LyricsAnimationSettingsView: View {
                                 .lyricsFocusCascadeChaseSpeedGradientRange,
                         step: 0.01,
                         valueText:
-                            "\(Int((settings.lyricsFocusCascadeChaseSpeedGradient * 100).rounded()))%"
+                            L10n.percent(settings.lyricsFocusCascadeChaseSpeedGradient)
                     )
 
                     valueSlider(
-                        title: "位移收束时长",
+                        title: L10n.string("ui.settings.lyrics.animation.settle_duration"),
                         value: $settings.lyricsFocusCascadeDuration,
                         range:
                             AppSettings
                                 .lyricsFocusCascadeDurationRange,
                         step: 0.01,
                         valueText:
-                            "\(settings.lyricsFocusCascadeDuration.formatted(.number.precision(.fractionLength(2)))) 秒"
+                            L10n.format("ui.common.seconds_two_decimals", settings.lyricsFocusCascadeDuration)
                     )
 
                     valueSlider(
-                        title: "瞬移阈值",
+                        title: L10n.string("ui.settings.lyrics.animation.snap_threshold"),
                         value: $settings.lyricsFocusSnapThreshold,
                         range: AppSettings.lyricsFocusSnapThresholdRange,
                         step: 0.001,
                         valueText:
-                            "\(Int((settings.lyricsFocusSnapThreshold * 1_000).rounded())) 毫秒"
+                            L10n.format("ui.common.milliseconds", Int((settings.lyricsFocusSnapThreshold * 1_000).rounded()))
                     )
                 } header: {
-                    Text("移动与追赶")
+                    Text("ui.settings.lyrics.animation.section.movement")
                 } footer: {
-                    Text("后续行会按拖尾参数依次启动并追赶；剩余时间短于瞬移阈值时会直接对齐。")
+                    Text("ui.settings.lyrics.animation.movement.footer")
                 }
 
                 Section {
                     Toggle(
-                        "启用位移回弹",
+                        "ui.settings.lyrics.animation.enable_movement_bounce",
                         isOn:
                             $settings
                                 .lyricsFocusCascadeBounceEnabled
@@ -116,18 +116,18 @@ struct LyricsAnimationSettingsView: View {
 
                     if settings.lyricsFocusCascadeBounceEnabled {
                         valueSlider(
-                            title: "最大回弹弹性",
+                            title: L10n.string("ui.settings.lyrics.animation.maximum_bounce"),
                             value: $settings.lyricsFocusCascadeBounce,
                             range:
                                 AppSettings
                                     .lyricsFocusCascadeBounceRange,
                             step: 0.01,
                             valueText:
-                                "\(Int((settings.lyricsFocusCascadeBounce * 100).rounded()))%"
+                                L10n.percent(settings.lyricsFocusCascadeBounce)
                         )
 
                         valueSlider(
-                            title: "回弹强度梯度",
+                            title: L10n.string("ui.settings.lyrics.animation.bounce_gradient"),
                             value:
                                 $settings
                                     .lyricsFocusCascadeBounceGradient,
@@ -136,12 +136,12 @@ struct LyricsAnimationSettingsView: View {
                                     .lyricsFocusCascadeBounceGradientRange,
                             step: 0.01,
                             valueText:
-                                "\(Int((settings.lyricsFocusCascadeBounceGradient * 100).rounded()))%"
+                                L10n.percent(settings.lyricsFocusCascadeBounceGradient)
                         )
                     }
 
                     Toggle(
-                        "启用升格回弹",
+                        "ui.settings.lyrics.animation.enable_scale_bounce",
                         isOn:
                             $settings
                                 .lyricsFocusScaleBounceEnabled
@@ -149,7 +149,7 @@ struct LyricsAnimationSettingsView: View {
 
                     if settings.lyricsFocusScaleBounceEnabled {
                         valueSlider(
-                            title: "升格回弹时长",
+                            title: L10n.string("ui.settings.lyrics.animation.scale_bounce_duration"),
                             value:
                                 $settings
                                     .lyricsFocusScaleBounceDuration,
@@ -158,50 +158,62 @@ struct LyricsAnimationSettingsView: View {
                                     .lyricsFocusScaleBounceDurationRange,
                             step: 0.01,
                             valueText:
-                                "\(settings.lyricsFocusScaleBounceDuration.formatted(.number.precision(.fractionLength(2)))) 秒"
+                                L10n.format("ui.common.seconds_two_decimals", settings.lyricsFocusScaleBounceDuration)
                         )
 
                         valueSlider(
-                            title: "升格回弹弹性",
+                            title: L10n.string("ui.settings.lyrics.animation.scale_bounce_elasticity"),
                             value: $settings.lyricsFocusScaleBounce,
                             range:
                                 AppSettings
                                     .lyricsFocusScaleBounceRange,
                             step: 0.01,
                             valueText:
-                                "\(Int((settings.lyricsFocusScaleBounce * 100).rounded()))%"
+                                L10n.percent(settings.lyricsFocusScaleBounce)
                         )
                     }
 
                     valueSlider(
-                        title: "焦点颜色提前",
+                        title: L10n.string("ui.settings.lyrics.animation.focus_color_lead"),
                         value: $settings.lyricsFocusColorLeadTime,
                         range:
                             AppSettings
                                 .lyricsFocusColorLeadTimeRange,
                         step: 0.005,
                         valueText:
-                            "\(Int((settings.lyricsFocusColorLeadTime * 1_000).rounded())) 毫秒"
+                            L10n.format("ui.common.milliseconds", Int((settings.lyricsFocusColorLeadTime * 1_000).rounded()))
                     )
                 } header: {
-                    Text("回弹与焦点")
+                    Text("ui.settings.lyrics.animation.section.bounce_focus")
                 } footer: {
-                    Text("位移回弹作用于整页移动，升格回弹作用于当前行放大；焦点颜色可设置为先于或晚于移动变化。")
+                    Text("ui.settings.lyrics.animation.bounce_focus.footer")
                 }
             } else if settings.lyricsStyle == .appleMusic {
                 Section {
-                    LabeledContent("正向逐行延迟", value: "50 毫秒")
-                    LabeledContent("反向逐行延迟", value: "25 毫秒")
-                    LabeledContent("行变更弹簧", value: "1 / 100 / 18")
-                    LabeledContent("精确逐字行", value: "随行间隔动态响应")
+                    LabeledContent(
+                        L10n.string("ui.settings.lyrics.animation.forward_line_delay"),
+                        value: L10n.format("ui.common.milliseconds", 50)
+                    )
+                    LabeledContent(
+                        L10n.string("ui.settings.lyrics.animation.reverse_line_delay"),
+                        value: L10n.format("ui.common.milliseconds", 25)
+                    )
+                    LabeledContent(
+                        L10n.string("ui.settings.lyrics.animation.line_change_spring"),
+                        value: "1 / 100 / 18"
+                    )
+                    LabeledContent(
+                        L10n.string("ui.settings.lyrics.animation.precise_word_line"),
+                        value: L10n.string("ui.settings.lyrics.animation.dynamic_line_interval")
+                    )
                 } header: {
-                    Text("Apple Music 26 参数")
+                    Text("ui.settings.lyrics.animation.section.apple_music_parameters")
                 } footer: {
-                    Text("正向移动时前两行同时开始，后续行每行延迟 50 毫秒；反向移动使用倒序和 25 毫秒步进。含精确行结束时间的逐字歌词按相邻行间隔计算动态弹簧，普通时间轴使用质量 1、刚度 100、阻尼 18。")
+                    Text("ui.settings.lyrics.animation.apple_music.footer")
                 }
             }
         }
-        .navigationTitle("动画与性能")
+        .navigationTitle("ui.settings.lyrics.animation.title")
         .navigationBarTitleDisplayMode(.inline)
     }
 

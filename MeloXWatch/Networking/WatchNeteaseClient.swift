@@ -6,7 +6,7 @@ import Security
 nonisolated enum WatchNeteaseError: LocalizedError, Sendable {
     case requestEncoding
     case invalidResponse
-    case emptyResponse
+    case emptyResponse(Int)
     case server(Int, String)
     case loginRequired
     case noPlayableSource
@@ -14,17 +14,17 @@ nonisolated enum WatchNeteaseError: LocalizedError, Sendable {
     var errorDescription: String? {
         switch self {
         case .requestEncoding:
-            "无法生成网易云音乐请求。"
+            L10n.string("ui.error.api.request_encoding")
         case .invalidResponse:
-            "网易云音乐返回了无法识别的数据。"
-        case .emptyResponse:
-            "网易云音乐返回了空响应。"
-        case .server(let code, let message):
-            "请求失败（\(code)）：\(message)"
+            L10n.string("ui.error.api.invalid_response")
+        case .emptyResponse(let statusCode):
+            L10n.format("ui.error.api.empty_response", statusCode)
+        case .server(let code, _):
+            L10n.format("ui.error.api.server_code", code)
         case .loginRequired:
-            "请先登录网易云音乐。"
+            L10n.string("ui.error.api.login_required")
         case .noPlayableSource:
-            "当前歌曲没有可用的播放地址。"
+            L10n.string("ui.error.api.no_playable_source")
         }
     }
 }
@@ -178,7 +178,7 @@ final class WatchNeteaseClient {
             )
         }
         guard !responseData.isEmpty else {
-            throw WatchNeteaseError.emptyResponse
+            throw WatchNeteaseError.emptyResponse(httpResponse.statusCode)
         }
 
         return WatchNeteaseRawResponse(

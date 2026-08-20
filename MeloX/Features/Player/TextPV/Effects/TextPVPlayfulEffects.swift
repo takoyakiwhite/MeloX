@@ -145,7 +145,10 @@ extension TextPVEffectPainter {
         let y = config.number("y", default: 30)
         let side = config.number("size", default: 64)
         let iconType = config.string("iconType", default: "paint")
-        let label = config.string("label", default: "Icon")
+        let label = config.string(
+            "label",
+            default: L10n.string("ui.text_pv.generated.icon")
+        )
         let labelColor = color("labelColor", in: config, default: "#5a3a5a")
         let rect = CGRect(x: x, y: y, width: side, height: side)
         context.fill(Path(rect), with: .color(.white.opacity(0.92)))
@@ -200,7 +203,10 @@ extension TextPVEffectPainter {
         let titleRect = CGRect(x: rect.minX, y: rect.minY, width: rect.width, height: titleHeight)
         context.fill(Path(titleRect), with: .color(titleBackground.opacity(alpha)))
         drawText(
-            config.string("title", default: "Window"),
+            config.string(
+                "title",
+                default: L10n.string("ui.text_pv.generated.window")
+            ),
             in: &context,
             at: CGPoint(x: titleRect.minX + 9, y: titleRect.midY),
             color: titleColor,

@@ -24,7 +24,7 @@ struct PodcastHomeView: View {
     var body: some View {
         if showsNavigationTitle {
             pageContent
-                .navigationTitle("播客")
+                .navigationTitle("ui.navigation.podcasts")
                 .navigationBarTitleDisplayMode(.large)
         } else {
             pageContent
@@ -62,7 +62,7 @@ struct PodcastHomeView: View {
     private var initialState: some View {
         switch phase {
         case .loading:
-            ProgressView("正在发现好声音")
+            ProgressView("ui.podcasts.discovering")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .failed(let message):
             ConnectionUnavailableView(message: message) {
@@ -70,7 +70,7 @@ struct PodcastHomeView: View {
             }
         case .loaded:
             ContentUnavailableView(
-                "暂无播客推荐",
+                "ui.podcasts.no_recommendations",
                 systemImage: "mic"
             )
         }
@@ -81,14 +81,14 @@ struct PodcastHomeView: View {
             LazyVStack(alignment: .leading, spacing: 32) {
                 if !subscriptions.isEmpty {
                     podcastStrip(
-                        title: "我的订阅",
+                        title: L10n.string("ui.podcasts.my_subscriptions"),
                         podcasts: subscriptions
                     )
                 }
 
                 if let featured = recommended.first {
                     VStack(alignment: .leading, spacing: 14) {
-                        Text("精选播客")
+                        Text("ui.podcasts.featured")
                             .font(.title2.bold())
 
                         NavigationLink(
@@ -103,7 +103,7 @@ struct PodcastHomeView: View {
 
                 if recommended.count > 1 {
                     podcastStrip(
-                        title: "为你推荐",
+                        title: L10n.string("ui.podcasts.for_you"),
                         podcasts: Array(recommended.dropFirst())
                     )
                 }
@@ -148,7 +148,7 @@ struct PodcastHomeView: View {
 
     private var categorySection: some View {
         VStack(alignment: .leading, spacing: 14) {
-            Text("浏览分类")
+            Text("ui.podcasts.browse_categories")
                 .font(.title2.bold())
 
             LazyVGrid(columns: categoryColumns, spacing: 12) {

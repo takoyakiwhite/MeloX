@@ -10,7 +10,7 @@ struct TextPVSettingsView: View {
 
         Form {
             Section {
-                Picker("风格", selection: $preferences.style) {
+                Picker("ui.settings.text_pv.style", selection: $preferences.style) {
                     ForEach(TextPVStyle.allCases) { style in
                         Label(style.title, systemImage: style.systemImage)
                             .tag(style)
@@ -18,39 +18,39 @@ struct TextPVSettingsView: View {
                 }
                 .pickerStyle(.navigationLink)
             } header: {
-                Text("模板")
+                Text("ui.settings.text_pv.template.section")
             } footer: {
                 Text(preferences.style.description)
             }
 
             Section {
                 valueSlider(
-                    title: "动效强度",
+                    title: L10n.string("ui.settings.text_pv.intensity"),
                     value: $preferences.motionIntensity,
                     range: TextPVPreferences.motionIntensityRange
                 )
 
                 valueSlider(
-                    title: "动画速度",
+                    title: L10n.string("ui.settings.text_pv.speed"),
                     value: $preferences.animationSpeed,
                     range: TextPVPreferences.animationSpeedRange
                 )
             } header: {
-                Text("播放参数")
+                Text("ui.settings.text_pv.playback.section")
             } footer: {
-                Text("参数范围与 pv-tool 保持一致。切换模板时会恢复该模板在参考项目中的动画速度；系统开启“减少动态效果”后动画会停在稳定画面。")
+                Text("ui.settings.text_pv.playback.footer")
             }
 
             Section {
-                Button("恢复文字PV默认设置", role: .destructive) {
+                Button("ui.settings.text_pv.reset", role: .destructive) {
                     showsResetConfirmation = true
                 }
             }
         }
-        .navigationTitle("文字PV")
+        .navigationTitle("ui.settings.lyrics.style.text_pv")
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog("恢复文字PV默认设置？", isPresented: $showsResetConfirmation) {
-            Button("恢复默认设置", role: .destructive) {
+        .confirmationDialog("ui.settings.text_pv.reset.confirmation", isPresented: $showsResetConfirmation) {
+            Button("ui.settings.reset.action", role: .destructive) {
                 settings.textPV.reset()
             }
         }
@@ -61,7 +61,7 @@ struct TextPVSettingsView: View {
         value: Binding<Double>,
         range: ClosedRange<Double>
     ) -> some View {
-        let valueText = "\(Int((value.wrappedValue * 100).rounded()))%"
+        let valueText = L10n.percent(value.wrappedValue)
 
         return VStack(alignment: .leading, spacing: 8) {
             LabeledContent(title, value: valueText)

@@ -18,7 +18,7 @@ struct SongWikiSheet: View {
                         } label: {
                             Image(systemName: "xmark")
                         }
-                        .accessibilityLabel("关闭歌曲百科")
+                        .accessibilityLabel("ui.song.wiki.close")
                     }
                 }
         }

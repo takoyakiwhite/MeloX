@@ -10,7 +10,12 @@ from pathlib import Path
 import subprocess
 import sys
 
-from release_notes import PLATFORM_HEADINGS, parse_release_notes, write_platform_notes
+from release_notes import (
+    PLATFORM_HEADINGS,
+    parse_release_notes,
+    platform_has_entries,
+    write_platform_notes,
+)
 
 
 BUILD_PREFIX = 91
@@ -37,7 +42,9 @@ def resolve_commit(reference: str) -> str:
         check=False,
     )
     if result.returncode != 0:
-        raise ValueError(f"无法解析 Commit 或标签：{reference}")
+        raise ValueError(
+            f"Unable to resolve commit or tag / 无法解析 Commit 或标签: {reference}"
+        )
     return result.stdout.strip()
 
 
@@ -110,10 +117,10 @@ def validate_tag_platform(current_reference: str, platform: str) -> None:
     if reference_name == current_reference:
         return
     if not tag_matches_platform(reference_name, platform):
-        expected_suffix = "_mac" if platform == "macos" else "（无 _mac 后缀）"
+        expected_suffix = "_mac" if platform == "macos" else "no _mac suffix / 无 _mac 后缀"
         raise ValueError(
-            f"标签 {reference_name} 不属于 {PLATFORM_HEADINGS[platform]}，"
-            f"期望后缀：{expected_suffix}"
+            f"Tag does not match platform / 标签与平台不匹配: {reference_name} -> "
+            f"{PLATFORM_HEADINGS[platform]}; expected / 期望: {expected_suffix}"
         )
 
 
@@ -130,12 +137,15 @@ def version_label(reference: str | None) -> str | None:
 
 def release_version(build_number: str) -> str:
     if not build_number.isascii() or not build_number.isdecimal():
-        raise ValueError("构建号必须是纯数字")
+        raise ValueError("Build number must contain digits only / 构建号必须是纯数字")
 
     encoded_version = int(build_number)
     prefix, version_digits = divmod(encoded_version, BUILD_PREFIX_SCALE)
     if prefix != BUILD_PREFIX:
-        raise ValueError("构建号必须以固定前缀 91 开头")
+        raise ValueError(
+            "Build number must start with the fixed 91 prefix / "
+            "构建号必须以固定前缀 91 开头"
+        )
 
     major, remainder = divmod(version_digits, 10_000)
     minor, patch = divmod(remainder, PATCH_COMPONENT_SCALE)
@@ -176,31 +186,41 @@ def main() -> int:
         if previous_reference is not None:
             if not tag_matches_platform(previous_reference, arguments.platform):
                 raise ValueError(
-                    f"更新日志基线 {previous_reference} 与当前平台不一致"
+                    f"Release-note baseline does not match the platform / "
+                    f"更新日志基线与当前平台不一致: {previous_reference}"
                 )
             resolve_commit(previous_reference)
             if not is_ancestor(previous_reference, current_commit):
                 raise ValueError(
-                    f"更新日志基线 {previous_reference} 不是当前 Commit 的祖先"
+                    f"Release-note baseline is not an ancestor of the current commit / "
+                    f"更新日志基线不是当前 Commit 的祖先: {previous_reference}"
                 )
 
         entries = parse_release_notes(arguments.notes)[arguments.platform]
-        if not entries and not arguments.allow_empty:
+        if not platform_has_entries(entries) and not arguments.allow_empty:
             raise ValueError(
-                f"{PLATFORM_HEADINGS[arguments.platform]} 更新日志不能为空"
+                f"{PLATFORM_HEADINGS[arguments.platform]} release notes cannot be empty / "
+                "更新日志不能为空"
             )
     except (subprocess.CalledProcessError, ValueError) as error:
-        print(f"生成更新日志失败：{error}", file=sys.stderr)
+        print(
+            f"Failed to generate release notes / 生成更新日志失败: {error}",
+            file=sys.stderr,
+        )
         return 1
 
     payload = {
-        "schemaVersion": 2,
+        "schemaVersion": 3,
         "platform": arguments.platform,
         "version": version,
         "sourceRevision": current_commit,
         "currentRef": current_tag or arguments.current_ref,
         "previousRef": previous_reference,
         "previousVersion": version_label(previous_reference),
+        "localizedEntries": {
+            locale: [entry.removeprefix("- ").strip() for entry in localized_entries]
+            for locale, localized_entries in entries.items()
+        },
     }
 
     arguments.output.parent.mkdir(parents=True, exist_ok=True)
@@ -221,12 +241,14 @@ def main() -> int:
     range_description = (
         f"{previous_reference}..{current_tag or current_commit[:7]}"
         if previous_reference is not None
-        else "无可用的历史版本基线"
+        else "no previous release baseline / 无可用的历史版本基线"
     )
+    entry_count = len(entries["zh-Hans"])
     print(
-        f"已生成 MeloX {payload['version']} "
-        f"{PLATFORM_HEADINGS[arguments.platform]} 更新日志："
-        f"{range_description}，从 {arguments.notes} 读取 {len(entries)} 条"
+        f"Generated / 已生成 MeloX {payload['version']} "
+        f"{PLATFORM_HEADINGS[arguments.platform]} release notes / 更新日志: "
+        f"{range_description}; {entry_count} translated entries / 双语条目 "
+        f"from {arguments.notes}"
     )
     return 0
 

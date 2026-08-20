@@ -27,6 +27,9 @@ struct LyricSharePayload: Identifiable {
     }
 
     var subject: String {
-        "\(song.name) — \(song.artistText)"
+        L10n.joined(
+            [song.name, song.artistText],
+            separatorKey: "ui.common.title_detail_separator"
+        )
     }
 }

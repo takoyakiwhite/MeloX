@@ -19,7 +19,7 @@ struct HomePageResource: Decodable, Identifiable {
         uiElement?.mainTitle?.nonemptyTitle
             ?? extensionInfo?.song?.name
             ?? extensionInfo?.podcastProgram?.name
-            ?? "网易云音乐"
+            ?? L10n.string("ui.common.netease_cloud_music")
     }
 
     var subtitle: String? {

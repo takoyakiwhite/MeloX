@@ -233,10 +233,20 @@ final class NeteaseDirectClient {
     private func responseDescription(_ data: Data, decodingError: Error) -> String {
         guard let text = String(data: data, encoding: .utf8) else {
             let hex = data.prefix(32).map { String(format: "%02X", $0) }.joined()
-            return "数据解析失败（\(data.count) 字节，\(hex)）：\(decodingError.localizedDescription)"
+            return L10n.format(
+                "ui.error.api.decode_with_hex",
+                data.count,
+                hex,
+                decodingError.localizedDescription
+            )
         }
         let compact = text.replacingOccurrences(of: "\n", with: " ")
-        return "数据解析失败（\(data.count) 字节）：\(String(compact.prefix(180)))；\(decodingError.localizedDescription)"
+        return L10n.format(
+            "ui.error.api.decode",
+            data.count,
+            String(compact.prefix(180)),
+            decodingError.localizedDescription
+        )
     }
 
     private var csrfToken: String {

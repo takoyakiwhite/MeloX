@@ -21,11 +21,11 @@ struct NeteaseLoginView: View {
                         .progressViewStyle(.linear)
                 }
             }
-            .navigationTitle("登录网易云音乐")
+            .navigationTitle("ui.settings.account.login")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消", role: .cancel) {
+                    Button("ui.common.cancel", role: .cancel) {
                         dismiss()
                     }
                 }

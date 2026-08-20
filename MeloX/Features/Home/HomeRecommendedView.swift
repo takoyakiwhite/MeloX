@@ -58,7 +58,7 @@ struct HomeRecommendedView: View {
             await loadFallbacks()
         }
         .alert(
-            "无法完成操作",
+            "ui.error.operation_failed.title",
             isPresented: Binding(
                 get: { actionErrorMessage != nil },
                 set: { isPresented in
@@ -68,11 +68,11 @@ struct HomeRecommendedView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 actionErrorMessage = nil
             }
         } message: {
-            Text(actionErrorMessage ?? "请稍后重试。")
+            Text(actionErrorMessage ?? L10n.string("ui.error.try_again_later"))
         }
     }
 
@@ -80,7 +80,7 @@ struct HomeRecommendedView: View {
     private var initialState: some View {
         switch phase {
         case .loading:
-            ProgressView("正在为你准备推荐")
+            ProgressView("ui.home.preparing_recommendations")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .failed(let message):
             ConnectionUnavailableView(message: message) {
@@ -88,7 +88,7 @@ struct HomeRecommendedView: View {
             }
         case .loaded:
             ContentUnavailableView(
-                "暂无推荐",
+                "ui.home.no_recommendations",
                 systemImage: "music.note.house"
             )
         }
@@ -118,12 +118,12 @@ struct HomeRecommendedView: View {
 
                     if feed.sections.isEmpty {
                         ContentUnavailableView(
-                            "暂无个性化推荐",
+                            "ui.home.no_personalized_recommendations",
                             systemImage: "sparkles",
                             description: Text(
                                 library.isLoggedIn
-                                    ? "下拉刷新后再试一次。"
-                                    : "登录网易云音乐后可查看完整的个性化内容。"
+                                    ? L10n.string("ui.home.pull_to_refresh")
+                                    : L10n.string("ui.home.login_for_personalized_content")
                             )
                         )
                         .frame(
@@ -154,7 +154,7 @@ struct HomeRecommendedView: View {
             }
         case .privateRadar:
             guard let playlist = feed.firstRadarPlaylist else {
-                actionErrorMessage = "当前推荐中没有可用的私人雷达歌单。"
+                actionErrorMessage = L10n.string("ui.home.error.no_private_radar")
                 return
             }
             openMusicRoute(.playlist(playlist))
@@ -367,13 +367,13 @@ private enum HomePlaybackActionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .loginRequired:
-            "请先登录网易云音乐。"
+            L10n.string("ui.home.error.login_required")
         case .noLikedSongs:
-            "收藏一些喜欢的歌曲后即可使用心动模式。"
+            L10n.string("ui.home.error.liked_songs_required")
         case .songRequired:
-            "请先播放一首歌曲，再查找相似歌曲。"
+            L10n.string("ui.home.error.current_song_required")
         case .noRecommendations:
-            "网易云音乐暂时没有返回可播放的推荐歌曲。"
+            L10n.string("ui.home.error.no_playable_recommendations")
         }
     }
 }

@@ -27,7 +27,7 @@ struct DesktopPodcastDetailView: View {
                     LazyVStack(alignment: .leading, spacing: 32) {
                         DesktopCollectionHeader(
                             artworkURL: podcast.artworkURL,
-                            kind: "播客",
+                            kind: L10n.string("ui.podcasts.podcast"),
                             title: podcast.name,
                             subtitle: podcast.host?.nickname,
                             metadata: metadata(for: podcast),
@@ -44,9 +44,9 @@ struct DesktopPodcastDetailView: View {
                         )
 
                         HStack {
-                            DesktopSectionHeader(title: "节目")
+                            DesktopSectionHeader(title: L10n.string("ui.podcasts.episodes"))
                             Spacer()
-                            Picker("顺序", selection: $order) {
+                            Picker("ui.podcasts.episode_order", selection: $order) {
                                 ForEach(PodcastProgramOrder.allCases) { order in
                                     Text(order.title).tag(order)
                                 }
@@ -82,7 +82,7 @@ struct DesktopPodcastDetailView: View {
                                 DesktopCollectionPaginationFooter(
                                     isLoading: isLoadingMorePrograms,
                                     failureMessage: loadMoreProgramsError,
-                                    loadingTitle: "正在加载更多节目"
+                                    loadingTitle: L10n.string("ui.podcasts.loading_more_episodes")
                                 ) {
                                     await loadMorePrograms()
                                 }
@@ -93,14 +93,14 @@ struct DesktopPodcastDetailView: View {
                     .padding(.vertical, 34)
                 }
             } else if isLoading {
-                DesktopDetailLoadingView(message: "正在载入播客…")
+                DesktopDetailLoadingView(message: L10n.string("ui.podcasts.loading"))
             } else {
-                DesktopDetailErrorView(message: errorMessage ?? "未知错误") {
+                DesktopDetailErrorView(message: errorMessage ?? L10n.string("ui.error.unknown")) {
                     Task { await load(reset: true) }
                 }
             }
         }
-        .navigationTitle(podcast?.name ?? "播客")
+        .navigationTitle(podcast?.name ?? L10n.string("ui.podcasts.podcast"))
         .task(id: loadRequest) { await load(reset: true) }
         .animation(
             reduceMotion ? nil : .smooth(duration: 0.30),
@@ -117,27 +117,31 @@ struct DesktopPodcastDetailView: View {
 
     private func metadata(for podcast: Podcast) -> String {
         let programCount = max(totalProgramCount, podcast.programCount)
-        return "\(programCount) 期 · \(podcast.subscriberCount.formatted()) 位订阅者"
+        return L10n.format(
+            "ui.desktop.podcasts.metadata",
+            programCount,
+            podcast.subscriberCount.formatted(.number.locale(L10n.locale))
+        )
     }
 
     @ViewBuilder
     private var programEmptyState: some View {
         if isLoading {
-            ProgressView("正在载入节目…")
+            ProgressView("ui.podcasts.loading_episodes")
                 .frame(maxWidth: .infinity, minHeight: 220)
         } else if let errorMessage {
             ContentUnavailableView {
-                Label("无法载入节目", systemImage: "wifi.exclamationmark")
+                Label("ui.desktop.podcasts.load_episodes_failed", systemImage: "wifi.exclamationmark")
             } description: {
                 Text(errorMessage)
             } actions: {
-                Button("重试") {
+                Button("ui.common.retry") {
                     Task { await load(reset: true) }
                 }
             }
             .frame(maxWidth: .infinity, minHeight: 220)
         } else {
-            ContentUnavailableView("暂无节目", systemImage: "waveform")
+            ContentUnavailableView("ui.podcasts.no_episodes", systemImage: "waveform")
                 .frame(maxWidth: .infinity, minHeight: 220)
         }
     }

@@ -19,7 +19,11 @@ struct TrackRowView: View {
                 ArtworkImage(url: song.album?.artworkURL, cornerRadius: 6)
                     .frame(width: 44, height: 44)
             } else if let index {
-                Text("\(index + 1)")
+                Text(
+                    (index + 1).formatted(
+                        .number.locale(L10n.locale)
+                    )
+                )
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
                     .frame(width: 26, alignment: .trailing)
@@ -39,12 +43,12 @@ struct TrackRowView: View {
                 if downloads.isDownloading(songID: song.id) {
                     ProgressView()
                         .controlSize(.mini)
-                        .accessibilityLabel("正在下载")
+                        .accessibilityLabel("ui.downloads.downloading")
                 } else if downloads.contains(songID: song.id) {
                     Image(systemName: "arrow.down.circle.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .accessibilityLabel("已下载")
+                        .accessibilityLabel("ui.downloads.downloaded")
                 }
             }
             if song.durationMS > 0 {
@@ -60,7 +64,7 @@ struct TrackRowView: View {
                 Task { await player.playNext(song) }
             } label: {
                 Label(
-                    "下一首播放",
+                    "ui.player.play_next",
                     systemImage:
                         "text.line.first.and.arrowtriangle.forward"
                 )
@@ -69,7 +73,7 @@ struct TrackRowView: View {
             Button {
                 presentedSheet = .addToPlaylist(song)
             } label: {
-                Label("添加到歌单", systemImage: "text.badge.plus")
+                Label("ui.playlists.add_to", systemImage: "text.badge.plus")
             }
 
             if !song.isPodcastProgram {
@@ -88,13 +92,13 @@ struct TrackRowView: View {
                     Button {
                         downloads.cancel(songID: song.id)
                     } label: {
-                        Label("取消下载", systemImage: "xmark.circle")
+                        Label("ui.downloads.cancel", systemImage: "xmark.circle")
                     }
                 } else if downloads.contains(songID: song.id) {
                     Button(role: .destructive) {
                         downloads.remove(songID: song.id)
                     } label: {
-                        Label("删除下载", systemImage: "trash")
+                        Label("ui.downloads.delete", systemImage: "trash")
                     }
                 } else {
                     Menu {
@@ -104,7 +108,7 @@ struct TrackRowView: View {
                             }
                         }
                     } label: {
-                        Label("下载歌曲", systemImage: "arrow.down.circle")
+                        Label("ui.downloads.download_song", systemImage: "arrow.down.circle")
                     }
                 }
             }
@@ -112,19 +116,19 @@ struct TrackRowView: View {
             Button {
                 openMusicRoute(.song(song))
             } label: {
-                Label("歌曲资料", systemImage: "info.circle")
+                Label("ui.song.information", systemImage: "info.circle")
             }
 
             Button {
                 presentedSheet = .comments(song)
             } label: {
-                Label("评论", systemImage: "bubble.left.and.bubble.right")
+                Label("ui.comments.title", systemImage: "bubble.left.and.bubble.right")
             }
 
             Menu {
                 NeteaseShareMenuContent(resource: .song(song))
             } label: {
-                Label("分享", systemImage: "square.and.arrow.up")
+                Label("ui.common.share", systemImage: "square.and.arrow.up")
             }
         }
         .sheet(item: $presentedSheet) { sheet in
@@ -139,26 +143,28 @@ struct TrackRowView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityText)
-        .accessibilityAction(named: "查看歌曲资料") {
+        .accessibilityAction(named: L10n.string("ui.song.view_information")) {
             openMusicRoute(.song(song))
         }
-        .accessibilityAction(named: "下一首播放") {
+        .accessibilityAction(named: L10n.string("ui.player.play_next")) {
             Task { await player.playNext(song) }
         }
-        .accessibilityAction(named: "添加到歌单") {
+        .accessibilityAction(named: L10n.string("ui.playlists.add_to")) {
             presentedSheet = .addToPlaylist(song)
         }
         .songFavoriteAccessibilityAction(
             song: song,
             library: library
         )
-        .accessibilityAction(named: "查看评论") {
+        .accessibilityAction(named: L10n.string("ui.comments.view")) {
             presentedSheet = .comments(song)
         }
     }
 
     private var favoriteActionTitle: String {
-        library.contains(song: song) ? "取消喜欢" : "喜欢歌曲"
+        library.contains(song: song)
+            ? L10n.string("ui.song.unlike")
+            : L10n.string("ui.song.like")
     }
 
     private var subtitleText: String {
@@ -170,13 +176,19 @@ struct TrackRowView: View {
                 )
                 return normalized.isEmpty ? nil : normalized
             }
-            .joined(separator: " · ")
+            .joined(
+                separator: L10n.string("ui.common.metadata_separator")
+            )
     }
 
     private var accessibilityText: String {
         subtitleText.isEmpty
             ? song.name
-            : "\(song.name)，\(subtitleText)"
+            : L10n.format(
+                "ui.accessibility.track_title_and_subtitle",
+                song.name,
+                subtitleText
+            )
     }
 
     private var favoriteActionSystemImage: String {
@@ -210,8 +222,8 @@ private extension View {
             accessibilityAction(
                 named:
                     library.contains(song: song)
-                        ? "取消喜欢"
-                        : "喜欢歌曲"
+                        ? L10n.string("ui.song.unlike")
+                        : L10n.string("ui.song.like")
             ) {
                 library.toggle(song: song)
             }

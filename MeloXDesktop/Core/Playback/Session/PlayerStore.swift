@@ -1283,6 +1283,9 @@ final class PlayerStore {
         nowPlayingSession.onPause = { [weak self] in
             self?.engine.pause()
         }
+        nowPlayingSession.onTogglePlayPause = { [weak self] in
+            self?.togglePlayback()
+        }
         nowPlayingSession.onNext = { [weak self] in
             Task { @MainActor in await self?.next() }
         }

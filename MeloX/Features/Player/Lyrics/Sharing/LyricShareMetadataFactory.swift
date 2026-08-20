@@ -11,9 +11,9 @@ enum LyricShareMetadataFactory {
             in: .whitespacesAndNewlines
         )
         metadata.title = if let firstLine, !firstLine.isEmpty {
-            "歌词摘录：\(firstLine)"
+            L10n.format("ui.lyrics.share.excerpt", firstLine)
         } else {
-            "歌词摘录 · \(payload.song.name)"
+            L10n.format("ui.lyrics.share.excerpt_song", payload.song.name)
         }
         metadata.url = payload.songURL
         metadata.originalURL = payload.songURL

@@ -18,7 +18,7 @@ struct PodcastCardView: View {
     private var accessibilityLabel: String {
         [podcast.name, podcast.subtitle]
             .compactMap { $0?.podcastNonempty }
-            .joined(separator: "，")
+            .joined(separator: L10n.string("ui.common.spoken_separator"))
     }
 }
 
@@ -47,7 +47,7 @@ struct PodcastListRow: View {
 
                 HStack(spacing: 8) {
                     if podcast.programCount > 0 {
-                        Text("\(podcast.programCount) 期")
+                        Text(L10n.format("ui.podcasts.episode_count_short", podcast.programCount))
                     }
                     if podcast.subscriberCount > 0 {
                         Label(
@@ -63,7 +63,7 @@ struct PodcastListRow: View {
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(podcast.name)，\(podcast.programCount)期节目"
+            L10n.format("ui.podcasts.accessibility_episode_count", podcast.name, podcast.programCount)
         )
     }
 }
@@ -97,7 +97,7 @@ struct PodcastProgramRowLabel: View {
 
                 if program.listenerCount > 0 {
                     Label(
-                        "\(program.listenerCount.podcastCountText) 次播放",
+                        L10n.format("ui.podcasts.play_count", program.listenerCount.podcastCountText),
                         systemImage: "headphones"
                     )
                     .font(.caption)
@@ -108,7 +108,11 @@ struct PodcastProgramRowLabel: View {
         .contentShape(.rect)
         .accessibilityElement(children: .combine)
         .accessibilityLabel(
-            "\(program.name)，\(program.durationMS.podcastDurationText)"
+            L10n.format(
+                "ui.accessibility.podcast_title_and_duration",
+                program.name,
+                program.durationMS.podcastDurationText
+            )
         )
     }
 }
@@ -143,7 +147,9 @@ struct PodcastProgramListRow: View {
             .buttonStyle(.plain)
             .disabled(program.playbackSong == nil)
             .accessibilityLabel(
-                isCurrent && isPlaying ? "暂停节目" : "播放节目"
+                isCurrent && isPlaying
+                    ? L10n.string("ui.podcasts.pause_episode")
+                    : L10n.string("ui.podcasts.play_episode")
             )
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -161,7 +167,7 @@ struct PodcastCategoryTile: View {
             )
             .frame(width: 48, height: 48)
 
-            Text(category.name)
+            Text(category.localizedName)
                 .font(.headline)
                 .foregroundStyle(.primary)
                 .lineLimit(1)
@@ -194,7 +200,7 @@ struct FeaturedPodcastView: View {
             .clipShape(.rect(cornerRadius: 22))
 
             VStack(alignment: .leading, spacing: 6) {
-                Text("编辑推荐")
+                Text("ui.podcasts.editors_choice")
                     .font(.caption.weight(.bold))
                     .foregroundStyle(.white.opacity(0.78))
 
@@ -220,14 +226,11 @@ struct FeaturedPodcastView: View {
 
 extension Int {
     var podcastCountText: String {
-        switch self {
-        case 100_000_000...:
-            "\(Self.podcastDecimal(Double(self) / 100_000_000))亿"
-        case 10_000...:
-            "\(Self.podcastDecimal(Double(self) / 10_000))万"
-        default:
-            "\(self)"
-        }
+        formatted(
+            .number
+                .notation(.compactName)
+                .locale(L10n.locale)
+        )
     }
 
     var podcastDurationText: String {
@@ -251,7 +254,9 @@ extension Int {
             return String(Int(value.rounded()))
         }
         return value.formatted(
-            .number.precision(.fractionLength(1))
+            .number
+                .precision(.fractionLength(1))
+                .locale(L10n.locale)
         )
     }
 }
@@ -266,6 +271,7 @@ extension Int64 {
                 .year()
                 .month(.abbreviated)
                 .day()
+                .locale(L10n.locale)
         )
     }
 }

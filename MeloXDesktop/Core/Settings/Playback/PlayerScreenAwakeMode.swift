@@ -11,13 +11,13 @@ enum PlayerScreenAwakeMode: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .disabled:
-            "关闭"
+            L10n.string("ui.common.off")
         case .player:
-            "播放器常亮"
+            L10n.string("ui.settings.screen_awake.player")
         case .lyrics:
-            "歌词页常亮"
+            L10n.string("ui.settings.screen_awake.lyrics")
         case .hiddenLyricsInterface:
-            "歌词页隐藏 UI 后常亮"
+            L10n.string("ui.settings.screen_awake.hidden_lyrics_ui")
         }
     }
 }

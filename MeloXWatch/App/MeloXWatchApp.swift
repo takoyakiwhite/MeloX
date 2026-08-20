@@ -2,6 +2,9 @@ import SwiftUI
 
 @main
 struct MeloXWatchApp: App {
+    @AppStorage(AppLanguage.storageKey)
+    private var appLanguage: AppLanguage = .system
+
     @StateObject private var account: WatchAccountStore
     @StateObject private var connectivity: WatchConnectivityStore
     @StateObject private var playback: WatchPlaybackStore
@@ -12,6 +15,7 @@ struct MeloXWatchApp: App {
 
     init() {
         WatchPreferenceDefaults.register()
+        L10n.activate(AppLanguage.selected)
 
         let account = WatchAccountStore()
         let client = WatchNeteaseClient {
@@ -43,7 +47,11 @@ struct MeloXWatchApp: App {
                 .environmentObject(playback)
                 .environmentObject(coordinator)
                 .environmentObject(lyrics)
+                .environment(\.locale, appLanguage.locale)
                 .tint(.red)
+                .onChange(of: appLanguage) { _, language in
+                    L10n.activate(language)
+                }
                 .task {
                     connectivity.activate()
                 }

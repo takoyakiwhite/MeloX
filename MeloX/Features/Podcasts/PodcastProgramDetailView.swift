@@ -9,52 +9,52 @@ struct PodcastProgramDetailView: View {
         List {
             header
 
-            Section("播客") {
+            Section("ui.common.podcast") {
                 NavigationLink(
                     value: MusicRoute.podcast(
                         program.podcastSummary
                     )
                 ) {
                     LabeledContent(
-                        "来自",
+                        L10n.string("ui.podcasts.from"),
                         value: program.radio.name
                     )
                 }
             }
 
-            Section("节目信息") {
+            Section("ui.podcasts.episode_information") {
                 if let createTime = program.createTime {
                     LabeledContent(
-                        "发布日期",
+                        L10n.string("ui.song.release_date"),
                         value: createTime.podcastDateText
                     )
                 }
 
                 if program.durationMS > 0 {
                     LabeledContent(
-                        "时长",
+                        L10n.string("ui.common.duration"),
                         value: program.durationMS.podcastDurationText
                     )
                 }
 
                 if program.listenerCount > 0 {
                     LabeledContent(
-                        "播放",
+                        L10n.string("ui.common.plays"),
                         value:
-                            "\(program.listenerCount.podcastCountText) 次"
+                            L10n.format("ui.common.times_compact", program.listenerCount.podcastCountText)
                     )
                 }
 
                 if program.likedCount > 0 {
                     LabeledContent(
-                        "点赞",
+                        L10n.string("ui.common.likes"),
                         value: program.likedCount.podcastCountText
                     )
                 }
 
                 if program.commentCount > 0 {
                     LabeledContent(
-                        "评论",
+                        L10n.string("ui.comments.title"),
                         value: program.commentCount.podcastCountText
                     )
                 }
@@ -63,14 +63,14 @@ struct PodcastProgramDetailView: View {
             if let description = program
                 .programDescription?
                 .podcastNonempty {
-                Section("节目简介") {
+                Section("ui.podcasts.episode_description") {
                     Text(description)
                         .textSelection(.enabled)
                 }
             }
         }
         .listStyle(.insetGrouped)
-        .navigationTitle("节目")
+        .navigationTitle("ui.podcasts.episode")
         .navigationBarTitleDisplayMode(.inline)
     }
 
@@ -101,8 +101,8 @@ struct PodcastProgramDetailView: View {
                 Button(action: play) {
                     Label(
                         isCurrent && player.isPlaying
-                            ? "暂停"
-                            : "播放节目",
+                            ? L10n.string("ui.player.pause")
+                            : L10n.string("ui.podcasts.play_episode"),
                         systemImage:
                             isCurrent && player.isPlaying
                             ? "pause.fill"

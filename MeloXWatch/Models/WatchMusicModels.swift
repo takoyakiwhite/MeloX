@@ -34,7 +34,10 @@ struct WatchSong: Codable, Hashable, Identifiable {
     let audioAvailability: WatchSongAudioAvailability
 
     var artistText: String {
-        artists.map(\.name).joined(separator: " / ")
+        L10n.joined(
+            artists.map(\.name),
+            separatorKey: "ui.common.artist_separator"
+        )
     }
 
     var duration: TimeInterval {
@@ -64,7 +67,8 @@ struct WatchSong: Codable, Hashable, Identifiable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decodeIfPresent(Int.self, forKey: .id) ?? 0
-        name = try container.decodeIfPresent(String.self, forKey: .name) ?? "未知歌曲"
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+            ?? L10n.string("ui.metadata.unknown_song")
         artists = try container.decodeIfPresent(
             [WatchArtist].self,
             forKey: .ar
@@ -122,7 +126,8 @@ struct WatchPlaylist: Decodable, Hashable, Identifiable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         id = try container.decodeIfPresent(Int.self, forKey: .id) ?? 0
-        name = try container.decodeIfPresent(String.self, forKey: .name) ?? "未知歌单"
+        name = try container.decodeIfPresent(String.self, forKey: .name)
+            ?? L10n.string("ui.metadata.unknown_playlist")
         artworkURLString = try container.decodeIfPresent(
             String.self,
             forKey: .artworkURLString
@@ -217,17 +222,17 @@ enum WatchRepeatMode: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .off: "关闭"
-        case .all: "列表循环"
-        case .one: "单曲循环"
+        case .off: L10n.string("ui.player.repeat.off")
+        case .all: L10n.string("ui.player.repeat.all")
+        case .one: L10n.string("ui.player.repeat.one")
         }
     }
 
     var controlTitle: String {
         switch self {
-        case .off: "循环"
-        case .all: "列表"
-        case .one: "单曲"
+        case .off: L10n.string("ui.watch.repeat.control")
+        case .all: L10n.string("ui.watch.repeat.list")
+        case .one: L10n.string("ui.watch.repeat.song")
         }
     }
 
@@ -240,9 +245,9 @@ enum WatchRepeatMode: String, CaseIterable, Identifiable {
 
     var accessibilityTitle: String {
         switch self {
-        case .off: "循环关闭，轻点切换到列表循环"
-        case .all: "列表循环，轻点切换到单曲循环"
-        case .one: "单曲循环，轻点关闭循环"
+        case .off: L10n.string("ui.watch.repeat.off.hint")
+        case .all: L10n.string("ui.watch.repeat.all.hint")
+        case .one: L10n.string("ui.watch.repeat.one.hint")
         }
     }
 }

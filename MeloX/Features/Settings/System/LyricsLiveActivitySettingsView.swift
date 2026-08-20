@@ -13,60 +13,60 @@ struct LyricsLiveActivitySettingsView: View {
         Form {
             Section {
                 Label(
-                    "实验性功能，当前版本仍不稳定",
+                    "ui.settings.live_activity.warning.title",
                     systemImage: "exclamationmark.triangle.fill"
                 )
                 .font(.headline)
                 .foregroundStyle(.orange)
 
-                Text("可能出现歌词更新延迟、显示异常，或被系统提前结束。")
+                Text("ui.settings.live_activity.warning.footer")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } header: {
-                Text("功能状态")
+                Text("ui.settings.live_activity.status.section")
             }
 
             Section {
-                LabeledContent("主标题格式") {
+                LabeledContent("ui.settings.system_lyrics.title_format") {
                     formatField(
-                        "主标题格式",
+                        L10n.string("ui.settings.system_lyrics.title_format"),
                         text: $settings.lyricsLiveActivityTitleFormat
                     )
                 }
 
-                LabeledContent("副标题格式") {
+                LabeledContent("ui.settings.system_lyrics.subtitle_format") {
                     formatField(
-                        "副标题格式",
+                        L10n.string("ui.settings.system_lyrics.subtitle_format"),
                         text:
                             $settings
                                 .lyricsLiveActivitySubtitleFormat
                     )
                 }
 
-                LabeledContent("缩起歌词格式") {
+                LabeledContent("ui.settings.live_activity.compact_format") {
                     formatField(
-                        "缩起歌词格式",
+                        L10n.string("ui.settings.live_activity.compact_format"),
                         text:
                             $settings
                                 .lyricsLiveActivityCompactFormat
                     )
                 }
             } header: {
-                Text("文字格式")
+                Text("ui.settings.lyrics_format.section")
             } footer: {
-                Text("可使用 {歌词}、{歌名}、{作者} 占位符；留空时会自动回退。")
+                Text("ui.settings.live_activity.format.footer")
             }
 
             Section {
                 Toggle(
-                    "显示封面",
+                    "ui.settings.live_activity.show_artwork",
                     isOn:
                         $settings
                             .lyricsLiveActivityShowsArtwork
                 )
 
                 Picker(
-                    "歌词字号",
+                    "ui.settings.live_activity.text_size",
                     selection:
                         $settings
                             .lyricsLiveActivityCompactTextSize
@@ -79,7 +79,7 @@ struct LyricsLiveActivitySettingsView: View {
                 }
 
                 Toggle(
-                    "长歌词自动滚动",
+                    "ui.settings.live_activity.auto_scroll",
                     isOn:
                         $settings
                             .lyricsLiveActivityScrollsCompactText
@@ -87,7 +87,7 @@ struct LyricsLiveActivitySettingsView: View {
 
                 if settings.lyricsLiveActivityScrollsCompactText {
                     valueSlider(
-                        title: "滚动速度",
+                        title: L10n.string("ui.settings.live_activity.scroll_speed"),
                         value:
                             $settings
                                 .lyricsLiveActivityScrollSpeed,
@@ -96,11 +96,14 @@ struct LyricsLiveActivitySettingsView: View {
                                 .lyricsLiveActivityScrollSpeedRange,
                         step: 1,
                         valueText:
-                            "\(Int(settings.lyricsLiveActivityScrollSpeed.rounded())) 点/秒"
+                            L10n.format(
+                                "ui.settings.live_activity.points_per_second",
+                                Int(settings.lyricsLiveActivityScrollSpeed.rounded())
+                            )
                     )
 
                     valueSlider(
-                        title: "开始停顿",
+                        title: L10n.string("ui.settings.live_activity.start_pause"),
                         value:
                             $settings
                                 .lyricsLiveActivityScrollPause,
@@ -108,36 +111,36 @@ struct LyricsLiveActivitySettingsView: View {
                             AppSettings
                                 .lyricsLiveActivityScrollPauseRange,
                         step: 0.1,
-                        valueText: String(
-                            format: "%.1f 秒",
+                        valueText: L10n.format(
+                            "ui.common.seconds_decimal",
                             settings.lyricsLiveActivityScrollPause
                         )
                     )
                 }
             } header: {
-                Text("缩起显示")
+                Text("ui.settings.live_activity.compact.section")
             } footer: {
-                Text("空间不足时由播放进度推动歌词依次经过左右区域；若设定速度无法在下一句前显示完整，本句会自动提速。")
+                Text("ui.settings.live_activity.compact.footer")
             }
 
             Section {
                 Toggle(
-                    "显示下一句",
+                    "ui.settings.live_activity.show_next",
                     isOn:
                         $settings
                             .lyricsLiveActivityShowsNextLyric
                 )
                 Toggle(
-                    "显示播放进度",
+                    "ui.settings.live_activity.show_progress",
                     isOn:
                         $settings
                             .lyricsLiveActivityShowsProgress
                 )
             } header: {
-                Text("展开与锁定屏幕")
+                Text("ui.settings.live_activity.expanded.section")
             }
         }
-        .navigationTitle("实时活动歌词")
+        .navigationTitle("ui.settings.live_activity.title")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: preferences) {
             player.applyLyricsLiveActivityPreference()
@@ -174,9 +177,9 @@ struct LyricsLiveActivitySettingsView: View {
 private extension LyricsLiveActivityCompactTextSize {
     var title: String {
         switch self {
-        case .small: "小"
-        case .standard: "标准"
-        case .large: "大"
+        case .small: L10n.string("ui.common.size.small")
+        case .standard: L10n.string("ui.common.size.standard")
+        case .large: L10n.string("ui.common.size.large")
         }
     }
 }

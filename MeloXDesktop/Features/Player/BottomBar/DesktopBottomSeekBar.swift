@@ -68,7 +68,7 @@ struct DesktopBottomSeekBar: View {
             in: 0...max(model.player.duration, 1)
         )
         .controlSize(.large)
-        .accessibilityLabel("播放进度")
+        .accessibilityLabel("ui.desktop.player.playback_progress")
     }
 
     private var progressFraction: CGFloat {

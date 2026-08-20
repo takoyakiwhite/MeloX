@@ -14,7 +14,7 @@ struct SongWikiView: View {
         Group {
             switch phase {
             case .loading where wiki == nil:
-                ProgressView("正在载入歌曲百科")
+                ProgressView("ui.song.wiki.loading")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
 
             case .failed(let message) where wiki == nil:
@@ -25,9 +25,9 @@ struct SongWikiView: View {
             default:
                 if let wiki, wiki.isEmpty {
                     ContentUnavailableView(
-                        "暂无百科资料",
+                        "ui.song.wiki.empty",
                         systemImage: "book.closed",
-                        description: Text("这首歌曲暂时还没有可展示的百科内容。")
+                        description: Text("ui.song.wiki.empty.message")
                     )
                 } else if let wiki {
                     SongWikiContent(song: song, wiki: wiki)
@@ -37,23 +37,23 @@ struct SongWikiView: View {
                 }
             }
         }
-        .navigationTitle("歌曲百科")
+        .navigationTitle("ui.song.wiki.title")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: reloadToken) {
             await load()
         }
         .alert(
-            "无法更新歌曲百科",
+            "ui.song.wiki.refresh_failed",
             isPresented: Binding(
                 get: { refreshErrorMessage != nil },
                 set: { if !$0 { refreshErrorMessage = nil } }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 refreshErrorMessage = nil
             }
         } message: {
-            Text(refreshErrorMessage ?? "请稍后重试。")
+            Text(refreshErrorMessage ?? L10n.string("ui.error.try_again_later"))
         }
     }
 

@@ -10,11 +10,11 @@ enum AppAppearance: String, CaseIterable, Identifiable {
     var title: String {
         switch self {
         case .system:
-            "跟随系统"
+            L10n.string("ui.settings.appearance.option.system")
         case .light:
-            "浅色"
+            L10n.string("ui.settings.appearance.option.light")
         case .dark:
-            "深色"
+            L10n.string("ui.settings.appearance.option.dark")
         }
     }
 

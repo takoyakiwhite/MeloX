@@ -9,11 +9,11 @@ enum ListenTogetherConnectionState: Equatable {
     var title: String {
         switch self {
         case .idle:
-            "未连接"
+            L10n.string("ui.listen_together.connection.idle")
         case .connected:
-            "已同步"
+            L10n.string("ui.listen_together.connection.connected")
         case .reconnecting:
-            "正在重新连接"
+            L10n.string("ui.listen_together.connection.reconnecting")
         }
     }
 
@@ -37,11 +37,11 @@ enum ListenTogetherOperation: Equatable {
     var title: String {
         switch self {
         case .creating:
-            "正在创建"
+            L10n.string("ui.listen_together.operation.creating")
         case .joining:
-            "正在加入"
+            L10n.string("ui.listen_together.operation.joining")
         case .leaving:
-            "正在退出"
+            L10n.string("ui.listen_together.operation.leaving")
         }
     }
 }
@@ -56,19 +56,19 @@ enum ListenTogetherSessionError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noCurrentSong:
-            "请先播放一首歌曲，再发起一起听。"
+            L10n.string("ui.error.listen_together.song_required")
         case .roomUnavailable(let status):
             if status?.uppercased() == "FULL" {
-                "一起听房间人数已满。"
+                L10n.string("ui.error.listen_together.room_full")
             } else {
-                "该一起听房间当前无法加入。"
+                L10n.string("ui.error.listen_together.room_unavailable")
             }
         case .missingRoom:
-            "网易云音乐没有返回有效的一起听房间。"
+            L10n.string("ui.error.listen_together.missing_room")
         case .missingAccount:
-            "无法读取当前网易云账号，请重新登录后再试。"
+            L10n.string("ui.error.listen_together.missing_account")
         case .invalidPlaybackState:
-            "一起听房间暂时没有可同步的播放内容。"
+            L10n.string("ui.error.listen_together.invalid_playback_state")
         }
     }
 }
@@ -191,7 +191,7 @@ final class ListenTogetherStore {
             } catch {
                 connectionState = .reconnecting
                 errorMessage =
-                    "房间已创建，但首次同步失败：\(error.localizedDescription)"
+                    L10n.format("ui.error.listen_together.initial_sync_failed", error.localizedDescription)
             }
             startMonitoring()
         } catch is CancellationError {
@@ -256,7 +256,7 @@ final class ListenTogetherStore {
             } catch {
                 connectionState = .reconnecting
                 errorMessage =
-                    "已加入房间，正在等待播放状态：\(error.localizedDescription)"
+                    L10n.format("ui.error.listen_together.waiting_for_playback", error.localizedDescription)
             }
             startMonitoring()
         } catch is CancellationError {
@@ -288,7 +288,7 @@ final class ListenTogetherStore {
         operation = nil
         if let leaveError {
             noticeMessage =
-                "已停止本机同步，但网易云房间退出请求失败：\(leaveError.localizedDescription)"
+                L10n.format("ui.error.listen_together.leave_failed", leaveError.localizedDescription)
         }
     }
 

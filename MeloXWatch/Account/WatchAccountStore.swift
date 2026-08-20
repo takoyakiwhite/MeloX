@@ -8,9 +8,9 @@ enum WatchAccountSource: String {
 
     var title: String {
         switch self {
-        case .none: "未登录"
-        case .iPhone: "来自 iPhone"
-        case .qrCode: "Apple Watch 二维码"
+        case .none: L10n.string("ui.watch.account.source.none")
+        case .iPhone: L10n.string("ui.watch.account.source.iphone")
+        case .qrCode: L10n.string("ui.watch.account.source.qr")
         }
     }
 }

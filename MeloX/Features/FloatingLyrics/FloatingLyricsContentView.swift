@@ -216,24 +216,24 @@ struct FloatingLyricsContentView: View {
     }
 }
 
-#Preview("悬浮歌词") {
+#Preview("Floating Lyrics") {
     FloatingLyricsContentView(
         presentation: FloatingLyricsPresentation(
             songID: 1,
-            title: "正在播放的歌曲",
-            artist: "歌手",
+            title: L10n.string("ui.preview.now_playing_song"),
+            artist: L10n.string("ui.common.artist"),
             currentLine: nil,
             upcomingLines: [
                 LyricLine(
                     time: 18,
-                    text: "下一句歌词会显示在这里"
+                    text: L10n.string("ui.preview.next_lyric")
                 ),
                 LyricLine(
                     time: 24,
-                    text: "更远处的歌词会逐渐淡出"
+                    text: L10n.string("ui.preview.distant_lyrics")
                 ),
             ],
-            fallbackText: "让音乐陪你去往更远的地方",
+            fallbackText: L10n.string("ui.preview.floating_lyrics_fallback"),
             playbackTime: 12.5,
             isPlaying: true,
             usesPseudoTiming: false,

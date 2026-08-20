@@ -13,7 +13,7 @@ struct DesktopListenTogetherView: View {
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                Text("一起听")
+                Text("ui.listen_together.title")
                     .font(.system(size: 28, weight: .bold))
                 Spacer()
                 if let operation = model.listenTogether.operation {
@@ -21,7 +21,7 @@ struct DesktopListenTogetherView: View {
                         .controlSize(.small)
                         .help(operation.title)
                 }
-                Button("完成") { dismiss() }
+                Button("ui.common.done") { dismiss() }
             }
             .padding(26)
 
@@ -38,22 +38,26 @@ struct DesktopListenTogetherView: View {
         }
         .frame(width: 620, height: 620)
         .alert(
-            "一起听操作失败",
+            L10n.string("ui.listen_together.error.title"),
             isPresented: Binding(
                 get: { model.listenTogether.errorMessage != nil },
                 set: { if !$0 { model.listenTogether.dismissError() } }
             )
         ) {
-            Button("好") { model.listenTogether.dismissError() }
+            Button("ui.common.ok") { model.listenTogether.dismissError() }
         } message: {
-            Text(model.listenTogether.errorMessage ?? "网易云音乐未完成操作。")
+            Text(model.listenTogether.errorMessage ?? L10n.string("ui.error.netease_operation_incomplete"))
         }
         .confirmationDialog(
-            model.listenTogether.isHost ? "结束一起听？" : "退出一起听？",
+            model.listenTogether.isHost
+                ? L10n.string("ui.listen_together.end.confirmation")
+                : L10n.string("ui.listen_together.leave.confirmation"),
             isPresented: $confirmsLeaving
         ) {
             Button(
-                model.listenTogether.isHost ? "结束一起听" : "退出一起听",
+                model.listenTogether.isHost
+                    ? L10n.string("ui.listen_together.end")
+                    : L10n.string("ui.listen_together.leave"),
                 role: .destructive
             ) {
                 Task { await model.listenTogether.leaveRoom() }
@@ -70,9 +74,9 @@ struct DesktopListenTogetherView: View {
                     .padding(.top, 38)
 
                 VStack(spacing: 8) {
-                    Text("和朋友同步听歌")
+                    Text("ui.listen_together.welcome.title")
                         .font(.title.bold())
-                    Text("播放、暂停、切歌、进度和队列都会通过网易云一起听房间同步。")
+                    Text("ui.desktop.listen_together.welcome.message")
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
                 }
@@ -81,7 +85,7 @@ struct DesktopListenTogetherView: View {
                     Button {
                         Task { await model.listenTogether.createRoom() }
                     } label: {
-                        Label("发起一起听", systemImage: "person.2.badge.plus")
+                        Label("ui.listen_together.start", systemImage: "person.2.badge.plus")
                             .frame(maxWidth: .infinity)
                     }
                     .buttonStyle(.borderedProminent)
@@ -89,23 +93,23 @@ struct DesktopListenTogetherView: View {
                     .disabled(model.player.currentSong == nil)
 
                     if model.player.currentSong == nil {
-                        Text("请先播放一首歌曲。")
+                        Text("ui.error.listen_together.song_required")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
 
                     VStack(alignment: .leading, spacing: 10) {
-                        Text("加入房间")
+                        Text("ui.listen_together.join_room")
                             .font(.headline)
                         TextField(
-                            "粘贴网易云一起听邀请链接",
+                            "ui.listen_together.paste_invitation",
                             text: $invitationText,
                             axis: .vertical
                         )
                         .textFieldStyle(.roundedBorder)
                         .lineLimit(2...4)
 
-                        Button("加入") {
+                        Button("ui.listen_together.join_room") {
                             Task {
                                 await model.listenTogether.joinRoom(
                                     invitationText: invitationText
@@ -119,11 +123,11 @@ struct DesktopListenTogetherView: View {
                     .background(.quaternary.opacity(0.5), in: .rect(cornerRadius: 14))
                 } else {
                     ContentUnavailableView {
-                        Label("需要登录网易云音乐", systemImage: "person.crop.circle.badge.exclamationmark")
+                        Label("ui.listen_together.login_required", systemImage: "person.crop.circle.badge.exclamationmark")
                     } description: {
-                        Text("一起听使用你的网易云账户创建和加入房间。")
+                        Text("ui.listen_together.login_message")
                     } actions: {
-                        Button("登录") { model.ui.sheet = .login }
+                        Button("ui.common.login") { model.ui.sheet = .login }
                     }
                 }
             }
@@ -141,7 +145,11 @@ struct DesktopListenTogetherView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         Text(model.listenTogether.connectionState.title)
                             .font(.headline)
-                        Text(model.listenTogether.isHost ? "你发起的房间" : "已加入好友的房间")
+                        Text(
+                            model.listenTogether.isHost
+                                ? L10n.string("ui.desktop.listen_together.your_room")
+                                : L10n.string("ui.desktop.listen_together.friends_room")
+                        )
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
@@ -159,7 +167,7 @@ struct DesktopListenTogetherView: View {
                         DesktopArtworkView(url: song.album?.artworkURL, cornerRadius: 8)
                             .frame(width: 72, height: 72)
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("正在同步")
+                            Text("ui.listen_together.syncing")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                             Text(song.name)
@@ -174,7 +182,7 @@ struct DesktopListenTogetherView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 12) {
-                    Text("房间成员")
+                    Text("ui.listen_together.room_members")
                         .font(.headline)
                     ForEach(room.users) { user in
                         HStack(spacing: 10) {
@@ -183,7 +191,7 @@ struct DesktopListenTogetherView: View {
                                 .clipShape(.circle)
                             Text(user.nickname)
                             if user.id == room.creatorID {
-                                Text("房主")
+                                Text("ui.listen_together.host")
                                     .font(.caption2.bold())
                                     .padding(.horizontal, 7)
                                     .padding(.vertical, 3)
@@ -198,12 +206,14 @@ struct DesktopListenTogetherView: View {
                 HStack {
                     if let url = model.listenTogether.invitationURL {
                         ShareLink(item: url) {
-                            Label("分享邀请", systemImage: "square.and.arrow.up")
+                            Label("ui.listen_together.invite_friends", systemImage: "square.and.arrow.up")
                         }
                         .buttonStyle(.borderedProminent)
                     }
                     Button(
-                        model.listenTogether.isHost ? "结束房间" : "退出房间",
+                        model.listenTogether.isHost
+                            ? L10n.string("ui.listen_together.end")
+                            : L10n.string("ui.listen_together.leave"),
                         role: .destructive
                     ) {
                         confirmsLeaving = true

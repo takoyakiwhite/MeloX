@@ -12,11 +12,11 @@ enum SearchKind: Int, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .songs: "歌曲"
-        case .albums: "专辑"
-        case .artists: "歌手"
-        case .playlists: "歌单"
-        case .podcasts: "播客"
+        case .songs: L10n.string("ui.search.kind.songs")
+        case .albums: L10n.string("ui.search.kind.albums")
+        case .artists: L10n.string("ui.search.kind.artists")
+        case .playlists: L10n.string("ui.search.kind.playlists")
+        case .podcasts: L10n.string("ui.search.kind.podcasts")
         }
     }
 }
@@ -32,17 +32,17 @@ enum APIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .requestEncoding:
-            "无法生成网易云音乐请求。"
+            L10n.string("ui.error.api.request_encoding")
         case .invalidResponse:
-            "音乐服务返回了无法识别的数据。"
+            L10n.string("ui.error.api.invalid_response")
         case .emptyResponse(let statusCode):
-            "音乐服务返回了空响应（\(statusCode)）。"
-        case .server(let statusCode, let message):
-            "请求失败（\(statusCode)）：\(message)"
+            L10n.format("ui.error.api.empty_response", statusCode)
+        case .server(let statusCode, _):
+            L10n.format("ui.error.api.server_code", statusCode)
         case .noPlayableSource:
-            "当前歌曲可能因版权或地区限制，没有可用的播放地址。"
+            L10n.string("ui.error.api.no_playable_source")
         case .notLoggedIn:
-            "请先登录网易云音乐。"
+            L10n.string("ui.error.api.login_required")
         }
     }
 }
@@ -1054,7 +1054,7 @@ final class NeteaseAPI {
         guard (200..<300).contains(responseCode) else {
             throw APIError.server(
                 statusCode: responseCode,
-                message: message ?? "网易云音乐未完成操作。"
+                message: message ?? L10n.string("ui.error.api.operation_incomplete")
             )
         }
     }

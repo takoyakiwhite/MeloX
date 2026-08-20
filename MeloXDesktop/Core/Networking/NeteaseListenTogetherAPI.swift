@@ -210,7 +210,7 @@ extension NeteaseAPI {
             || response.data?.result == false {
             throw APIError.server(
                 statusCode: response.code,
-                message: response.message ?? "网易云音乐未能结束一起听房间。"
+                message: response.message ?? L10n.string("ui.error.listen_together.end_failed")
             )
         }
     }
@@ -226,7 +226,7 @@ extension NeteaseAPI {
             || response.data?.success == false {
             throw APIError.server(
                 statusCode: response.code,
-                message: response.message ?? "网易云音乐未完成一起听操作。"
+                message: response.message ?? L10n.string("ui.error.listen_together.operation_incomplete")
             )
         }
     }

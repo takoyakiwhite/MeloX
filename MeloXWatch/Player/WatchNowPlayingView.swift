@@ -58,7 +58,9 @@ struct WatchNowPlayingView: View {
                     .background(.thinMaterial, in: .capsule)
                     .padding(.top, 5)
                     .padding(.trailing, 6)
-                    .accessibilityLabel("当前实际音质")
+                    .accessibilityLabel(
+                        L10n.string("ui.watch.now_playing.effective_quality")
+                    )
                     .accessibilityValue(quality.title)
             }
         }
@@ -94,7 +96,10 @@ struct WatchNowPlayingView: View {
 
     private func titleBlock(height: CGFloat) -> some View {
         VStack(spacing: 1) {
-            Text(coordinator.song?.name ?? "未在播放")
+            Text(
+                coordinator.song?.name
+                    ?? L10n.string("ui.player.not_playing")
+            )
                 .font(.system(.headline, design: .rounded, weight: .semibold))
                 .lineLimit(1)
                 .minimumScaleFactor(0.78)
@@ -136,7 +141,7 @@ struct WatchNowPlayingView: View {
             }
             .buttonStyle(.plain)
             .disabled(coordinator.song == nil)
-            .accessibilityLabel("上一首")
+            .accessibilityLabel("ui.player.previous")
 
             Spacer(minLength: 4)
 
@@ -150,7 +155,11 @@ struct WatchNowPlayingView: View {
             .buttonStyle(.plain)
             .disabled(coordinator.song == nil)
             .accessibilityLabel(
-                coordinator.isPlaying ? "暂停" : "播放"
+                L10n.string(
+                    coordinator.isPlaying
+                        ? "ui.action.pause"
+                        : "ui.action.play"
+                )
             )
 
             Spacer(minLength: 4)
@@ -166,7 +175,7 @@ struct WatchNowPlayingView: View {
             }
             .buttonStyle(.plain)
             .disabled(coordinator.queue.count < 2)
-            .accessibilityLabel("下一首")
+            .accessibilityLabel("ui.player.next")
         }
         .frame(height: metrics.centerControlSize)
         .padding(

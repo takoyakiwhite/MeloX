@@ -261,7 +261,7 @@ struct DesktopMiniPlayerWindow: View {
                 .frame(width: 42, height: 42)
 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(model.player.currentSong?.name ?? "未在播放")
+                    Text(model.player.currentSong?.name ?? L10n.string("ui.desktop.player.not_playing"))
                         .font(.system(size: 16, weight: .semibold))
                         .lineLimit(1)
                     Text(
@@ -270,7 +270,11 @@ struct DesktopMiniPlayerWindow: View {
                             model.player.currentSong?.album?.name,
                         ]
                         .compactMap { $0 }
-                        .joined(separator: " — ")
+                        .joined(
+                            separator: L10n.string(
+                                "ui.common.title_detail_separator"
+                            )
+                        )
                     )
                     .font(.system(size: 13))
                     .foregroundStyle(.secondary)
@@ -281,15 +285,15 @@ struct DesktopMiniPlayerWindow: View {
             .padding(.horizontal, 15)
             .padding(.top, 8)
             .gesture(WindowDragGesture())
-            .accessibilityHint("拖动以移动迷你播放器")
+            .accessibilityHint("ui.desktop.mini_player.drag_hint")
         } else {
             Image(systemName: "apple.logo")
                 .font(.system(size: 38, weight: .medium))
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .gesture(WindowDragGesture())
-                .accessibilityLabel("未在播放")
-                .accessibilityHint("拖动以移动迷你播放器")
+                .accessibilityLabel("ui.desktop.player.not_playing")
+                .accessibilityHint("ui.desktop.mini_player.drag_hint")
         }
     }
 
@@ -453,7 +457,7 @@ struct DesktopMiniPlayerWindow: View {
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .help("收起音量")
+            .help(L10n.string("ui.desktop.player.collapse_volume"))
         }
         .padding(.horizontal, 14)
         .frame(width: 154, height: 36)
@@ -471,13 +475,13 @@ struct DesktopMiniPlayerWindow: View {
         .tint(.primary)
         .controlSize(.large)
         .frame(width: 96)
-        .accessibilityLabel("音量")
+        .accessibilityLabel("ui.player.volume")
     }
 
     private var largeArtworkMetadata: some View {
         HStack(alignment: .center, spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
-                Text(model.player.currentSong?.name ?? "未在播放")
+                Text(model.player.currentSong?.name ?? L10n.string("ui.desktop.player.not_playing"))
                     .font(.system(size: 17, weight: .bold))
                     .lineLimit(1)
                 Text(
@@ -486,7 +490,11 @@ struct DesktopMiniPlayerWindow: View {
                         model.player.currentSong?.album?.name,
                     ]
                     .compactMap { $0 }
-                    .joined(separator: " — ")
+                    .joined(
+                        separator: L10n.string(
+                            "ui.common.title_detail_separator"
+                        )
+                    )
                 )
                 .font(.system(size: 14.5, weight: .medium))
                 .foregroundStyle(.white.opacity(0.88))
@@ -531,7 +539,9 @@ struct DesktopMiniPlayerWindow: View {
         .help(
             model.player.currentSong.map {
                 model.library.contains(song: $0)
-            } == true ? "取消喜欢" : "喜欢"
+            } == true
+                ? L10n.string("ui.song.unlike")
+                : L10n.string("ui.song.like")
         )
     }
 
@@ -586,14 +596,14 @@ struct DesktopMiniPlayerWindow: View {
         .menuIndicator(.hidden)
         .fixedSize()
         .frame(width: 36, height: 36)
-        .help("更多")
-        .accessibilityLabel("更多")
+        .help(L10n.string("ui.common.more"))
+        .accessibilityLabel("ui.common.more")
     }
 
     @ViewBuilder
     private var miniPlayerMenuItems: some View {
         Picker(
-            "歌词来源",
+            "ui.settings.lyrics.content.default_source",
             selection: Binding(
                 get: { model.settings.lyricsSourcePreference },
                 set: { model.settings.lyricsSourcePreference = $0 }
@@ -609,7 +619,9 @@ struct DesktopMiniPlayerWindow: View {
         DesktopPlaybackQualityMenu(model: model)
 
         Button(
-            showsLargeArtwork ? "隐藏大插图" : "显示大插图",
+            showsLargeArtwork
+                ? L10n.string("ui.desktop.mini_player.hide_large_artwork")
+                : L10n.string("ui.desktop.mini_player.show_large_artwork"),
             systemImage: showsLargeArtwork ? "photo.fill" : "photo"
         ) {
             expandedPanel = nil
@@ -618,7 +630,7 @@ struct DesktopMiniPlayerWindow: View {
 
         Divider()
 
-        Button("打开完整播放器", systemImage: "arrow.up.left.and.arrow.down.right") {
+        Button("ui.desktop.mini_player.open_full_player", systemImage: "arrow.up.left.and.arrow.down.right") {
             dismissWindow(id: "mini-player")
             Task { @MainActor in
                 await Task.yield()
@@ -630,7 +642,7 @@ struct DesktopMiniPlayerWindow: View {
                 mainWindow?.makeKeyAndOrderFront(nil)
             }
         }
-        Button("桌面歌词", systemImage: "text.quote") {
+        Button("ui.floating_lyrics.title", systemImage: "text.quote") {
             openWindow(id: "floating-lyrics")
         }
     }
@@ -639,19 +651,19 @@ struct DesktopMiniPlayerWindow: View {
         HStack(spacing: 9) {
             miniWindowButton(
                 color: Color(red: 1, green: 0.37, blue: 0.34),
-                help: "关闭迷你播放器"
+                help: L10n.string("ui.desktop.mini_player.close")
             ) {
                 dismissWindow(id: "mini-player")
             }
             miniWindowButton(
                 color: Color(red: 1, green: 0.74, blue: 0.18),
-                help: "最小化"
+                help: L10n.string("ui.desktop.window.minimize")
             ) {
                 NSApp.keyWindow?.miniaturize(nil)
             }
             miniWindowButton(
                 color: Color(red: 0.15, green: 0.78, blue: 0.33),
-                help: "缩放"
+                help: L10n.string("ui.desktop.window.zoom")
             ) {
                 NSApp.keyWindow?.zoom(nil)
             }
@@ -715,7 +727,9 @@ struct DesktopMiniPlayerWindow: View {
         }
         .buttonStyle(.plain)
         .accessibilityValue(
-            isSelected ? "已选择" : "未选择"
+            isSelected
+                ? L10n.string("ui.common.selected")
+                : L10n.string("ui.common.not_selected")
         )
     }
 
@@ -778,7 +792,7 @@ private struct DesktopMiniPlayerProgress: View {
         )
         .tint(tint)
         .controlSize(.small)
-        .accessibilityLabel("播放进度")
+        .accessibilityLabel("ui.desktop.player.playback_progress")
         .frame(height: 14)
     }
 

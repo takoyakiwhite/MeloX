@@ -106,7 +106,11 @@ enum StorageMaintenance {
                     try fileManager.removeItem(at: url)
                 } catch {
                     failures.append(
-                        "\(url.lastPathComponent)：\(error.localizedDescription)"
+                        L10n.format(
+                            "ui.settings.storage.error.file_detail",
+                            url.lastPathComponent,
+                            error.localizedDescription
+                        )
                     )
                 }
             }
@@ -277,8 +281,10 @@ nonisolated enum StorageMaintenanceError:
     var errorDescription: String? {
         switch self {
         case .unableToRemove(let failures):
-            "部分临时文件无法清理："
-                + failures.joined(separator: "；")
+            L10n.format(
+                "ui.error.storage.partial_cleanup",
+                failures.joined(separator: L10n.string("ui.common.list_separator"))
+            )
         }
     }
 }

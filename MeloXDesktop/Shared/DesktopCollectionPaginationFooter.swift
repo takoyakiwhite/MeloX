@@ -3,7 +3,7 @@ import SwiftUI
 struct DesktopCollectionPaginationFooter: View {
     let isLoading: Bool
     let failureMessage: String?
-    var loadingTitle = "正在加载更多歌曲"
+    var loadingTitle = L10n.string("ui.common.loading_more_songs")
     let action: () async -> Void
 
     var body: some View {
@@ -15,7 +15,7 @@ struct DesktopCollectionPaginationFooter: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
-                    Button("重新加载") {
+                    Button("ui.common.retry") {
                         Task {
                             await action()
                         }
@@ -31,7 +31,7 @@ struct DesktopCollectionPaginationFooter: View {
                         .foregroundStyle(.secondary)
                 }
             } else {
-                Button("加载更多", systemImage: "arrow.down.circle") {
+                Button("ui.common.loading_more", systemImage: "arrow.down.circle") {
                     Task {
                         await action()
                     }

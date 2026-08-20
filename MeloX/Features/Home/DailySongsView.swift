@@ -15,7 +15,7 @@ struct DailySongsView: View {
         Group {
             switch phase {
             case .loading:
-                ProgressView("正在载入每日推荐")
+                ProgressView("ui.home.daily_songs.loading")
             case .failed(let message):
                 ConnectionUnavailableView(message: message) {
                     reloadToken += 1
@@ -27,7 +27,7 @@ struct DailySongsView: View {
                             Button {
                                 Task { await player.playAll(songs) }
                             } label: {
-                                Label("播放全部", systemImage: "play.fill")
+                                Label("ui.common.play_all", systemImage: "play.fill")
                                     .font(.headline)
                             }
                             .buttonStyle(.plain)
@@ -46,17 +46,21 @@ struct DailySongsView: View {
                                         Image(systemName: "arrow.triangle.2.circlepath")
                                     }
 
-                                    Text(isRefreshing ? "更换中" : "换一批")
+                                    Text(
+                                        isRefreshing
+                                            ? L10n.string("ui.home.daily_songs.refreshing")
+                                            : L10n.string("ui.home.daily_songs.refresh")
+                                    )
                                 }
                             }
                             .buttonStyle(.bordered)
                             .disabled(isRefreshing)
                             .accessibilityLabel(
                                 isRefreshing
-                                    ? "正在更换每日推荐"
-                                    : "换一批每日推荐"
+                                    ? L10n.string("ui.home.daily_songs.refreshing_accessibility")
+                                    : L10n.string("ui.home.daily_songs.refresh_accessibility")
                             )
-                            .accessibilityHint("请求一组新的每日推荐歌曲")
+                            .accessibilityHint("ui.home.daily_songs.refresh_hint")
                         }
                     }
                     ForEach(Array(songs.enumerated()), id: \.element.id) { index, song in
@@ -70,7 +74,12 @@ struct DailySongsView: View {
                             Button {
                                 library.toggle(song: song)
                             } label: {
-                                Label("收藏", systemImage: library.contains(song: song) ? "heart.slash" : "heart")
+                                Label(
+                                    library.contains(song: song)
+                                        ? L10n.string("ui.common.unfavorite")
+                                        : L10n.string("ui.common.favorite"),
+                                    systemImage: library.contains(song: song) ? "heart.slash" : "heart"
+                                )
                             }
                             .tint(.pink)
                         }
@@ -79,13 +88,13 @@ struct DailySongsView: View {
                 .listStyle(.plain)
             }
         }
-        .navigationTitle("每日推荐")
+        .navigationTitle("ui.home.action.daily_songs")
         .task(id: reloadToken) {
             guard phase != .loaded else { return }
             await load()
         }
         .alert(
-            "无法换一批",
+            "ui.home.daily_songs.refresh_failed",
             isPresented: Binding(
                 get: { refreshErrorMessage != nil },
                 set: { isPresented in
@@ -95,11 +104,11 @@ struct DailySongsView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 refreshErrorMessage = nil
             }
         } message: {
-            Text(refreshErrorMessage ?? "请稍后重试。")
+            Text(refreshErrorMessage ?? L10n.string("ui.error.try_again_later"))
         }
     }
 

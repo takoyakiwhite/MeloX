@@ -202,7 +202,7 @@ struct ContentView: View {
                 }
             }
             .alert(
-                "歌曲无法播放",
+                "ui.error.playback.title",
                 isPresented: Binding(
                     get: { player.playbackIssue != nil },
                     set: { isPresented in
@@ -213,19 +213,19 @@ struct ContentView: View {
                 )
             ) {
                 if player.canPlayNext {
-                    Button("播放下一首") {
+                    Button("ui.player.play_next") {
                         player.dismissPlaybackIssue()
                         Task { await player.next() }
                     }
                 }
-                Button("好", role: .cancel) {
+                Button("ui.common.ok", role: .cancel) {
                     player.dismissPlaybackIssue()
                 }
             } message: {
-                Text(player.playbackIssue?.message ?? "当前歌曲暂时无法播放。")
+                Text(player.playbackIssue?.message ?? L10n.string("ui.error.playback.current_unavailable"))
             }
             .alert(
-                "无法自动启动心动模式",
+                "ui.error.heart_mode_launch.title",
                 isPresented: Binding(
                     get: { heartModeLaunchErrorMessage != nil },
                     set: { isPresented in
@@ -235,14 +235,14 @@ struct ContentView: View {
                     }
                 )
             ) {
-                Button("好", role: .cancel) {
+                Button("ui.common.ok", role: .cancel) {
                     heartModeLaunchErrorMessage = nil
                 }
             } message: {
-                Text(heartModeLaunchErrorMessage ?? "请稍后重试。")
+                Text(heartModeLaunchErrorMessage ?? L10n.string("ui.error.try_again_later"))
             }
             .alert(
-                "下载操作失败",
+                "ui.error.download.title",
                 isPresented: Binding(
                     get: {
                         AppFeatureAvailability.downloads
@@ -255,14 +255,14 @@ struct ContentView: View {
                     }
                 )
             ) {
-                Button("好", role: .cancel) {
+                Button("ui.common.ok", role: .cancel) {
                     downloads.clearError()
                 }
             } message: {
-                Text(downloads.errorMessage ?? "无法完成下载操作。")
+                Text(downloads.errorMessage ?? L10n.string("ui.error.download.operation_failed"))
             }
             .alert(
-                "无法打开悬浮歌词",
+                "ui.error.floating_lyrics.title",
                 isPresented: Binding(
                     get: { floatingLyrics.errorMessage != nil },
                     set: { isPresented in
@@ -272,13 +272,13 @@ struct ContentView: View {
                     }
                 )
             ) {
-                Button("好", role: .cancel) {
+                Button("ui.common.ok", role: .cancel) {
                     floatingLyrics.dismissError()
                 }
             } message: {
                 Text(
                     floatingLyrics.errorMessage
-                        ?? "系统画中画暂时不可用。"
+                        ?? L10n.string("ui.error.picture_in_picture.unavailable")
                 )
             }
             .coordinateListenTogether()
@@ -400,10 +400,10 @@ struct ContentView: View {
             HomeView()
         case .recommended:
             HomeRecommendedView()
-                .navigationTitle("推荐")
+                .navigationTitle("ui.navigation.recommended")
                 .navigationBarTitleDisplayMode(.large)
         case .music:
-            ExploreView(navigationTitle: "音乐")
+            ExploreView(navigationTitle: L10n.string("ui.navigation.music"))
         case .podcasts:
             PodcastHomeView()
         case .explore:
@@ -438,8 +438,8 @@ struct ContentView: View {
                             "bubble.left.and.bubble.right"
                     )
                 }
-                .accessibilityLabel("私信")
-                .accessibilityHint("打开网易云私信")
+                .accessibilityLabel("ui.messages.private.title")
+                .accessibilityHint("ui.messages.private.open_hint")
             }
 
             Button {
@@ -447,7 +447,7 @@ struct ContentView: View {
             } label: {
                 Image(systemName: "waveform")
             }
-            .accessibilityLabel("听歌识曲")
+            .accessibilityLabel("ui.recognition.title")
 
             Button {
                 presentedSheet = .settings
@@ -497,9 +497,11 @@ struct ContentView: View {
 
     private var accountToolbarAccessibilityLabel: String {
         if let profile = library.profile {
-            return "\(profile.nickname)的账号与设置"
+            return L10n.format("ui.account.settings_for_user", profile.nickname)
         }
-        return library.isLoggedIn ? "账号与设置" : "登录与设置"
+        return library.isLoggedIn
+            ? L10n.string("ui.account.settings")
+            : L10n.string("ui.account.login_settings")
     }
 
     private func navigationPathBinding(

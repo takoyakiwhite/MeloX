@@ -19,7 +19,9 @@ struct LibrarySongsView: View {
                 Button(action: playDisplayedSongs) {
                     HStack {
                         Label(
-                            isSearching ? "播放搜索结果" : "播放全部",
+                            isSearching
+                                ? L10n.string("ui.common.play_search_results")
+                                : L10n.string("ui.common.play_all"),
                             systemImage: "play.fill"
                         )
                         Spacer()
@@ -47,7 +49,7 @@ struct LibrarySongsView: View {
                     Button(role: .destructive) {
                         library.toggle(song: song)
                     } label: {
-                        Label("取消收藏", systemImage: "heart.slash")
+                        Label("ui.common.unfavorite", systemImage: "heart.slash")
                     }
                 }
             }
@@ -73,7 +75,7 @@ struct LibrarySongsView: View {
             await prepareSearchResults(debounced: true)
         }
         .alert(
-            "无法启动心动模式",
+            "ui.library.heart_mode_failed",
             isPresented: Binding(
                 get: { heartModeErrorMessage != nil },
                 set: { presented in
@@ -83,14 +85,14 @@ struct LibrarySongsView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 heartModeErrorMessage = nil
             }
         } message: {
-            Text(heartModeErrorMessage ?? "请稍后重试。")
+            Text(heartModeErrorMessage ?? L10n.string("ui.error.try_again_later"))
         }
         .alert(
-            "无法播放全部",
+            "ui.library.play_all_failed",
             isPresented: Binding(
                 get: { playbackErrorMessage != nil },
                 set: { isPresented in
@@ -100,11 +102,11 @@ struct LibrarySongsView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 playbackErrorMessage = nil
             }
         } message: {
-            Text(playbackErrorMessage ?? "无法读取完整歌曲列表。")
+            Text(playbackErrorMessage ?? L10n.string("ui.library.complete_song_list_failed"))
         }
     }
 
@@ -130,7 +132,7 @@ struct LibrarySongsView: View {
     private var heartModeButton: some View {
         Button(action: startHeartMode) {
             HStack {
-                Label("心动模式", systemImage: "heart.circle.fill")
+                Label("ui.home.action.heart_mode", systemImage: "heart.circle.fill")
                 Spacer()
                 if isStartingHeartMode {
                     ProgressView()
@@ -147,7 +149,7 @@ struct LibrarySongsView: View {
             if isPreparingSearchResults {
                 HStack(spacing: 8) {
                     ProgressView()
-                    Text("正在搜索全部收藏歌曲")
+                    Text("ui.library.searching_all_favorite_songs")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
@@ -162,7 +164,7 @@ struct LibrarySongsView: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
-                    Button("重新搜索") {
+                    Button("ui.library.search_again") {
                         searchReloadToken += 1
                     }
                     .buttonStyle(.bordered)
@@ -193,10 +195,10 @@ struct LibrarySongsView: View {
                 ContentUnavailableView.search(text: normalizedSearchQuery)
             } else if !library.hasMoreFavoriteSongs {
                 ContentUnavailableView(
-                    "还没有收藏歌曲",
+                    "ui.library.no_favorite_songs",
                     systemImage: "heart",
                     description: Text(
-                        "在歌曲列表左滑即可收藏到网易云音乐。"
+                        "ui.library.no_favorite_songs.message"
                     )
                 )
             }

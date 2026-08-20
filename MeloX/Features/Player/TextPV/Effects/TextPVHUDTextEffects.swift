@@ -11,7 +11,10 @@ extension TextPVEffectPainter {
     ) {
         let fontSize = config.number("fontSize", default: 13)
         drawText(
-            config.string("centerText", default: "SYS.MONITOR // ONLINE"),
+            config.string(
+                "centerText",
+                default: L10n.string("ui.text_pv.generated.hud.system_online")
+            ),
             in: &context,
             at: CGPoint(x: size.width / 2, y: 15),
             color: color("textColor", in: config, default: "$text"),
@@ -20,7 +23,10 @@ extension TextPVEffectPainter {
             anchor: .top
         )
         drawText(
-            config.string("rightText", default: "NETWATCH // PROTOCOL V.2.0.77"),
+            config.string(
+                "rightText",
+                default: L10n.string("ui.text_pv.generated.hud.netwatch_protocol")
+            ),
             in: &context,
             at: CGPoint(x: size.width - 30, y: 15),
             color: color("alertColor", in: config, default: "$accent"),
@@ -70,21 +76,21 @@ extension TextPVEffectPainter {
 
         let targetID = "T-\(Int(target.midX))\(Int(target.midY))"
         let lines: [(String, CGFloat, CGFloat, CGFloat, Color, Font.Weight)] = [
-            ("TARGET \(targetID)", 10, 18, 14, alert, .bold),
-            ("IMG_REC_FAIL", panel.width / 2 - 40, 105, 11, alert, .regular),
-            ("NAME", 15, 195, 9, text, .regular),
-            ("UNKNOWN", 15, 208, 12, primary, .regular),
-            ("GENDER", 15, 230, 9, text, .regular),
-            ("N/A", 15, 243, 12, primary, .regular),
-            ("HEIGHT", panel.width / 2 + 5, 230, 9, text, .regular),
+            (L10n.format("ui.text_pv.generated.hud.target", targetID), 10, 18, 14, alert, .bold),
+            (L10n.string("ui.text_pv.generated.hud.image_recognition_failed"), panel.width / 2 - 40, 105, 11, alert, .regular),
+            (L10n.string("ui.text_pv.generated.hud.name"), 15, 195, 9, text, .regular),
+            (L10n.string("ui.text_pv.generated.hud.unknown"), 15, 208, 12, primary, .regular),
+            (L10n.string("ui.text_pv.generated.hud.gender"), 15, 230, 9, text, .regular),
+            (L10n.string("ui.text_pv.generated.hud.not_available"), 15, 243, 12, primary, .regular),
+            (L10n.string("ui.text_pv.generated.hud.height"), panel.width / 2 + 5, 230, 9, text, .regular),
             ("---cm", panel.width / 2 + 5, 243, 12, primary, .regular),
-            ("THREAT", 15, 265, 9, text, .regular),
-            ("CRITICAL", 15, 278, 12, alert, .bold),
-            ("LOCATION", 15, 300, 9, text, .regular),
-            ("NIGHT CITY", 15, 313, 12, primary, .regular),
-            ("NOTES", 15, 335, 9, text, .regular),
-            ("Scanning...", 15, 348, 12, text, .regular),
-            ("ARASAKA INTEL // CLASSIFIED", 10, panel.height - 18, 9, alert, .regular),
+            (L10n.string("ui.text_pv.generated.hud.threat"), 15, 265, 9, text, .regular),
+            (L10n.string("ui.text_pv.generated.hud.critical"), 15, 278, 12, alert, .bold),
+            (L10n.string("ui.text_pv.generated.hud.location"), 15, 300, 9, text, .regular),
+            (L10n.string("ui.text_pv.generated.hud.night_city"), 15, 313, 12, primary, .regular),
+            (L10n.string("ui.text_pv.generated.hud.notes"), 15, 335, 9, text, .regular),
+            (L10n.string("ui.text_pv.generated.hud.scanning"), 15, 348, 12, text, .regular),
+            (L10n.string("ui.text_pv.generated.hud.classified"), 10, panel.height - 18, 9, alert, .regular),
         ]
         for line in lines {
             drawText(

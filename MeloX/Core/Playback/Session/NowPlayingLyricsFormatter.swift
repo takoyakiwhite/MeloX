@@ -26,11 +26,11 @@ enum NowPlayingLyricsFormatter {
         }
 
         let lyric = nonempty(currentLyric) ?? songTitle
-        let replacements = [
-            "{歌词}": lyric,
-            "{歌名}": songTitle,
-            "{作者}": songArtist,
-        ]
+        let replacements = L10n.lyricFormatReplacements(
+            lyric: lyric,
+            title: songTitle,
+            artist: songArtist
+        )
         return NowPlayingLyricsMetadata(
             title: render(
                 settings.titleFormat,

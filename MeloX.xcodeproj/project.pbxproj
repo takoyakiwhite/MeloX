@@ -138,6 +138,11 @@
 			path = MeloXDesktop;
 			sourceTree = "<group>";
 		};
+		E40000000000000000000001 /* MeloXLocalization */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = MeloXLocalization;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -181,6 +186,7 @@
 			children = (
 				6DB1D884300F5FA000FB3AEE /* MeloX */,
 				D30000000000000000000003 /* MeloXDesktop */,
+				E40000000000000000000001 /* MeloXLocalization */,
 				B10000000000000000000004 /* MeloXWatchShared */,
 				B10000000000000000000003 /* MeloXWatch */,
 				CCEB73D46F0F496D8CBFF0CE /* MeloXLyricsWidget */,
@@ -218,6 +224,7 @@
 			fileSystemSynchronizedGroups = (
 				C2283E4B5CA041B19C10CB23 /* MeloXLiveActivityShared */,
 				CCEB73D46F0F496D8CBFF0CE /* MeloXLyricsWidget */,
+				E40000000000000000000001 /* MeloXLocalization */,
 			);
 			name = MeloXLyricsWidget;
 			packageProductDependencies = (
@@ -247,6 +254,7 @@
 				6DB1D884300F5FA000FB3AEE /* MeloX */,
 				B10000000000000000000004 /* MeloXWatchShared */,
 				C2283E4B5CA041B19C10CB23 /* MeloXLiveActivityShared */,
+				E40000000000000000000001 /* MeloXLocalization */,
 			);
 			name = MeloX;
 			packageProductDependencies = (
@@ -272,6 +280,7 @@
 			fileSystemSynchronizedGroups = (
 				B10000000000000000000003 /* MeloXWatch */,
 				B10000000000000000000004 /* MeloXWatchShared */,
+				E40000000000000000000001 /* MeloXLocalization */,
 			);
 			name = "MeloX Watch App";
 			packageProductDependencies = (
@@ -296,6 +305,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				D30000000000000000000003 /* MeloXDesktop */,
+				E40000000000000000000001 /* MeloXLocalization */,
 			);
 			name = "MeloX Desktop";
 			packageProductDependencies = (
@@ -344,6 +354,7 @@
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
+				"zh-Hans",
 				Base,
 			);
 			mainGroup = 6DB1D879300F5FA000FB3AEE;

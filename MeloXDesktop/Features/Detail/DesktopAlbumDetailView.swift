@@ -20,7 +20,7 @@ struct DesktopAlbumDetailView: View {
                     LazyVStack(alignment: .leading, spacing: 34) {
                         DesktopCollectionHeader(
                             artworkURL: album.artworkURL,
-                            kind: album.type ?? "专辑",
+                            kind: album.type ?? L10n.string("ui.common.album"),
                             title: album.name,
                             subtitle: album.artistText,
                             metadata: metadata(album),
@@ -47,29 +47,29 @@ struct DesktopAlbumDetailView: View {
                     .padding(.vertical, 34)
                 }
             } else if isLoading {
-                DesktopDetailLoadingView(message: "正在载入专辑…")
+                DesktopDetailLoadingView(message: L10n.string("ui.album.loading"))
             } else {
-                DesktopDetailErrorView(message: errorMessage ?? "未知错误") {
+                DesktopDetailErrorView(message: errorMessage ?? L10n.string("ui.error.unknown")) {
                     Task { await load() }
                 }
             }
         }
-        .navigationTitle(album?.name ?? "专辑")
+        .navigationTitle(album?.name ?? L10n.string("ui.common.album"))
         .task(id: albumID) { await load() }
         .animation(
             reduceMotion ? nil : .smooth(duration: 0.30),
             value: isLoading
         )
         .alert(
-            "无法更新收藏状态",
+            L10n.string("ui.error.favorite_failed"),
             isPresented: Binding(
                 get: { operationError != nil },
                 set: { if !$0 { operationError = nil } }
             )
         ) {
-            Button("好") { operationError = nil }
+            Button("ui.common.ok") { operationError = nil }
         } message: {
-            Text(operationError ?? "网易云音乐未完成操作。")
+            Text(operationError ?? L10n.string("ui.error.netease_operation_incomplete"))
         }
     }
 
@@ -115,10 +115,17 @@ struct DesktopAlbumDetailView: View {
     private func metadata(_ album: Album) -> String {
         var values: [String] = []
         if let publishTime = album.publishTime {
-            values.append(Date(timeIntervalSince1970: publishTime / 1_000).formatted(.dateTime.year()))
+            values.append(
+                Date(timeIntervalSince1970: publishTime / 1_000).formatted(
+                    .dateTime.year().locale(L10n.locale)
+                )
+            )
         }
-        if let size = album.size { values.append("\(size) 首歌曲") }
+        if let size = album.size { values.append(L10n.format("ui.common.song_count", size)) }
         values.append(model.settings.quality.title)
-        return values.joined(separator: " · ")
+        return L10n.joined(
+            values,
+            separatorKey: "ui.common.metadata_separator"
+        )
     }
 }

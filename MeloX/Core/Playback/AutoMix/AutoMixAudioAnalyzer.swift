@@ -201,19 +201,20 @@ nonisolated enum AutoMixAnalysisError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .modelMissing:
-            "BeatNet Core ML 模型未包含在应用中。"
+            L10n.string("ui.error.automix.model_missing")
         case .audioTrackMissing:
-            "歌曲没有可分析的音频轨道。"
+            L10n.string("ui.error.automix.no_audio_track")
         case .readerCouldNotStart:
-            "无法启动歌曲分析。"
+            L10n.string("ui.error.automix.analysis_start_failed")
         case .readerFailed(let error):
-            error?.localizedDescription ?? "读取歌曲音频失败。"
+            error?.localizedDescription
+                ?? L10n.string("ui.error.automix.audio_read_failed")
         case .invalidAudioBuffer:
-            "歌曲解码结果无法用于分析。"
+            L10n.string("ui.error.automix.invalid_decoded_audio")
         case .invalidModelOutput:
-            "BeatNet 返回了无效结果。"
+            L10n.string("ui.error.automix.invalid_result")
         case .invalidRemoteResponse:
-            "无法下载用于 BeatNet 分析的歌曲音频。"
+            L10n.string("ui.error.automix.download_failed")
         }
     }
 }

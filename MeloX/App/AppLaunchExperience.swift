@@ -30,21 +30,21 @@ private struct AppLaunchExperienceModifier: ViewModifier {
                 ReleaseNotesSheet(releaseNotes: notes)
             }
             .confirmationDialog(
-                "喜欢 MeloX 吗？",
+                "ui.launch.recommend.title",
                 isPresented: $showsRecommendationDialog,
                 titleVisibility: .visible
             ) {
                 ShareLink(
                     item: AppUpdateService.repositoryURL,
-                    subject: Text("推荐 MeloX"),
-                    message: Text("我正在使用 MeloX，推荐你也试试！")
+                    subject: Text("ui.launch.recommend.share_subject"),
+                    message: Text("ui.launch.recommend.share_message")
                 ) {
-                    Label("分享 MeloX", systemImage: "square.and.arrow.up")
+                    Label("ui.launch.recommend.share", systemImage: "square.and.arrow.up")
                 }
 
-                Button("还是算了", role: .cancel) {}
+                Button("ui.launch.recommend.not_now", role: .cancel) {}
             } message: {
-                Text("如果 MeloX 对你有帮助，欢迎把它推荐给更多人。你的分享会帮助项目被更多用户发现。")
+                Text("ui.launch.recommend.message")
             }
             .onChange(of: showsRecommendationDialog) { _, isPresented in
                 guard !isPresented else { return }
@@ -55,12 +55,12 @@ private struct AppLaunchExperienceModifier: ViewModifier {
             }
             .alert(item: $automaticUpdateAlert) { alert in
                 Alert(
-                    title: Text("发现新版本"),
+                    title: Text("ui.update.available.title"),
                     message: Text(alert.message),
-                    primaryButton: .default(Text("打开发布页")) {
+                    primaryButton: .default(Text("ui.update.open_release_page")) {
                         openURL(alert.releaseURL)
                     },
-                    secondaryButton: .cancel(Text("稍后"))
+                    secondaryButton: .cancel(Text("ui.common.later"))
                 )
             }
     }
@@ -116,7 +116,11 @@ private struct AppLaunchExperienceModifier: ViewModifier {
             guard result.hasUpdate else { return }
 
             automaticUpdateAlert = AutomaticUpdateAlert(
-                message: "当前版本 \(result.currentVersion)，最新版本 \(result.latestVersion)。可以前往发布页查看更新内容。",
+                message: L10n.format(
+                    "ui.update.available.message",
+                    result.currentVersion,
+                    result.latestVersion
+                ),
                 releaseURL: result.releaseURL
             )
         } catch {

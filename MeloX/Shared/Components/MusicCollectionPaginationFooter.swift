@@ -4,7 +4,7 @@ struct MusicCollectionPaginationFooter: View {
     let isLoading: Bool
     let failureMessage: String?
     let loadToken: Int
-    var loadingTitle = "正在加载更多歌曲"
+    var loadingTitle = L10n.string("ui.common.loading_more_songs")
     let action: () async -> Void
 
     var body: some View {
@@ -16,7 +16,7 @@ struct MusicCollectionPaginationFooter: View {
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
 
-                    Button("重新加载") {
+                    Button("ui.common.reload") {
                         Task {
                             await action()
                         }

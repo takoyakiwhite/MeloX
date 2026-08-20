@@ -24,7 +24,7 @@ struct DesktopAboutView: View {
                     .foregroundStyle(.secondary)
                     .padding(.top, 10)
 
-                Text("开发者：洛汐聚合体")
+                Text("ui.desktop.about.developer")
                     .foregroundStyle(.secondary)
                     .padding(.top, 6)
 
@@ -49,16 +49,20 @@ struct DesktopAboutView: View {
                                     .controlSize(.small)
                             }
 
-                            Text(isCheckingUpdate ? "正在检查…" : "检查更新…")
+                            Text(
+                                isCheckingUpdate
+                                    ? L10n.string("ui.about.checking_updates")
+                                    : L10n.string("ui.about.check_updates")
+                            )
                         }
                     }
                     .disabled(isCheckingUpdate)
 
-                    Button("GitHub 仓库") {
+                    Button("ui.about.github") {
                         openURL(AppUpdateService.repositoryURL)
                     }
 
-                    Button("版权声明…") {
+                    Button("ui.legal.projects_licenses.title") {
                         openWindow(id: "licenses")
                     }
                 }
@@ -75,28 +79,32 @@ struct DesktopAboutView: View {
                 Alert(
                     title: Text(alert.title),
                     message: Text(alert.message),
-                    primaryButton: .default(Text("打开发布页")) {
+                    primaryButton: .default(Text("ui.about.open_release_page")) {
                         openURL(releaseURL)
                     },
-                    secondaryButton: .cancel(Text("好"))
+                    secondaryButton: .cancel(Text("ui.common.ok"))
                 )
             } else {
                 Alert(
                     title: Text(alert.title),
                     message: Text(alert.message),
-                    dismissButton: .default(Text("好"))
+                    dismissButton: .default(Text("ui.common.ok"))
                 )
             }
         }
     }
 
     private var versionDescription: String {
-        "版本 \(Bundle.main.appReleaseVersion) (\(Bundle.main.appBuildNumber))"
+        L10n.format(
+            "ui.desktop.about.version_build",
+            Bundle.main.appReleaseVersion,
+            Bundle.main.appBuildNumber
+        )
     }
 
     private var copyrightNotice: String {
         let year = Calendar.current.component(.year, from: .now)
-        return "© \(year) 洛汐聚合体。\nMeloX 是非官方第三方网易云音乐客户端。"
+        return L10n.format("ui.desktop.about.copyright", year)
     }
 
     @MainActor
@@ -115,20 +123,24 @@ struct DesktopAboutView: View {
 
             if result.hasUpdate {
                 updateAlert = DesktopAboutUpdateAlert(
-                    title: "发现新版本",
-                    message: "当前版本 \(result.currentVersion)，最新版本 \(result.latestVersion)。",
+                    title: L10n.string("ui.about.update_available.title"),
+                    message: L10n.format(
+                        "ui.desktop.about.update_available.message",
+                        result.currentVersion,
+                        result.latestVersion
+                    ),
                     releaseURL: result.releaseURL
                 )
             } else {
                 updateAlert = DesktopAboutUpdateAlert(
-                    title: "已是最新版本",
-                    message: "当前版本 \(result.currentVersion) 已是最新版本。",
+                    title: L10n.string("ui.about.up_to_date.title"),
+                    message: L10n.format("ui.about.up_to_date.message", result.currentVersion),
                     releaseURL: nil
                 )
             }
         } catch {
             updateAlert = DesktopAboutUpdateAlert(
-                title: "检查更新失败",
+                title: L10n.string("ui.about.update_check_failed.title"),
                 message: error.localizedDescription,
                 releaseURL: nil
             )

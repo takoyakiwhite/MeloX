@@ -15,7 +15,7 @@ struct UserListeningRankView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("排行周期", selection: $selectedPeriod) {
+            Picker("ui.account.listening_rank.period", selection: $selectedPeriod) {
                 ForEach(UserPlayRecordPeriod.allCases) { period in
                     Text(period.title).tag(period)
                 }
@@ -28,7 +28,7 @@ struct UserListeningRankView: View {
 
             content
         }
-        .navigationTitle("我的听歌排行")
+        .navigationTitle("ui.library.my_listening_rank")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: selectedPeriod) {
             await load(period: selectedPeriod)
@@ -43,11 +43,11 @@ struct UserListeningRankView: View {
                     Image(systemName: "arrow.clockwise")
                 }
                 .disabled(currentPhase == .loading)
-                .accessibilityLabel("刷新听歌排行")
+                .accessibilityLabel("ui.account.listening_rank.refresh")
             }
         }
         .alert(
-            "无法更新听歌排行",
+            "ui.account.listening_rank.refresh_failed",
             isPresented: Binding(
                 get: { refreshErrorMessage != nil },
                 set: { isPresented in
@@ -57,11 +57,11 @@ struct UserListeningRankView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 refreshErrorMessage = nil
             }
         } message: {
-            Text(refreshErrorMessage ?? "请稍后重试。")
+            Text(refreshErrorMessage ?? L10n.string("ui.error.try_again_later"))
         }
     }
 
@@ -69,7 +69,7 @@ struct UserListeningRankView: View {
     private var content: some View {
         switch currentPhase {
         case .loading:
-            ProgressView("正在载入听歌排行")
+            ProgressView("ui.account.listening_rank.loading")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .failed(let message):
             ConnectionUnavailableView(message: message) {
@@ -86,7 +86,7 @@ struct UserListeningRankView: View {
     private var loadedContent: some View {
         if currentRecords.isEmpty {
             ContentUnavailableView(
-                "暂无听歌排行",
+                "ui.account.listening_rank.empty",
                 systemImage: "chart.bar.xaxis",
                 description: Text(selectedPeriod.emptyDescription)
             )
@@ -97,7 +97,7 @@ struct UserListeningRankView: View {
                     Button {
                         Task { await player.playAll(currentSongs) }
                     } label: {
-                        Label("播放全部", systemImage: "play.fill")
+                        Label("ui.common.play_all", systemImage: "play.fill")
                     }
                 } footer: {
                     Text(selectedPeriod.description)
@@ -115,7 +115,7 @@ struct UserListeningRankView: View {
                             song: record.song,
                             index: index,
                             secondaryMetadata:
-                                "播放 \(record.playCount.formatted()) 次"
+                                L10n.format("ui.common.play_count", record.playCount)
                         )
                     }
                     .buttonStyle(.plain)
@@ -181,27 +181,27 @@ private extension UserPlayRecordPeriod {
     var title: String {
         switch self {
         case .week:
-            "最近一周"
+            L10n.string("ui.account.listening_rank.week")
         case .allTime:
-            "所有时间"
+            L10n.string("ui.account.listening_rank.all_time")
         }
     }
 
     var description: String {
         switch self {
         case .week:
-            "按最近一周的播放次数排序"
+            L10n.string("ui.account.listening_rank.week.detail")
         case .allTime:
-            "按账号全部听歌记录的播放次数排序"
+            L10n.string("ui.account.listening_rank.all_time.detail")
         }
     }
 
     var emptyDescription: String {
         switch self {
         case .week:
-            "最近一周还没有可显示的听歌记录。"
+            L10n.string("ui.account.listening_rank.week.empty")
         case .allTime:
-            "当前账号还没有可显示的听歌记录。"
+            L10n.string("ui.account.listening_rank.all_time.empty")
         }
     }
 }

@@ -12,11 +12,11 @@ struct AddToPlaylistSheet: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle("添加到歌单")
+                .navigationTitle("ui.playlists.add_to")
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("取消") {
+                        Button("ui.common.cancel") {
                             dismiss()
                         }
                     }
@@ -24,7 +24,7 @@ struct AddToPlaylistSheet: View {
         }
         .interactiveDismissDisabled(addingToPlaylistID != nil)
         .alert(
-            "添加失败",
+            "ui.playlists.add_failed",
             isPresented: Binding(
                 get: { errorMessage != nil },
                 set: { isPresented in
@@ -34,11 +34,11 @@ struct AddToPlaylistSheet: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 errorMessage = nil
             }
         } message: {
-            Text(errorMessage ?? "未知错误")
+            Text(errorMessage ?? L10n.string("ui.common.unknown_error"))
         }
     }
 
@@ -46,20 +46,20 @@ struct AddToPlaylistSheet: View {
     private var content: some View {
         if !library.isLoggedIn {
             ContentUnavailableView(
-                "需要登录",
+                "ui.account.login_required",
                 systemImage: "person.crop.circle.badge.exclamationmark",
-                description: Text("登录网易云音乐后，才能把歌曲添加到自己的歌单。")
+                description: Text("ui.playlists.login_to_add")
             )
         } else if library.phase == .loading, library.ownedPlaylists.isEmpty {
-            ProgressView("正在读取歌单")
+            ProgressView("ui.playlists.loading")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if library.ownedPlaylists.isEmpty {
             ContentUnavailableView {
-                Label("没有可选歌单", systemImage: "music.note.list")
+                Label("ui.playlists.none_available", systemImage: "music.note.list")
             } description: {
-                Text(library.errorMessage ?? "请先在网易云音乐中创建一个歌单。")
+                Text(library.errorMessage ?? L10n.string("ui.playlists.create_first"))
             } actions: {
-                Button("重新加载") {
+                Button("ui.common.reload") {
                     Task {
                         await library.refresh(force: true)
                     }
@@ -80,7 +80,7 @@ struct AddToPlaylistSheet: View {
                             Text(playlist.name)
                                 .lineLimit(1)
 
-                            Text("\(playlist.trackCount) 首歌曲")
+                            Text(L10n.format("ui.common.song_count", playlist.trackCount))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -94,7 +94,13 @@ struct AddToPlaylistSheet: View {
                 }
                 .buttonStyle(.plain)
                 .disabled(addingToPlaylistID != nil)
-                .accessibilityLabel("添加到\(playlist.name)，\(playlist.trackCount) 首歌曲")
+                .accessibilityLabel(
+                    L10n.format(
+                        "ui.playlists.add_to_accessibility",
+                        playlist.name,
+                        playlist.trackCount
+                    )
+                )
             }
             .listStyle(.plain)
             .refreshable {

@@ -17,7 +17,7 @@ struct ArtistDetailView: View {
         Group {
             switch phase {
             case .loading where artist == nil:
-                ProgressView("正在载入歌手")
+                ProgressView("ui.artist.loading")
             case .failed(let message) where artist == nil:
                 ConnectionUnavailableView(message: message) {
                     reloadToken += 1
@@ -28,7 +28,7 @@ struct ArtistDetailView: View {
                 }
             }
         }
-        .navigationTitle(artist?.name ?? "歌手")
+        .navigationTitle(artist?.name ?? L10n.string("ui.common.artist"))
         .navigationBarTitleDisplayMode(.inline)
         .task(id: reloadToken) {
             guard artist == nil else { return }
@@ -45,14 +45,19 @@ struct ArtistDetailView: View {
                     Text(artist.name)
                         .font(.title.bold())
                     if !artist.aliases.isEmpty {
-                        Text(artist.aliases.joined(separator: " / "))
+                        Text(
+                            L10n.joined(
+                                artist.aliases,
+                                separatorKey: "ui.common.artist_separator"
+                            )
+                        )
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                     }
                     Button {
                         Task { await player.playAll(songs, sourceID: artist.id) }
                     } label: {
-                        Text("播放热门歌曲")
+                        Text("ui.artist.play_popular_songs")
                     }
                     .buttonStyle(.borderedProminent)
                     .disabled(songs.isEmpty)
@@ -61,7 +66,7 @@ struct ArtistDetailView: View {
                 .padding(.vertical, 8)
             }
 
-            Section("热门歌曲") {
+            Section("ui.artist.popular_songs") {
                 ForEach(Array(songs.prefix(20).enumerated()), id: \.element.id) { index, song in
                     Button {
                         Task {
@@ -75,14 +80,19 @@ struct ArtistDetailView: View {
                         Button {
                             library.toggle(song: song)
                         } label: {
-                            Label("收藏", systemImage: library.contains(song: song) ? "heart.slash" : "heart")
+                            Label(
+                                library.contains(song: song)
+                                    ? L10n.string("ui.common.unfavorite")
+                                    : L10n.string("ui.common.favorite"),
+                                systemImage: library.contains(song: song) ? "heart.slash" : "heart"
+                            )
                         }
                         .tint(.pink)
                     }
                 }
             }
 
-            Section("专辑") {
+            Section("ui.common.albums") {
                 ForEach(albums) { album in
                     NavigationLink(value: MusicRoute.album(album)) {
                         HStack(spacing: 12) {
@@ -91,7 +101,7 @@ struct ArtistDetailView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(album.name)
                                     .lineLimit(1)
-                                Text(album.type ?? "专辑")
+                                Text(album.type ?? L10n.string("ui.common.album"))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

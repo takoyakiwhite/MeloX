@@ -11,11 +11,11 @@ enum FloatingLyricsBackgroundStyle: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .transparent: "透明"
-        case .material: "系统材质"
-        case .light: "浅色"
-        case .dark: "深色"
-        case .blurredArtwork: "模糊封面"
+        case .transparent: L10n.string("ui.desktop.floating_lyrics.background.transparent")
+        case .material: L10n.string("ui.desktop.floating_lyrics.background.material")
+        case .light: L10n.string("ui.settings.appearance.option.light")
+        case .dark: L10n.string("ui.settings.appearance.option.dark")
+        case .blurredArtwork: L10n.string("ui.desktop.floating_lyrics.background.blurred_artwork")
         }
     }
 

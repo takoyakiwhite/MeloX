@@ -16,9 +16,9 @@ enum RepeatMode: String, CaseIterable, Identifiable {
 
     var accessibilityTitle: String {
         switch self {
-        case .off: "循环关闭"
-        case .all: "列表循环"
-        case .one: "单曲循环"
+        case .off: L10n.string("ui.player.repeat.off")
+        case .all: L10n.string("ui.player.repeat.all")
+        case .one: L10n.string("ui.player.repeat.one")
         }
     }
 }

@@ -44,7 +44,7 @@ struct WatchRootView: View {
                     }
                     .buttonStyle(.plain)
                     .tint(.white)
-                    .accessibilityLabel("打开菜单")
+                    .accessibilityLabel("ui.watch.menu.open")
                 }
             }
         }

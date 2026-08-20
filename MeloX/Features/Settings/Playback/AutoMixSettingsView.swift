@@ -10,20 +10,20 @@ struct AutoMixSettingsView: View {
         Form {
             Section {
                 Toggle(
-                    "自动混音",
+                    "ui.settings.automix.enabled",
                     isOn: Binding(
                         get: { player.isAutoMixEnabled },
                         set: { player.setAutoMixEnabled($0) }
                     )
                 )
 
-                Picker("过渡方式", selection: $preferences.mode) {
+                Picker("ui.settings.automix.transition_mode", selection: $preferences.mode) {
                     ForEach(AutoMixMode.allCases) { mode in
                         Text(mode.title).tag(mode)
                     }
                 }
             } header: {
-                Text("模式")
+                Text("ui.settings.automix.section.mode")
             } footer: {
                 Text(preferences.mode.description)
             }
@@ -31,7 +31,7 @@ struct AutoMixSettingsView: View {
             if preferences.mode == .smart {
                 Section {
                     Picker(
-                        "过渡长度",
+                        "ui.settings.automix.transition_length",
                         selection: $preferences.transitionBars
                     ) {
                         ForEach(AutoMixTransitionBars.allCases) { bars in
@@ -40,7 +40,7 @@ struct AutoMixSettingsView: View {
                     }
 
                     Picker(
-                        "上一首结束位置",
+                        "ui.settings.automix.previous_end_position",
                         selection: $preferences.tailCutBars
                     ) {
                         ForEach(AutoMixTailCutBars.allCases) {
@@ -50,13 +50,13 @@ struct AutoMixSettingsView: View {
                     }
 
                     Toggle(
-                        "匹配歌曲速度",
+                        "ui.settings.automix.match_tempo",
                         isOn: $preferences.tempoMatchingEnabled
                     )
 
                     if preferences.tempoMatchingEnabled {
                         valueSlider(
-                            title: "最大速度调整",
+                            title: L10n.string("ui.settings.automix.maximum_tempo_adjustment"),
                             value:
                                 $preferences
                                     .maximumTempoAdjustmentPercent,
@@ -65,35 +65,39 @@ struct AutoMixSettingsView: View {
                                     .maximumTempoAdjustmentPercentRange,
                             step: 0.5,
                             valueText:
-                                "\(preferences.maximumTempoAdjustmentPercent.formatted(.number.precision(.fractionLength(1))))%"
+                                preferences.maximumTempoAdjustmentPercent.formatted(
+                                    .number
+                                        .precision(.fractionLength(1))
+                                        .locale(L10n.locale)
+                                ) + "%"
                         )
                     }
 
                     Toggle(
-                        "跳过安静开头",
+                        "ui.settings.automix.skip_quiet_opening",
                         isOn: $preferences.skipsQuietOpening
                     )
 
                     valueSlider(
-                        title: "最低分析置信度",
+                        title: L10n.string("ui.settings.automix.minimum_confidence"),
                         value: $preferences.minimumAnalysisConfidence,
                         range:
                             AutoMixPreferences
                                 .minimumAnalysisConfidenceRange,
                         step: 0.05,
                         valueText:
-                            "\(Int((preferences.minimumAnalysisConfidence * 100).rounded()))%"
+                            L10n.percent(preferences.minimumAnalysisConfidence)
                     )
 
                     Toggle(
-                        "分析网络歌曲",
+                        "ui.settings.automix.analyze_streaming",
                         isOn: $preferences.analyzesStreamingTracks
                     )
                 } header: {
-                    Text("智能分析")
+                    Text("ui.settings.automix.section.smart_analysis")
                 } footer: {
                     Text(
-                        "BeatNet 与频谱变化会在整曲范围寻找段落和 16/32 拍乐句边界，再对前后两首的能量走势、频段拥挤和安静区间联合评分。所有节拍都可成为候选，重拍只提供很小的辅助信息，不会等待人声完全结束。“上一首结束位置”决定最晚保留到哪里。"
+                        "ui.settings.automix.smart_analysis.footer"
                     )
                 }
             }
@@ -102,40 +106,43 @@ struct AutoMixSettingsView: View {
                 if preferences.mode == .fixed
                     || preferences.fallbackBehavior == .crossfade {
                     valueSlider(
-                        title: "交叉淡化时长",
+                        title: L10n.string("ui.settings.automix.crossfade_duration"),
                         value: $preferences.fixedDuration,
                         range: AutoMixPreferences.fixedDurationRange,
                         step: 0.5,
                         valueText:
-                            "\(preferences.fixedDuration.formatted(.number.precision(.fractionLength(1)))) 秒"
+                            L10n.format("ui.common.seconds_decimal", preferences.fixedDuration)
                     )
                 }
 
                 valueSlider(
-                    title: "提前预载",
+                    title: L10n.string("ui.settings.automix.preload_lead_time"),
                     value: $preferences.preloadLeadTime,
                     range: AutoMixPreferences.preloadLeadTimeRange,
                     step: 5,
-                    valueText: "\(Int(preferences.preloadLeadTime)) 秒"
+                    valueText: L10n.format("ui.common.seconds", Int(preferences.preloadLeadTime))
                 )
 
-                Picker("淡化曲线", selection: $preferences.fadeCurve) {
+                Picker("ui.settings.automix.fade_curve", selection: $preferences.fadeCurve) {
                     ForEach(AutoMixFadeCurve.allCases) { curve in
                         Text(curve.title).tag(curve)
                     }
                 }
             } header: {
-                Text("播放")
+                Text("ui.settings.playback.section.playback")
             } footer: {
                 Text(
-                    "\(preferences.fadeCurve.description) 智能混音期间两首歌会沿同一条速度曲线逐渐交接，并在中段交换低频，避免底鼓互相覆盖。播放器中的混音进度直接取自两台播放器实际走过的媒体时间；暂停或缓冲时不会继续前进。“提前预载”只控制何时准备第二个播放器。"
+                    L10n.format(
+                        "ui.settings.automix.playback.footer",
+                        preferences.fadeCurve.description
+                    )
                 )
             }
 
             if preferences.mode == .smart {
                 Section {
                     Picker(
-                        "分析不可用时",
+                        "ui.settings.automix.analysis_unavailable",
                         selection: $preferences.fallbackBehavior
                     ) {
                         ForEach(AutoMixFallbackBehavior.allCases) {
@@ -144,13 +151,13 @@ struct AutoMixSettingsView: View {
                         }
                     }
                 } header: {
-                    Text("失败策略")
+                    Text("ui.settings.automix.section.failure_strategy")
                 } footer: {
                     Text(preferences.fallbackBehavior.description)
                 }
             }
         }
-        .navigationTitle("自动混音")
+        .navigationTitle("ui.settings.automix.title")
         .navigationBarTitleDisplayMode(.inline)
         .onChange(of: preferences.configuration) {
             player.applyAutoMixSettings()

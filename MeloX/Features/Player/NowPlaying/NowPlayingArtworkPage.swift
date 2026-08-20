@@ -114,7 +114,7 @@ struct NowPlayingArtworkPage: View {
                     value: player.isPlaying
                 )
                 .accessibilityElement()
-                .accessibilityLabel("\(song.name)的封面")
+                .accessibilityLabel(L10n.format("ui.song.artwork_accessibility", song.name))
                 .accessibilityHidden(!showsArtwork)
                 .task(id: player.isPlaying) {
                     await animateArtworkBounce(

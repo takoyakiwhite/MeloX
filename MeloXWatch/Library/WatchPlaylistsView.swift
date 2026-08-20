@@ -11,10 +11,10 @@ struct WatchPlaylistsView: View {
         Group {
             switch phase {
             case .idle, .loading:
-                ProgressView("正在载入歌单")
+                ProgressView("ui.watch.playlists.loading")
             case .failed(let message):
                 ContentUnavailableView(
-                    "无法载入歌单",
+                    "ui.watch.playlists.load_failed",
                     systemImage: "music.note.list",
                     description: Text(message)
                 )
@@ -44,7 +44,12 @@ struct WatchPlaylistsView: View {
 
                             VStack(alignment: .leading, spacing: 1) {
                                 Text(playlist.name).lineLimit(2)
-                                Text("\(playlist.trackCount) 首")
+                                Text(
+                                    L10n.format(
+                                        "ui.common.song_count",
+                                        playlist.trackCount
+                                    )
+                                )
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
                             }
@@ -53,7 +58,7 @@ struct WatchPlaylistsView: View {
                 }
             }
         }
-        .navigationTitle("我的歌单")
+        .navigationTitle("ui.watch.playlists.mine")
         .task {
             await load()
         }
@@ -61,7 +66,7 @@ struct WatchPlaylistsView: View {
 
     private func load() async {
         guard account.isLoggedIn else {
-            phase = .failed("请先登录网易云音乐。")
+            phase = .failed(L10n.string("ui.watch.playlists.login_required"))
             return
         }
         phase = .loading
@@ -94,10 +99,10 @@ private struct WatchPlaylistDetailView: View {
         Group {
             switch phase {
             case .idle, .loading:
-                ProgressView("正在载入歌曲")
+                ProgressView("ui.watch.playlists.songs_loading")
             case .failed(let message):
                 ContentUnavailableView(
-                    "无法载入歌单",
+                    "ui.watch.playlists.load_failed",
                     systemImage: "exclamationmark.triangle",
                     description: Text(message)
                 )
@@ -109,7 +114,7 @@ private struct WatchPlaylistDetailView: View {
                             await coordinator.play(first, in: songs)
                         }
                     } label: {
-                        Label("播放全部", systemImage: "play.fill")
+                        Label("ui.action.play_all", systemImage: "play.fill")
                     }
 
                     ForEach(songs) { song in

@@ -23,7 +23,7 @@ struct PodcastCategoryView: View {
                 podcastList
             }
         }
-        .navigationTitle(category.name)
+        .navigationTitle(category.localizedName)
         .navigationBarTitleDisplayMode(.large)
         .task(id: reloadToken) {
             guard podcasts.isEmpty else { return }
@@ -35,7 +35,7 @@ struct PodcastCategoryView: View {
     private var initialState: some View {
         switch phase {
         case .loading:
-            ProgressView("正在载入\(category.name)播客")
+            ProgressView(L10n.format("ui.podcasts.loading_category", category.localizedName))
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         case .failed(let message):
             ConnectionUnavailableView(message: message) {
@@ -43,7 +43,7 @@ struct PodcastCategoryView: View {
             }
         case .loaded:
             ContentUnavailableView(
-                "暂无播客",
+                "ui.podcasts.empty",
                 systemImage: "mic"
             )
         }
@@ -52,7 +52,7 @@ struct PodcastCategoryView: View {
     private var podcastList: some View {
         List {
             if let totalCount, totalCount > 0 {
-                Text("\(totalCount) 个播客")
+                Text(L10n.format("ui.podcasts.count", totalCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .listRowSeparator(.hidden)
@@ -86,7 +86,7 @@ struct PodcastCategoryView: View {
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
 
-                Button("重新加载") {
+                Button("ui.common.reload") {
                     Task { await loadMore() }
                 }
                 .buttonStyle(.bordered)
@@ -96,7 +96,7 @@ struct PodcastCategoryView: View {
         } else {
             HStack(spacing: 8) {
                 ProgressView()
-                Text("正在加载更多播客")
+                Text("ui.podcasts.loading_more")
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }

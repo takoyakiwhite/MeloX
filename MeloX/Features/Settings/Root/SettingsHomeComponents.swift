@@ -97,7 +97,7 @@ struct SettingsHomeResetCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("还原")
+            Text("ui.common.restore")
                 .font(.headline)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal, 14)
@@ -108,7 +108,7 @@ struct SettingsHomeResetCard: View {
                         .font(.title3.weight(.medium))
                         .frame(width: 30)
 
-                    Text("恢复播放器默认设置")
+                    Text("ui.settings.reset.card.title")
                         .font(.body.weight(.semibold))
 
                     Spacer(minLength: 8)
@@ -135,8 +135,8 @@ struct SettingsHomeResetCard: View {
 
             Text(
                 AppFeatureAvailability.downloads
-                    ? "重置播放、歌词、均衡器、自动混音和扩展歌词显示，不会删除账号、下载或音乐数据。"
-                    : "重置播放、歌词、均衡器、自动混音和扩展歌词显示，不会删除账号或音乐数据。"
+                    ? L10n.string("ui.settings.reset.card.subtitle.downloads")
+                    : L10n.string("ui.settings.reset.card.subtitle")
             )
                 .font(.footnote)
                 .foregroundStyle(.secondary)

@@ -9,9 +9,13 @@ struct NeteasePrivateMessagePayload: Hashable {
             return text
         }
         if let resource {
-            return "[\(resource.kindTitle)] \(resource.title)"
+            return L10n.format(
+                "ui.messages.resource_summary",
+                resource.kindTitle,
+                resource.title
+            )
         }
-        return "私信"
+        return L10n.string("ui.messages.private_message")
     }
 
     static func decode(_ serialized: String) -> Self {
@@ -65,7 +69,10 @@ struct NeteasePrivateConversation: Decodable, Hashable, Identifiable {
         }
         return fromUser
             ?? toUser
-            ?? NeteaseMessageContact(id: 0, nickname: "网易云用户")
+            ?? NeteaseMessageContact(
+                id: 0,
+                nickname: L10n.string("ui.metadata.netease_user")
+            )
     }
 
     enum CodingKeys: String, CodingKey {

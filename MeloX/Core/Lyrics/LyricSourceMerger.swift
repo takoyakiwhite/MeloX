@@ -211,7 +211,7 @@ enum LyricSourceMerger {
             lines: [
                 LyricLine(
                     time: 0,
-                    text: "纯音乐，请欣赏"
+                    text: L10n.string("ui.lyrics.instrumental")
                 )
             ],
             isPureMusic: true

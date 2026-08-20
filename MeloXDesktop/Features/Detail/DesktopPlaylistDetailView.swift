@@ -24,7 +24,9 @@ struct DesktopPlaylistDetailView: View {
                     LazyVStack(alignment: .leading, spacing: 34) {
                         DesktopCollectionHeader(
                             artworkURL: playlist.artworkURL,
-                            kind: playlist.isOfficialToplist ? "排行榜" : "播放列表",
+                            kind: playlist.isOfficialToplist
+                                ? L10n.string("ui.category.toplists")
+                                : L10n.string("ui.common.playlist"),
                             title: playlist.name,
                             subtitle: playlist.creator?.nickname,
                             metadata: metadata(for: playlist),
@@ -68,21 +70,21 @@ struct DesktopPlaylistDetailView: View {
                     .padding(.vertical, 34)
                 }
             } else if isLoading {
-                DesktopDetailLoadingView(message: "正在载入播放列表…")
+                DesktopDetailLoadingView(message: L10n.string("ui.playlists.loading"))
             } else {
-                DesktopDetailErrorView(message: errorMessage ?? "未知错误") {
+                DesktopDetailErrorView(message: errorMessage ?? L10n.string("ui.error.unknown")) {
                     Task { await load() }
                 }
             }
         }
-        .navigationTitle(playlist?.name ?? "播放列表")
+        .navigationTitle(playlist?.name ?? L10n.string("ui.common.playlist"))
         .task(id: playlistID) { await load() }
         .animation(
             reduceMotion ? nil : .smooth(duration: 0.30),
             value: isLoading
         )
         .alert(
-            "无法播放全部",
+            L10n.string("ui.desktop.collection.play_all_failed"),
             isPresented: Binding(
                 get: { playbackErrorMessage != nil },
                 set: { isPresented in
@@ -92,20 +94,23 @@ struct DesktopPlaylistDetailView: View {
                 }
             )
         ) {
-            Button("好", role: .cancel) {
+            Button("ui.common.ok", role: .cancel) {
                 playbackErrorMessage = nil
             }
         } message: {
-            Text(playbackErrorMessage ?? "无法读取完整歌单。")
+            Text(playbackErrorMessage ?? L10n.string("ui.playlists.load_complete_failed"))
         }
     }
 
     private func metadata(for playlist: Playlist) -> String {
-        var parts = ["\(playlist.trackCount) 首歌曲"]
+        var parts = [L10n.format("ui.common.song_count", playlist.trackCount)]
         if model.settings.showPlayCount {
-            parts.append("\(playlist.playCount.formatted()) 次播放")
+            parts.append(L10n.format("ui.common.play_count", playlist.playCount))
         }
-        return parts.joined(separator: " · ")
+        return L10n.joined(
+            parts,
+            separatorKey: "ui.common.metadata_separator"
+        )
     }
 
     private var hasMoreTracks: Bool {

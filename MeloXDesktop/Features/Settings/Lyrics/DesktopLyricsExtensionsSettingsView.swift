@@ -10,17 +10,17 @@ struct DesktopLyricsExtensionsSettingsView: View {
 
         ScrollView {
             Form {
-                Section("桌面歌词") {
+                Section("ui.floating_lyrics.title") {
                     Toggle(
-                        "显示翻译",
+                        "ui.settings.floating_lyrics.show_translation",
                         isOn: $floating.showsTranslation
                     )
                     Toggle(
-                        "显示下一行",
+                        "ui.settings.floating_lyrics.show_next",
                         isOn: $floating.showsNextLine
                     )
                     Picker(
-                        "文字对齐",
+                        "ui.desktop.floating_lyrics.text_alignment",
                         selection: $floating.textAlignment
                     ) {
                         ForEach(FloatingLyricsTextAlignment.allCases) {
@@ -32,14 +32,14 @@ struct DesktopLyricsExtensionsSettingsView: View {
                     .pickerStyle(.segmented)
                 }
 
-                Section("文字样式") {
-                    Picker("字重", selection: $floating.fontWeight) {
+                Section("ui.desktop.floating_lyrics.text_style") {
+                    Picker("ui.settings.lyrics.appearance.font_weight", selection: $floating.fontWeight) {
                         ForEach(LyricsFontWeight.allCases) { weight in
                             Text(weight.title)
                                 .tag(weight)
                         }
                     }
-                    Picker("文字效果", selection: $floating.textEffect) {
+                    Picker("ui.desktop.floating_lyrics.text_effect", selection: $floating.textEffect) {
                         ForEach(FloatingLyricsTextEffect.allCases) { effect in
                             Text(effect.title)
                                 .tag(effect)
@@ -47,33 +47,33 @@ struct DesktopLyricsExtensionsSettingsView: View {
                     }
                     .pickerStyle(.segmented)
                     HStack {
-                        Text("歌词大小")
+                        Text("ui.settings.floating_lyrics.text_size")
                         Slider(
                             value: $floating.fontScale,
                             in: FloatingLyricsPreferences.fontScaleRange,
                             step: 0.05
                         )
                         Text(
-                            "\(Int((floating.fontScale * 100).rounded()))%"
+                            L10n.percent(floating.fontScale)
                         )
                         .monospacedDigit()
                         .frame(width: 48, alignment: .trailing)
                     }
                     percentageSlider(
-                        "文字不透明度",
+                        L10n.string("ui.desktop.floating_lyrics.text_opacity"),
                         value: $floating.textOpacity,
                         range: FloatingLyricsPreferences.textOpacityRange
                     )
                     valueSlider(
-                        "行间距",
+                        L10n.string("ui.settings.lyrics.appearance.line_spacing"),
                         value: $floating.lineSpacing,
                         range: FloatingLyricsPreferences.lineSpacingRange,
                         suffix: " pt"
                     )
                 }
 
-                Section("背景") {
-                    Picker("背景样式", selection: $floating.backgroundStyle) {
+                Section("ui.desktop.floating_lyrics.background") {
+                    Picker("ui.settings.player_appearance.background_style", selection: $floating.backgroundStyle) {
                         ForEach(FloatingLyricsBackgroundStyle.allCases) {
                             style in
                             Text(style.title)
@@ -81,50 +81,50 @@ struct DesktopLyricsExtensionsSettingsView: View {
                         }
                     }
                     percentageSlider(
-                        "背景强度",
+                        L10n.string("ui.desktop.floating_lyrics.background_intensity"),
                         value: $floating.backgroundOpacity,
                         range: FloatingLyricsPreferences.backgroundOpacityRange
                     )
                     .disabled(floating.backgroundStyle == .transparent)
                     if floating.backgroundStyle == .blurredArtwork {
                         valueSlider(
-                            "封面模糊",
+                            L10n.string("ui.desktop.floating_lyrics.artwork_blur"),
                             value: $floating.backgroundBlur,
                             range: FloatingLyricsPreferences.backgroundBlurRange,
                             suffix: " pt"
                         )
                     }
                     valueSlider(
-                        "窗口圆角",
+                        L10n.string("ui.desktop.floating_lyrics.corner_radius"),
                         value: $floating.cornerRadius,
                         range: FloatingLyricsPreferences.cornerRadiusRange,
                         suffix: " pt"
                     )
-                    LabeledContent("窗口大小") {
-                        Text("拖动窗口边缘调整")
+                    LabeledContent("ui.desktop.floating_lyrics.window_size") {
+                        Text("ui.desktop.floating_lyrics.resize_hint")
                             .foregroundStyle(.secondary)
                     }
                 }
 
-                Section("歌词通知") {
+                Section("ui.settings.lyrics_notification.title") {
                     Toggle(
-                        "启用歌词通知",
+                        "ui.desktop.lyrics_notifications.enable",
                         isOn: notificationEnabledBinding
                     )
                     Toggle(
-                        "显示封面",
+                        "ui.settings.lyrics_notification.show_artwork",
                         isOn: $notifications.showsArtwork
                     )
                     Toggle(
-                        "前台显示",
+                        "ui.settings.lyrics_notification.show_foreground",
                         isOn: $notifications.showsInForeground
                     )
                     Toggle(
-                        "后台显示",
+                        "ui.settings.lyrics_notification.show_background",
                         isOn: $notifications.showsInBackground
                     )
                     Toggle(
-                        "暂停时移除",
+                        "ui.settings.lyrics_notification.dismiss_on_pause",
                         isOn: $notifications.removesWhenPaused
                     )
                 }
@@ -146,12 +146,12 @@ struct DesktopLyricsExtensionsSettingsView: View {
             model.player.applyLyricsNotificationPreference()
         }
         .alert(
-            "无法开启通知歌词",
+            L10n.string("ui.settings.lyrics_notification.enable_failed.title"),
             isPresented: $showsNotificationPermissionAlert
         ) {
-            Button("好", role: .cancel) {}
+            Button("ui.common.ok", role: .cancel) {}
         } message: {
-            Text("请先在系统设置中允许 MeloX 显示通知。")
+            Text("ui.settings.lyrics_notification.permission_required")
         }
     }
 
@@ -163,7 +163,7 @@ struct DesktopLyricsExtensionsSettingsView: View {
         HStack {
             Text(title)
             Slider(value: value, in: range, step: 0.05)
-            Text("\(Int((value.wrappedValue * 100).rounded()))%")
+            Text(L10n.percent(value.wrappedValue))
                 .monospacedDigit()
                 .frame(width: 48, alignment: .trailing)
         }
@@ -178,7 +178,7 @@ struct DesktopLyricsExtensionsSettingsView: View {
         HStack {
             Text(title)
             Slider(value: value, in: range, step: 1)
-            Text("\(Int(value.wrappedValue.rounded()))\(suffix)")
+            Text(L10n.format("ui.common.points", Int(value.wrappedValue.rounded())))
                 .monospacedDigit()
                 .frame(width: 56, alignment: .trailing)
         }

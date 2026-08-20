@@ -96,7 +96,7 @@ struct DesktopRootView: View {
                 .environment(model)
         }
         .alert(
-            "操作未完成",
+            L10n.string("ui.error.operation_failed.title"),
             isPresented: Binding(
                 get: { model.library.operationErrorMessage != nil },
                 set: {
@@ -106,23 +106,23 @@ struct DesktopRootView: View {
                 }
             )
         ) {
-            Button("好") { model.library.clearOperationError() }
+            Button("ui.common.ok") { model.library.clearOperationError() }
         } message: {
             Text(
                 model.library.operationErrorMessage
-                    ?? "网易云音乐未完成操作。"
+                    ?? L10n.string("ui.error.netease_operation_incomplete")
             )
         }
         .alert(
-            "无法启动心动模式",
+            L10n.string("ui.error.heart_mode_launch.title"),
             isPresented: Binding(
                 get: { model.launchErrorMessage != nil },
                 set: { if !$0 { model.clearLaunchError() } }
             )
         ) {
-            Button("好") { model.clearLaunchError() }
+            Button("ui.common.ok") { model.clearLaunchError() }
         } message: {
-            Text(model.launchErrorMessage ?? "请稍后重试。")
+            Text(model.launchErrorMessage ?? L10n.string("ui.error.try_again_later"))
         }
         .onExitCommand {
             if ui.isNowPlayingPresented {

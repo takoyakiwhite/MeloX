@@ -85,22 +85,22 @@ nonisolated enum AudioEqualizerPreset: String, CaseIterable, Identifiable, Senda
 
     var title: String {
         switch self {
-        case .flat: "平直"
-        case .acoustic: "原声"
-        case .bassBoost: "低音增强"
-        case .bassReduce: "低音减弱"
-        case .classical: "古典"
-        case .dance: "舞曲"
-        case .electronic: "电子"
-        case .hipHop: "嘻哈"
-        case .jazz: "爵士"
-        case .pop: "流行"
-        case .rock: "摇滚"
-        case .spokenWord: "播客与有声书"
-        case .trebleBoost: "高音增强"
-        case .trebleReduce: "高音减弱"
-        case .vocal: "人声突出"
-        case .custom: "自定义"
+        case .flat: L10n.string("ui.settings.equalizer.preset.flat")
+        case .acoustic: L10n.string("ui.settings.equalizer.preset.acoustic")
+        case .bassBoost: L10n.string("ui.settings.equalizer.preset.bass_boost")
+        case .bassReduce: L10n.string("ui.settings.equalizer.preset.bass_reduce")
+        case .classical: L10n.string("ui.settings.equalizer.preset.classical")
+        case .dance: L10n.string("ui.settings.equalizer.preset.dance")
+        case .electronic: L10n.string("ui.settings.equalizer.preset.electronic")
+        case .hipHop: L10n.string("ui.settings.equalizer.preset.hip_hop")
+        case .jazz: L10n.string("ui.settings.equalizer.preset.jazz")
+        case .pop: L10n.string("ui.settings.equalizer.preset.pop")
+        case .rock: L10n.string("ui.settings.equalizer.preset.rock")
+        case .spokenWord: L10n.string("ui.settings.equalizer.preset.spoken_word")
+        case .trebleBoost: L10n.string("ui.settings.equalizer.preset.treble_boost")
+        case .trebleReduce: L10n.string("ui.settings.equalizer.preset.treble_reduce")
+        case .vocal: L10n.string("ui.settings.equalizer.preset.vocal")
+        case .custom: L10n.string("ui.common.custom")
         }
     }
 
@@ -174,7 +174,7 @@ final class AudioEqualizerPreferences {
     }
 
     var summary: String {
-        isEnabled ? selectedPreset.title : "关闭"
+        isEnabled ? selectedPreset.title : L10n.string("ui.common.off")
     }
 
     @ObservationIgnored

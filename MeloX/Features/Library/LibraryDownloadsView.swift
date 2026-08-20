@@ -13,7 +13,7 @@ struct LibraryDownloadsView: View {
                     DownloadsView()
                 } label: {
                     HStack {
-                        Label("下载管理", systemImage: "arrow.down.circle")
+                        Label("ui.downloads.management", systemImage: "arrow.down.circle")
                         Spacer()
                         Text(downloadManagementValue)
                             .foregroundStyle(.secondary)
@@ -22,14 +22,14 @@ struct LibraryDownloadsView: View {
             }
 
             if !activeDownloadSongs.isEmpty {
-                Section("正在下载") {
+                Section("ui.downloads.active") {
                     ForEach(activeDownloadSongs) { song in
                         TrackRowView(song: song, showsArtwork: true)
                             .swipeActions {
                                 Button(role: .destructive) {
                                     downloads.cancel(songID: song.id)
                                 } label: {
-                                    Label("取消", systemImage: "xmark")
+                                    Label("ui.common.cancel", systemImage: "xmark")
                                 }
                             }
                     }
@@ -41,7 +41,9 @@ struct LibraryDownloadsView: View {
                     Task { await player.playAll(filteredDownloadedSongs) }
                 } label: {
                     Label(
-                        isSearching ? "播放搜索结果" : "播放全部",
+                        isSearching
+                            ? L10n.string("ui.common.play_search_results")
+                            : L10n.string("ui.common.play_all"),
                         systemImage: "play.fill"
                     )
                 }
@@ -63,7 +65,7 @@ struct LibraryDownloadsView: View {
                     Button(role: .destructive) {
                         downloads.remove(songID: download.id)
                     } label: {
-                        Label("删除下载", systemImage: "trash")
+                        Label("ui.downloads.delete", systemImage: "trash")
                     }
                 }
             }
@@ -78,10 +80,10 @@ struct LibraryDownloadsView: View {
                     )
                 } else {
                     ContentUnavailableView(
-                        "还没有下载歌曲",
+                        "ui.downloads.empty",
                         systemImage: "arrow.down.circle",
                         description: Text(
-                            "在歌曲的更多操作菜单中选择“下载歌曲”。"
+                            "ui.downloads.empty.message"
                         )
                     )
                 }
@@ -122,8 +124,8 @@ struct LibraryDownloadsView: View {
 
     private var downloadManagementValue: String {
         if !downloads.activeDownloads.isEmpty {
-            return "\(downloads.activeDownloads.count) 项进行中"
+            return L10n.format("ui.downloads.active_count", downloads.activeDownloads.count)
         }
-        return downloads.totalByteCount.formatted(.byteCount(style: .file))
+        return L10n.byteCount(downloads.totalByteCount)
     }
 }

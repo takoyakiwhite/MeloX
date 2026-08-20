@@ -84,8 +84,8 @@ struct NowPlayingLandscapeView: View {
         }
         .buttonStyle(.plain)
         .frame(height: 28)
-        .accessibilityLabel("收起播放器")
-        .accessibilityHint("轻点收起，或向下拖动播放器")
+        .accessibilityLabel("ui.player.collapse")
+        .accessibilityHint("ui.player.collapse_hint")
     }
 
     private func artwork(side: CGFloat) -> some View {
@@ -101,7 +101,7 @@ struct NowPlayingLandscapeView: View {
             )
             .animation(.smooth(duration: 0.45), value: player.isPlaying)
             .accessibilityElement()
-            .accessibilityLabel("\(song.name)的封面")
+            .accessibilityLabel(L10n.format("ui.song.artwork_accessibility", song.name))
     }
 
     private var rightPanel: some View {
@@ -289,11 +289,11 @@ struct NowPlayingLandscapeView: View {
 
     private var lyricsInterfaceAccessibilityActionName: String {
         if settings.lyricsStyle == .appleMusic {
-            return "显示播放器控制"
+            return L10n.string("ui.player.show_controls")
         }
         return showsLyricsControls
-            ? "隐藏播放器控制"
-            : "显示播放器控制"
+            ? L10n.string("ui.player.hide_controls")
+            : L10n.string("ui.player.show_controls")
     }
 
     private func enterSkylineLyrics() {

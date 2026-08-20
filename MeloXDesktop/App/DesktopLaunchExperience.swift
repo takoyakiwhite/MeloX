@@ -28,7 +28,7 @@ private struct DesktopLaunchExperienceModifier: ViewModifier {
                 inspectClipboardIfNeeded()
             }
             .alert(
-                detectedLink?.promptTitle ?? "剪贴板链接",
+                detectedLink?.promptTitle ?? L10n.string("ui.clipboard.title"),
                 isPresented: detectedLinkPresented
             ) {
                 if let detectedLink {
@@ -36,21 +36,21 @@ private struct DesktopLaunchExperienceModifier: ViewModifier {
                         open(detectedLink)
                     }
                 }
-                Button("忽略", role: .cancel) {}
+                Button("ui.common.ignore", role: .cancel) {}
             } message: {
                 Text(
                     detectedLink?.promptMessage
-                        ?? "是否在 MeloX 中打开此链接？"
+                        ?? L10n.string("ui.clipboard.open_link_prompt")
                 )
             }
             .alert(item: $updateAlert) { alert in
                 Alert(
-                    title: Text("发现新版本"),
+                    title: Text("ui.update.available.title"),
                     message: Text(alert.message),
-                    primaryButton: .default(Text("打开发布页")) {
+                    primaryButton: .default(Text("ui.update.open_release_page")) {
                         openURL(alert.releaseURL)
                     },
-                    secondaryButton: .cancel(Text("稍后"))
+                    secondaryButton: .cancel(Text("ui.common.later"))
                 )
             }
     }
@@ -104,8 +104,11 @@ private struct DesktopLaunchExperienceModifier: ViewModifier {
             )
             guard result.hasUpdate else { return }
             updateAlert = DesktopAutomaticUpdateAlert(
-                message:
-                    "当前版本 \(result.currentVersion)，最新版本 \(result.latestVersion)。可以前往发布页查看更新内容。",
+                message: L10n.format(
+                    "ui.update.available.message",
+                    result.currentVersion,
+                    result.latestVersion
+                ),
                 releaseURL: result.releaseURL
             )
         } catch {
@@ -123,23 +126,23 @@ private struct DesktopAutomaticUpdateAlert: Identifiable {
 private extension NeteaseMusicLink {
     var promptTitle: String {
         switch self {
-        case .song: "发现网易云歌曲链接"
-        case .listenTogether: "发现一起听邀请"
+        case .song: L10n.string("ui.clipboard.song_link_found")
+        case .listenTogether: L10n.string("ui.clipboard.listen_together_found")
         }
     }
 
     var promptMessage: String {
         switch self {
-        case .song: "是否在 MeloX 中打开剪贴板里的歌曲？"
+        case .song: L10n.string("ui.clipboard.song_prompt")
         case .listenTogether:
-            "是否查看剪贴板里的一起听邀请？加入前仍可核对邀请链接。"
+            L10n.string("ui.clipboard.listen_together_prompt")
         }
     }
 
     var actionTitle: String {
         switch self {
-        case .song: "打开歌曲"
-        case .listenTogether: "查看邀请"
+        case .song: L10n.string("ui.clipboard.open_song")
+        case .listenTogether: L10n.string("ui.clipboard.view_invitation")
         }
     }
 }
